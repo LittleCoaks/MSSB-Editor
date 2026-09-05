@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ZZZZ.dat viewer</title>
+<style>
+  :root { --bg:#1b1d22; --panel:#23262d; --line:#343841; --fg:#d9dce3; --dim:#8a8f9b; --acc:#5aa9ff; --sel:#2d3a52; }
+  * { box-sizing:border-box; }
+  body { margin:0; height:100vh; display:flex; flex-direction:column; background:var(--bg); color:var(--fg); font:13px/1.4 system-ui, Segoe UI, sans-serif; }
+  header { display:flex; gap:12px; align-items:center; padding:8px 12px; background:var(--panel); border-bottom:1px solid var(--line); }
+  header h1 { font-size:15px; margin:0 12px 0 0; }
+  header input, header select { background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:4px 6px; border-radius:4px; }
+  header .stat { color:var(--dim); margin-left:auto; white-space:nowrap; }
+  main { flex:1; display:flex; min-height:0; }
+  #list { width:560px; min-width:360px; overflow:auto; border-right:1px solid var(--line); resize:horizontal; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { padding:3px 6px; text-align:left; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  th { position:sticky; top:0; background:var(--panel); border-bottom:1px solid var(--line); cursor:pointer; user-select:none; }
+  tbody tr { cursor:pointer; }
+  tbody tr:hover { background:#2a2e36; }
+  tbody tr.sel { background:var(--sel); }
+  td.num { text-align:right; color:var(--dim); }
+  td.sym { max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+  .kind { display:inline-block; padding:0 6px; border-radius:8px; font-size:11px; background:#3a3f4a; }
+  .kind.textures { background:#2f5d3a; } .kind.container { background:#2f4a6a; } .kind.hvqm4 { background:#6a2f5d; }
+  .kind.animbank { background:#6a4f2f; } .kind.dsp-adpcm { background:#5d5d2f; } .kind.rel { background:#444; }
+  #detail { flex:1; overflow:auto; padding:12px 16px; min-width:0; }
+  #detail h2 { margin:0 0 6px; font-size:16px; }
+  .row { color:var(--dim); margin-bottom:4px; } .row b { color:var(--fg); font-weight:500; }
+  .tabs { display:flex; gap:4px; margin:12px 0 8px; border-bottom:1px solid var(--line); }
+  .tabs button { background:none; border:none; color:var(--dim); padding:6px 10px; cursor:pointer; border-bottom:2px solid transparent; font:inherit; }
+  .tabs button.on { color:var(--fg); border-color:var(--acc); }
+  .btn { background:var(--panel); border:1px solid var(--line); color:var(--fg); padding:4px 10px; border-radius:4px; cursor:pointer; font:inherit; margin-right:6px; }
+  .btn:hover { border-color:var(--acc); }
+  pre { font:12px/1.35 ui-monospace, Consolas, monospace; background:#15171b; padding:10px; border-radius:4px; overflow:auto; margin:0; }
+  .grid { display:flex; flex-wrap:wrap; gap:10px; }
+  .tex { background:#15171b; border:1px solid var(--line); border-radius:4px; padding:6px; text-align:center; font-size:11px; color:var(--dim); }
+  .tex img { display:block; margin:0 auto 4px; image-rendering:pixelated; max-width:256px; max-height:256px;
+             background:conic-gradient(#333 25%, #444 0 50%, #333 0 75%, #444 0) 0 0/16px 16px; }
+  .hexnav { display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; white-space:nowrap; }
+  .hexnav input { width:110px; background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:3px 6px; border-radius:4px; }
+  .msg { color:var(--acc); margin-left:8px; }
+  a { color:var(--acc); }
+  .secs td { font-family:ui-monospace, Consolas, monospace; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ZZZZ.dat</h1>
+  <input id="q" placeholder="filter: symbol, module, id, offset…" size="34">
+  <select id="kind"><option value="">all kinds</option></select>
+  <select id="module"><option value="">all modules</option></select>
+  <label><input type="checkbox" id="texonly"> has textures</label>
+  <span class="stat" id="stat"></span>
+</header>
+<main>
+  <div id="list"><table>
+    <thead><tr>
+      <th data-k="id">id</th><th data-k="offset">offset</th><th data-k="size">size</th><th data-k="kind">kind</th>
+      <th data-k="ntex">tex</th><th data-k="module">mod</th><th data-k="symbol">symbol</th>
+    </tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+  <div id="detail"><div class="row">Select an entry on the left. Click column headers to sort.</div></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const hex = (n, w=8) => '0x' + n.toString(16).padStart(w, '0');
+const kb = n => n >= 1048576 ? (n/1048576).toFixed(1)+' MB' : n >= 1024 ? (n/1024).toFixed(1)+' KB' : n+' B';
+let all = [], view = [], sel = null, sortK = 'id', sortD = 1, meta = {};
+
+async function load() {
+  const r = await (await fetch('/api/index')).json();
+  all = r.entries; meta = r;
+  const kinds = [...new Set(all.map(e => e.kind))].sort();
+  const mods = [...new Set(all.map(e => e.module))].sort();
+  for (const k of kinds) $('#kind').append(new Option(k, k));
+  for (const m of mods) $('#module').append(new Option(m, m));
+  const covered = r.meta.covered_bytes || 0;
+  $('#stat').textContent = `${all.length} entries · ${kb(covered)} of ${kb(r.archive_size)} indexed · ${r.meta.source === 'iso' ? 'reading from ISO' : 'reading ZZZZ.dat'}`;
+  refilter();
+  if (location.hash) open(+location.hash.slice(1));
+}
+
+function refilter() {
+  const q = $('#q').value.trim().toLowerCase(), k = $('#kind').value, m = $('#module').value, t = $('#texonly').checked;
+  view = all.filter(e => (!k || e.kind === k) && (!m || e.module === m) && (!t || e.ntex > 0) &&
+    (!q || e.symbol.toLowerCase().includes(q) || String(e.id) === q || hex(e.offset).includes(q) || e.name.includes(q) || e.kind.includes(q)));
+  view.sort((a, b) => (a[sortK] > b[sortK] ? 1 : a[sortK] < b[sortK] ? -1 : a.id - b.id) * sortD);
+  const tb = $('#rows'); tb.innerHTML = '';
+  for (const e of view) {
+    const tr = document.createElement('tr'); tr.dataset.id = e.id; if (sel && sel.id === e.id) tr.className = 'sel';
+    tr.innerHTML = `<td class="num">${e.id}</td><td class="num">${hex(e.offset)}</td><td class="num">${kb(e.size)}</td>
+      <td><span class="kind ${e.kind}">${e.kind||'?'}</span></td><td class="num">${e.ntex||''}</td><td>${e.module}</td><td class="sym" title="${e.symbol}">${e.symbol}</td>`;
+    tr.onclick = () => open(e.id);
+    tb.append(tr);
+  }
+}
+for (const el of ['#q', '#kind', '#module', '#texonly']) $(el).addEventListener('input', refilter);
+document.querySelectorAll('th').forEach(th => th.onclick = () => { const k = th.dataset.k; sortD = (sortK === k) ? -sortD : 1; sortK = k; refilter(); });
+
+let tab = 'info';
+async function open(id) {
+  location.hash = id;
+  document.querySelectorAll('#rows tr').forEach(tr => tr.classList.toggle('sel', +tr.dataset.id === id));
+  const d = await (await fetch('/api/entry/' + id)).json();
+  if (d.error) { $('#detail').innerHTML = `<div class="row">Error: ${d.error}</div>`; return; }
+  sel = d; render();
+}
+
+function render() {
+  const d = sel;
+  const comp = d.compressed ? `LZSS (lookback ${d.lookback_bits} bits, length ${d.repeat_bits} bits)` : 'stored';
+  let h = `<h2>#${d.id} · ${d.symbol || d.name}</h2>
+    <div class="row">${d.archive} @ <b>${hex(d.offset)}</b> · on disc <b>${kb(d.disc_size)}</b> (${hex(d.disc_size)}) · decompressed <b>${kb(d.size)}</b> (${hex(d.size)}) · ${comp}</div>
+    <div class="row">content: <b>${d.file_kind}</b>${d.sections.length ? ` · ${d.sections.length} sections` : ''}${d.textures.length ? ` · ${d.textures.length} textures` : ''} · file name <b>${d.file_name}</b></div>
+    <div class="row">referenced from: ${d.refs.map(r => `<b>${r}</b>`).join(', ')}</div>
+    <div style="margin:8px 0">
+      <a class="btn" href="/api/entry/${d.id}/data">Download decompressed</a>
+      <a class="btn" href="/api/entry/${d.id}/raw">Download raw</a>
+      <button class="btn" onclick="extract(${d.id}, false)">Extract to folder</button>
+      ${d.textures.length ? `<button class="btn" onclick="extract(${d.id}, true)">Extract + PNGs</button>` : ''}
+      <span class="msg" id="msg"></span>
+    </div>`;
+  const tabs = ['info', 'hex'];
+  if (d.sections.length) tabs.splice(1, 0, 'sections');
+  if (d.textures.length) tabs.splice(1, 0, 'textures');
+  if (!tabs.includes(tab)) tab = tabs[0];
+  h += `<div class="tabs">${tabs.map(t => `<button class="${t === tab ? 'on' : ''}" onclick="tab='${t}';render()">${t}</button>`).join('')}</div><div id="tabbody"></div>`;
+  $('#detail').innerHTML = h;
+  const body = $('#tabbody');
+  if (tab === 'info') {
+    if (d.hvqm4) body.innerHTML = '<pre>' + Object.entries(d.hvqm4).map(([k, v]) => `${k.padEnd(16)} ${v}`).join('\n') + '</pre>';
+    else body.innerHTML = `<div class="row">Movies are HVQM4 (extract and play with an HVQM4 decoder). Containers are tables of section offsets; texture tables decode in the textures tab. Animation banks and most other sections are not decoded yet.</div>`;
+  } else if (tab === 'sections') {
+    body.innerHTML = `<table class="secs"><tr><th>#</th><th>offset</th><th>size</th><th>magic</th><th>kind</th><th>tex</th><th></th></tr>` +
+      d.sections.map(s => `<tr><td>${s.index}</td><td>${hex(s.offset)}</td><td>${hex(s.size)}</td><td>${hex(s.magic)}</td><td>${s.kind}</td><td>${s.ntex||''}</td>
+        <td><a href="/api/entry/${d.id}/section/${s.index}">download</a> · <a href="#" onclick="tab='hex';hexOff=${s.offset};render();return false">hex</a></td></tr>`).join('') + '</table>';
+  } else if (tab === 'textures') {
+    body.innerHTML = `<div class="grid">` + d.textures.map(t => `<div class="tex"><a href="/api/entry/${d.id}/tex/${t.n}.png" target="_blank"><img loading="lazy" src="/api/entry/${d.id}/tex/${t.n}.png" width="${Math.min(t.width,256)}"></a>
+      #${t.n}${t.section !== null ? ` s${t.section}` : ''} · ${t.width}×${t.height} ${t.fmt}${t.mips ? ' mip' + t.mips : ''}${t.tlut ? ' pal' + t.tlut : ''}<br>@${hex(t.offset)}</div>`).join('') + '</div>';
+  } else if (tab === 'hex') {
+    body.innerHTML = `<div class="hexnav">offset <input id="hoff" value="${hex(hexOff)}"> <button class="btn" onclick="hexGo()">go</button>
+      <button class="btn" onclick="hexOff=Math.max(0,hexOff-4096);render()">◀ prev</button><button class="btn" onclick="hexOff+=4096;render()">next ▶</button>
+      <label><input type="checkbox" id="hraw" ${hexRaw ? 'checked' : ''} onchange="hexRaw=this.checked;render()"> raw (on-disc) bytes</label> <span id="htot" class="row"></span></div><pre id="hexpre">loading…</pre>`;
+    loadHex(d.id);
+  }
+}
+let hexOff = 0, hexRaw = false;
+function hexGo() { hexOff = parseInt($('#hoff').value, 16) || 0; hexOff -= hexOff % 16; render(); }
+async function loadHex(id) {
+  const r = await (await fetch(`/api/entry/${id}/hex?offset=${hexOff}&length=4096${hexRaw ? '&raw=1' : ''}`)).json();
+  if (!$('#hexpre')) return;
+  $('#htot').textContent = `of ${hex(r.total)} bytes`;
+  const b = r.hex.match(/../g) || [];
+  let out = '';
+  for (let i = 0; i < b.length; i += 16) {
+    const row = b.slice(i, i + 16);
+    out += (r.offset + i).toString(16).padStart(8, '0') + '  ' + row.join(' ').padEnd(47) + '  ' +
+      row.map(x => { const c = parseInt(x, 16); return c >= 32 && c < 127 ? String.fromCharCode(c) : '.'; }).join('').replace(/</g, '&lt;') + '\n';
+  }
+  $('#hexpre').innerHTML = out || '(end of file)';
+}
+async function extract(id, png) {
+  $('#msg').textContent = 'extracting…';
+  const r = await (await fetch(`/api/entry/${id}/extract${png ? '?png=1' : ''}`)).json();
+  $('#msg').textContent = r.error ? 'error: ' + r.error : `wrote ${r.written.length} file(s) → ${r.written[0]}`;
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+"""Recognise and parse the file formats found inside ZZZZ.dat entries.
+
+Everything here was worked out from the data itself (there is no format
+documentation in the decomp repo). Known shapes:
+
+* **Section container** - header of big-endian u32 section offsets, the first
+  of which is the header size (0x20, 0x40, 0x60 ...). Unused slots are zero.
+  Sections are individually typed; the most useful is the texture table.
+* **Texture table** - 0x20-byte records:
+
+      u16 count (first record only, else 0)
+      u16 pad
+      u32 data offset (relative to the table start)
+      u32 tlut offset (palette formats)
+      u16 width, u16 height
+      u8  flags[4]   (wrap s, wrap t, filter, ?)
+      f32 LOD bias
+      u16 pad, u8 mip levels, u8 GX texture format
+      u16 tlut entries, u8 tlut format, u8 pad
+
+* **HVQM4** - Nintendo's HVQM4 1.3 movie container ("HVQM4 1.3" magic).
+* **DSP-ADPCM** - raw 8-byte DSP frames (header nibble byte < 0x80 on every
+  8th byte); this is how the un-indexed audio region looks.
+* **0x007B7960 bank** - animation banks used by the character model tables:
+  header `u32 magic, u32 stride?, u32 count, u32 ...` then `count` records.
+"""
+from __future__ import annotations
+
+import struct
+from dataclasses import dataclass, field
+
+from . import gx
+
+
+@dataclass
+class Texture:
+    index: int
+    base: int          # absolute offset of the table this texture belongs to
+    data_offset: int   # relative to base
+    tlut_offset: int
+    width: int
+    height: int
+    flags: bytes
+    fmt: int
+    tlut_count: int
+    tlut_fmt: int
+    mips: int = 0
+    lod_bias: float = 0.0
+
+    @property
+    def fmt_name(self) -> str:
+        return gx.FORMAT_NAMES.get(self.fmt, f"fmt{self.fmt}")
+
+    @property
+    def data_size(self) -> int:
+        return gx.encoded_size(self.fmt, self.width, self.height)
+
+    @property
+    def abs_data_offset(self) -> int:
+        return self.base + self.data_offset
+
+    def decode_rgba(self, data: bytes) -> bytearray:
+        tlut = None
+        if self.fmt in (gx.GX_TF_C4, gx.GX_TF_C8, gx.GX_TF_C14X2) and self.tlut_count:
+            tlut = gx.decode_tlut(data[self.base + self.tlut_offset:], self.tlut_fmt, self.tlut_count)
+        start = self.abs_data_offset
+        return gx.decode(self.fmt, self.width, self.height, data[start:start + self.data_size], tlut)
+
+    def decode_png(self, data: bytes) -> bytes:
+        return gx.to_png(self.width, self.height, self.decode_rgba(data))
+
+
+@dataclass
+class Section:
+    index: int
+    offset: int
+    size: int
+    kind: str = "unknown"
+    textures: list[Texture] = field(default_factory=list)
+    magic: int = 0
+
+
+def _valid_dim(v: int) -> bool:
+    return 1 <= v <= 1024
+
+
+def _texture_record(data: bytes, base: int, index: int) -> Texture | None:
+    pos = base + index * 0x20
+    if pos + 0x20 > len(data):
+        return None
+    count, pad, doff, toff, w, h, flags, lod, pad2, mips, fmt, tlut_n, tlut_fmt, pad3 = struct.unpack_from(">HHIIHH4sfHBBHBB", data, pos)
+    if fmt not in gx.FORMAT_NAMES or not _valid_dim(w) or not _valid_dim(h) or pad or pad2 or pad3 or mips > 11:
+        return None
+    if base + doff + gx.encoded_size(fmt, w, h) > len(data):
+        return None
+    if index and count:
+        return None
+    return Texture(index, base, doff, toff, w, h, flags, fmt, tlut_n, tlut_fmt, mips, lod)
+
+
+def parse_texture_table(data: bytes, pos: int = 0) -> list[Texture]:
+    """Parse a texture table starting at `pos`; [] if it does not look like one."""
+    first = _texture_record(data, pos, 0)
+    if first is None:
+        return []
+    count = struct.unpack_from(">H", data, pos)[0]
+    if count == 0 or count > 4096:
+        return []
+    texs = [first]
+    for i in range(1, count):
+        t = _texture_record(data, pos, i)
+        if t is None:
+            return []
+        texs.append(t)
+    return texs
+
+
+def parse_container(data: bytes) -> list[Section] | None:
+    if len(data) < 0x20:
+        return None
+    hdr = struct.unpack_from(">I", data, 0)[0]
+    if hdr < 0x20 or hdr > 0x400 or hdr & 3 or hdr >= len(data):
+        return None
+    n = hdr // 4
+    offs = list(struct.unpack_from(f">{n}I", data, 0))
+    if offs[0] != hdr:
+        return None
+    used = []
+    for o in offs:
+        if o == 0:
+            continue
+        if o >= len(data) or o & 3:
+            return None
+        used.append(o)
+    if used != sorted(used) or len(set(used)) != len(used):
+        return None
+    secs = []
+    for i, o in enumerate(used):
+        end = used[i + 1] if i + 1 < len(used) else len(data)
+        s = Section(i, o, end - o)
+        s.magic = struct.unpack_from(">I", data, o)[0] if o + 4 <= len(data) else 0
+        s.textures = parse_texture_table(data, o)
+        s.kind = "textures" if s.textures else classify_blob(data[o:end])
+        secs.append(s)
+    return secs
+
+
+def is_hvqm4(data: bytes) -> bool:
+    return data[:6] == b"HVQM4 "
+
+
+def hvqm4_info(data: bytes) -> dict:
+    hs, bs, blocks, vframes, aframes = struct.unpack_from(">IIIII", data, 0x10)
+    usec, _, _, w, h = struct.unpack_from(">IIIHH", data, 0x24)
+    audio_hz = struct.unpack_from(">I", data, 0x40)[0] if len(data) >= 0x44 else 0
+    return {"version": data[:16].rstrip(b"\0").decode("ascii", "replace"), "width": w, "height": h,
+            "video_frames": vframes, "audio_frames": aframes, "usec_per_frame": usec,
+            "fps": round(1e6 / usec, 3) if usec else 0, "audio_hz": audio_hz, "body_size": bs}
+
+
+def looks_like_dsp_adpcm(data: bytes) -> bool:
+    n = min(len(data), 0x4000) // 8
+    if n < 64:
+        return False
+    return all(data[i * 8] < 0x80 for i in range(n)) and sum(data[i * 8 + 1] for i in range(n)) > 0
+
+
+def classify_blob(data: bytes) -> str:
+    if is_hvqm4(data):
+        return "hvqm4"
+    if data[:4] == b"\x00\x7b\x79\x60":
+        return "animbank"
+    if parse_texture_table(data):
+        return "textures"
+    if looks_like_dsp_adpcm(data):
+        return "dsp-adpcm"
+    return "unknown"
+
+
+@dataclass
+class FileInfo:
+    kind: str
+    sections: list[Section] = field(default_factory=list)
+    textures: list[Texture] = field(default_factory=list)
+    hvqm4: dict | None = None
+
+    def all_textures(self) -> list[tuple[Section | None, Texture]]:
+        out = [(None, t) for t in self.textures]
+        for s in self.sections:
+            out += [(s, t) for t in s.textures]
+        return out
+
+
+def identify(data: bytes) -> FileInfo:
+    if is_hvqm4(data):
+        return FileInfo("hvqm4", hvqm4=hvqm4_info(data))
+    texs = parse_texture_table(data)
+    if texs:
+        return FileInfo("textures", textures=texs)
+    secs = parse_container(data)
+    if secs:
+        return FileInfo("container", sections=secs)
+    return FileInfo(classify_blob(data))
