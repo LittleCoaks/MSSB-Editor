@@ -13,7 +13,8 @@ dependencies = []
 
 [project.optional-dependencies]
 app = ["pywebview>=5"]
-build = ["pywebview>=5", "pyinstaller>=6"]
+music = ["numpy", "miniaudio"]
+build = ["pywebview>=5", "numpy", "miniaudio", "pyinstaller>=6"]
 
 [project.scripts]
 zzzzdat = "zzzzdat.cli:main"

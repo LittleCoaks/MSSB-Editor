@@ -146,10 +146,21 @@ def cmd_model(a):
         print("no GeoPalette sections in this entry")
 
 
+def cmd_game(a):
+    from .disc import current_game, set_game
+    if a.path:
+        g = set_game(a.path)
+        print("game set")
+    else:
+        g = current_game()
+    for k, v in g.describe().items():
+        print(f"  {k:15} {v}")
+
+
 def cmd_dump(a):
     from .disc import dump_iso
     dest = dump_iso(a.out, a.only, log=print)
-    print(f"dumped to {dest}")
+    print(f"dumped to {dest} (now paired with the ISO for editing)")
 
 
 def cmd_music(a):
@@ -289,13 +300,17 @@ def main(argv=None):
     s.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_textures)
 
+    s = sub.add_parser("game", help="show or set the game (an .iso/.gcm or an extracted folder)")
+    s.add_argument("path", nargs="?")
+    s.set_defaults(fn=cmd_game)
+
     s = sub.add_parser("dump", help="extract the game's files from the ISO into a Dolphin-style folder (needed for editing)")
-    s.add_argument("-o", "--out", help="destination (default: the decomp's orig/GYQE01)")
+    s.add_argument("-o", "--out", help="destination (default: '<iso name> (extracted)' beside the ISO)")
     s.add_argument("--only", help="only paths starting with this, e.g. snd/")
     s.set_defaults(fn=cmd_dump)
 
     s = sub.add_parser("music", help="custom music: list, install, restore, export tracks (from MSSB-Custom-Music)")
-    s.add_argument("--root", help="game dump folder (remembered in game_root.txt)")
+    s.add_argument("--root", help="game folder with snd/my_snd_h (also sets the editor's game)")
     ms = s.add_subparsers(dest="music_cmd", required=True)
     ms.add_parser("list", help="every stock track and custom slot with its status")
     ms.add_parser("root", help="show the game root in use")

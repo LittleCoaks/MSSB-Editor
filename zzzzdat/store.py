@@ -9,7 +9,7 @@ from pathlib import Path
 from . import c3, dsp, formats
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
-from .disc import ORIG_DIR, VIEWER_ROOT, Archive, find_archive, read_fst
+from .disc import VIEWER_ROOT, Archive, Game, current_game, find_archive
 from .lzss import decompress
 
 EXTRACT_DIR = VIEWER_ROOT / "extracted"
@@ -28,9 +28,10 @@ def safe_name(s: str) -> str:
 
 
 class Store:
-    def __init__(self, index_path: Path = INDEX_PATH, archive: Archive | None = None):
+    def __init__(self, index_path: Path = INDEX_PATH, archive: Archive | None = None, game: Game | None = None):
         self.index_path = index_path
-        self.archive = archive or find_archive()
+        self.game = game or current_game()
+        self.archive = archive or find_archive(self.game)
         self.entries: list[Entry] = load_index(index_path) if index_path.exists() else []
         self.entries += self.disc_entries()
         self.by_id = {e.id: e for e in self.entries}
@@ -54,21 +55,12 @@ class Store:
         """The streamed .adp music files on the disc, as synthetic entries
         (archive 'disc'). Read from the ISO or from orig/GYQE01/files/."""
         out = []
-        files: dict[str, tuple[int, int]] = {}
-        # Prefer the writable dump (it holds installed custom music); fall back
-        # to the ISO's file table.
-        self._disc_from_dump = (ORIG_DIR / "files" / "snd" / "my_snd_h").is_dir()
-        if self._disc_from_dump:
-            root = ORIG_DIR / "files"
-            for p in sorted(root.rglob("*.adp")):
-                files[p.relative_to(root).as_posix()] = (0, p.stat().st_size)
-        elif self.archive.source == "iso":
-            with open(self.archive.path, "rb") as f:
-                files = read_fst(f)
-        for i, (path, (off, size)) in enumerate(sorted(files.items())):
+        # Extracted folder first (it holds installed custom music), else the ISO.
+        files = self.game.list_files("snd/")
+        for i, (path, size) in enumerate(sorted(files.items())):
             if not path.endswith(".adp"):
                 continue
-            e = Entry(DISC_ID_BASE + i, off, size, size, 0, 0, 0, name=path, refs=[f"disc:{path}"],
+            e = Entry(DISC_ID_BASE + i, 0, size, size, 0, 0, 0, name=path, refs=[f"disc:{path}"],
                       archive="disc", kind="dtk-adpcm", label=path.rsplit("/", 1)[-1], naud=1)
             out.append(e)
         return out
@@ -90,14 +82,17 @@ class Store:
     # -------------------------------------------------------------- bytes --
     def raw(self, e: Entry) -> bytes:
         if e.archive == "disc":
-            if not getattr(self, "_disc_from_dump", False) and self.archive.source == "iso":
-                with open(self.archive.path, "rb") as f:
-                    f.seek(e.offset)
-                    return f.read(e.disc_size)
-            return (ORIG_DIR / "files" / e.name).read_bytes()
+            data = self.game.read_file(e.name)
+            if data is None:
+                raise KeyError(f"{e.name} is not in the game")
+            return data
         if e.archive != "ZZZZ.dat":
-            with open(ORIG_DIR / "files" / e.archive, "rb") as f:
-                f.seek(e.offset)
+            loc = self.game.file(e.archive)
+            if not loc:
+                raise KeyError(f"{e.archive} is not in the game")
+            p, off, _ = loc
+            with open(p, "rb") as f:
+                f.seek(off + e.offset)
                 return f.read(e.disc_size)
         return self.archive.read(e.offset, e.disc_size)
 
@@ -264,7 +259,7 @@ class Store:
     # ---------------------------------------------------------- indexing --
     def rebuild_index(self, verify: bool = True, classify: bool = True, scan: bool = True, log=print) -> None:
         t0 = time.time()
-        ents = build_index(self.archive.size)
+        ents = build_index(self.archive.size, self.game)
         log(f"scanned executables: {len(ents)} candidate descriptors")
         if verify:
             ents = verify_entries(ents, self.archive)

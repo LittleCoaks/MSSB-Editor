@@ -11,9 +11,24 @@
   header h1 { font-size:15px; margin:0 12px 0 0; white-space:nowrap; }
   header input, header select { background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:4px 6px; border-radius:4px; }
   header .stat { color:var(--dim); margin-left:auto; white-space:nowrap; }
+  nav.pages { display:flex; gap:4px; white-space:nowrap; }
   nav.pages button { background:none; border:1px solid var(--line); color:var(--dim); padding:4px 10px; cursor:pointer; font:inherit; border-radius:4px; margin-right:4px; }
   nav.pages button.on { color:var(--fg); border-color:var(--acc); }
   #music { display:none; flex:1; overflow:auto; padding:16px 20px; }
+  #game { display:none; flex:1; overflow:auto; padding:16px 20px; }
+  #game .cur { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:10px 14px; margin-bottom:12px; }
+  #game .cur b { color:var(--fg); }
+  .explorer { border:1px solid var(--line); border-radius:6px; background:#15171b; max-width:720px; }
+  .explorer .path { padding:6px 10px; border-bottom:1px solid var(--line); color:var(--dim); display:flex; gap:8px; align-items:center; }
+  .explorer .path input { flex:1; background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:3px 6px; border-radius:4px; }
+  .explorer ul { list-style:none; margin:0; padding:4px 0; max-height:320px; overflow:auto; }
+  .explorer li { padding:3px 10px; cursor:pointer; display:flex; justify-content:space-between; }
+  .explorer li:hover { background:#2a2e36; }
+  .explorer li.iso { color:#7ec8a0; }
+  .explorer li .use { color:var(--acc); }
+  .bigdrop { border:2px dashed var(--line); border-radius:8px; padding:26px; text-align:center; color:var(--dim); margin:12px 0; max-width:720px; }
+  .bigdrop.over { border-color:var(--acc); color:var(--fg); }
+  #gamebtn.warn { border-color:#f08080; color:#f08080; }
   #music table { width:auto; }
   #music td, #music th { padding:5px 10px; }
   .status-stock { color:var(--dim); } .status-custom { color:#7ec8a0; } .status-modified { color:#e6b450; } .status-missing { color:#666; }
@@ -66,7 +81,7 @@
 <body>
 <header>
   <h1>MSSB Editor</h1>
-  <nav class="pages"><button class="on" data-page="assets">Assets</button><button data-page="music">Music</button></nav>
+  <nav class="pages"><button class="on" data-page="assets">Assets</button><button data-page="music">Music</button><button data-page="game" id="gamebtn">Game</button></nav>
   <input id="q" placeholder="filter: symbol, module, id, offset…" size="34">
   <select id="kind"><option value="">all kinds</option></select>
   <select id="module"><option value="">all modules</option></select>
@@ -74,6 +89,24 @@
   <label><input type="checkbox" id="audonly"> has audio</label>
   <span class="stat" id="stat"></span>
 </header>
+<div id="game">
+  <h2 style="margin:0 0 6px;font-size:16px">Game</h2>
+  <div class="row">Point MSSB Editor at your copy of Mario Superstar Baseball (GYQE01): a <b>.iso/.gcm</b> image, or an <b>extracted folder</b> (Dolphin's "Extract Files" layout with <code>files/</code> and <code>sys/</code>, or a GameCube Rebuilder root). Viewing works from either; editing (custom music, and later asset replacement) needs the extracted folder, which the editor can create from the ISO.</div>
+  <div class="cur" id="gamecur"></div>
+  <div class="bigdrop" id="gamedrop">Drop the ISO or the game folder here<br><span style="font-size:12px">(drag-and-drop paths are available in the desktop window; in a browser tab use Browse or the file explorer below)</span></div>
+  <div style="margin:8px 0 14px">
+    <button class="btn" id="pickiso">Browse for ISO…</button>
+    <button class="btn" id="pickfolder">Browse for folder…</button>
+    <input type="text" id="gamepath" placeholder="or type a path" style="width:420px;background:var(--bg);color:var(--fg);border:1px solid var(--line);padding:4px 6px;border-radius:4px">
+    <button class="btn" onclick="useGame($('#gamepath').value)">Use</button>
+    <span id="gamemsg" class="row" style="display:inline"></span>
+  </div>
+  <div class="explorer" id="explorer">
+    <div class="path"><button class="btn" id="fsup">↑</button><input id="fspath" placeholder="drives"><button class="btn" id="fsuse">Use this folder</button></div>
+    <ul id="fslist"></ul>
+  </div>
+  <div id="dumpbox" style="margin-top:14px"></div>
+</div>
 <div id="music">
   <h2 style="margin:0 0 6px;font-size:16px">Custom music</h2>
   <div class="row">Encodes any audio file to the game's DTK <code>.adp</code> streams and installs it into a dumped game folder (from <a href="https://github.com/LittleCoaks/MSSB-Custom-Music" target="_blank">MSSB-Custom-Music</a>). The original is backed up the first time a track is replaced.</div>
@@ -107,6 +140,9 @@ let all = [], view = [], sel = null, sortK = 'id', sortD = 1, meta = {};
 async function load() {
   const r = await (await fetch('/api/index')).json();
   all = r.entries; meta = r;
+  if (r.error) { $('#stat').textContent = r.error; $('#gamebtn').classList.add('warn'); showPage('game'); return; }
+  $('#gamebtn').classList.remove('warn');
+  $('#kind').innerHTML = '<option value="">all kinds</option>'; $('#module').innerHTML = '<option value="">all modules</option>';
   const kinds = [...new Set(all.map(e => e.kind))].sort();
   const mods = [...new Set(all.map(e => e.module))].sort();
   for (const k of kinds) $('#kind').append(new Option(k, k));
@@ -267,14 +303,66 @@ function showPage(p) {
   document.querySelectorAll('nav.pages button').forEach(b => b.classList.toggle('on', b.dataset.page === p));
   document.querySelector('main').style.display = p === 'assets' ? 'flex' : 'none';
   $('#music').style.display = p === 'music' ? 'block' : 'none';
+  $('#game').style.display = p === 'game' ? 'block' : 'none';
   if (p === 'music') loadMusic();
+  if (p === 'game') loadGame();
+}
+// ---- game setup --------------------------------------------------------
+const native = () => window.pywebview && window.pywebview.api;
+async function loadGame() {
+  const g = await (await fetch('/api/game')).json();
+  $('#gamebtn').classList.toggle('warn', !g.ok);
+  if (!g.ok) $('#gamecur').innerHTML = `<span class="warn">${g.problem || g.error || 'no game selected'}</span>`;
+  else $('#gamecur').innerHTML = `<b>${g.setting}</b><br>layout: <b>${g.layout}</b> · archive: ${g.archive} (${g.archive_source}) · ${g.entries} entries` +
+    `<br>editing: ${g.writable ? `<b>enabled</b> (writes to ${g.files_dir})` : '<span class="warn">read-only</span> — extract the ISO to a folder below to enable custom music and asset editing'}`;
+  $('#gamepath').value = g.setting || '';
+  $('#dumpbox').innerHTML = g.iso && !g.writable ? `<button class="btn" onclick="dumpGame('')">Extract the whole ISO to a folder (1.4 GB)</button> <button class="btn" onclick="dumpGame('snd/')">Extract only sys/ + snd/ (music editing, ~180 MB)</button> <span class="row" style="display:inline">→ ${g.default_dump}</span><div id="dumpjob"></div>` : '';
+  if (!fsCur) browseFs(g.setting ? (g.layout === 'iso' ? g.setting.replace(/[\\/][^\\/]*$/, '') : g.setting) : '');
+}
+async function useGame(path) {
+  if (!path) return;
+  $('#gamemsg').textContent = 'checking…';
+  const r = await (await fetch('/api/game?path=' + encodeURIComponent(path), { method: 'POST' })).json();
+  if (r.error && !r.ok) { $('#gamemsg').innerHTML = `<span class="warn">${r.error}</span>`; return; }
+  $('#gamemsg').textContent = 'ok';
+  await loadGame(); load();
+}
+$('#pickiso').onclick = async () => { if (native()) { const p = await native().pick_iso(); if (p) useGame(p); } else $('#gamemsg').textContent = 'native dialogs need the desktop window; use the explorer below'; };
+$('#pickfolder').onclick = async () => { if (native()) { const p = await native().pick_folder(); if (p) useGame(p); } else $('#gamemsg').textContent = 'native dialogs need the desktop window; use the explorer below'; };
+const gd = $('#gamedrop');
+gd.ondragover = e => { e.preventDefault(); gd.classList.add('over'); };
+gd.ondragleave = () => gd.classList.remove('over');
+gd.ondrop = e => { e.preventDefault(); gd.classList.remove('over'); const f = e.dataTransfer.files[0]; if (!f) return;
+  const p = f.pywebviewFullPath || f.path; if (p) useGame(p); else $('#gamemsg').innerHTML = '<span class="warn">this browser does not expose dropped file paths; use the explorer below (or the desktop window)</span>'; };
+let fsCur = null;
+async function browseFs(path) {
+  const r = await (await fetch('/api/fs?path=' + encodeURIComponent(path || ''))).json();
+  if (r.error) { $('#gamemsg').innerHTML = `<span class="warn">${r.error}</span>`; return; }
+  fsCur = r; $('#fspath').value = r.path;
+  $('#fslist').innerHTML = r.dirs.map(d => `<li onclick="browseFs(${JSON.stringify(r.path ? (r.path.endsWith('\\') || r.path.endsWith('/') ? r.path + d : r.path + '/' + d) : d)})"><span>📁 ${d}</span></li>`).join('') +
+    r.files.map(f => `<li class="iso" onclick="useGame(${JSON.stringify(r.path + '/' + f.name)})"><span>💿 ${f.name}</span><span class="use">use (${kb(f.size)})</span></li>`).join('');
+  $('#fsuse').textContent = r.layout ? `Use this folder (${r.layout} layout)` : 'Use this folder';
+}
+$('#fsup').onclick = () => browseFs(fsCur && fsCur.parent !== null ? fsCur.parent : '');
+$('#fsuse').onclick = () => useGame(fsCur ? fsCur.path : '');
+$('#fspath').onkeydown = e => { if (e.key === 'Enter') browseFs($('#fspath').value); };
+async function dumpGame(only) {
+  const r = await (await fetch('/api/game/dump?only=' + encodeURIComponent(only), { method: 'POST' })).json();
+  if (r.error) { $('#dumpjob').innerHTML = `<span class="warn">${r.error}</span>`; return; }
+  const poll = async () => {
+    const j = await (await fetch('/api/job/' + r.job)).json();
+    if (j.state === 'running') { $('#dumpjob').innerHTML = `extracting… <span class="bar"><i style="width:${Math.round(j.progress * 100)}%"></i></span> ${Math.round(j.progress * 100)}%`; setTimeout(poll, 500); return; }
+    $('#dumpjob').innerHTML = j.state === 'error' ? `<span class="warn">${j.error}</span>` : `done → ${j.dest}`;
+    if (j.state === 'done') { await loadGame(); load(); }
+  };
+  poll();
 }
 // ---- music ------------------------------------------------------------
 let mfile = null;
 async function loadMusic() {
   const r = await (await fetch('/api/music')).json();
   $('#mroot').value = r.root || '';
-  $('#mrootmsg').innerHTML = r.root ? '' : `<span class="warn">no game dump found. Run <code>python -m zzzzdat dump</code> to extract the ISO, or point this at a Dolphin "Extract Files" folder.</span>`;
+  $('#mrootmsg').innerHTML = r.root ? '' : `<span class="warn">the game is read-only (ISO). Go to the <a href="#" onclick="showPage('game');return false">Game</a> page and extract it to a folder, or point this at an extracted folder.</span>`;
   $('#mback').textContent = `decoders: ${r.backends.length ? r.backends.join(', ') : 'wav only (pip install miniaudio for mp3/flac/ogg)'} · numpy: ${r.numpy ? 'on (fast encoding)' : 'off (slow encoding; pip install numpy)'}`;
   const sel = $('#mtrack'); sel.innerHTML = '';
   for (const t of r.tracks) sel.append(new Option(`${t.label} (${t.file})`, t.file));
@@ -287,17 +375,19 @@ async function loadMusic() {
   }).join('');
 }
 $('#mfile').onchange = e => { mfile = e.target.files[0]; $('#mfilename').textContent = mfile ? `→ ${mfile.name} (${kb(mfile.size)})` : ''; };
+$('#mfile').parentElement.onclick = async e => { if (native()) { e.preventDefault(); const p = await native().pick_audio(); if (p) { mpath = p; mfile = null; $('#mfilename').textContent = '→ ' + p; } } };
+let mpath = null;
 const drop = $('#drop');
 drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
 drop.ondragleave = () => drop.classList.remove('over');
-drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); mfile = e.dataTransfer.files[0]; $('#mfilename').textContent = `→ ${mfile.name} (${kb(mfile.size)})`; };
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); mfile = e.dataTransfer.files[0]; mpath = null; $('#mfilename').textContent = `→ ${mfile.name} (${kb(mfile.size)})`; };
 async function setRoot() {
   const r = await (await fetch('/api/music/root?path=' + encodeURIComponent($('#mroot').value), { method: 'POST' })).json();
   $('#mrootmsg').textContent = r.error ? r.error : 'ok'; loadMusic();
 }
 async function installMusic() {
-  if (!mfile) { $('#mjob').textContent = 'pick an audio file first'; return; }
-  const fd = new FormData(); fd.append('file', mfile); fd.append('track', $('#mtrack').value); fd.append('pad', $('#mpad').checked ? '1' : '0');
+  if (!mfile && !mpath) { $('#mjob').textContent = 'pick an audio file first'; return; }
+  const fd = new FormData(); if (mfile) fd.append('file', mfile); else fd.append('path', mpath); fd.append('track', $('#mtrack').value); fd.append('pad', $('#mpad').checked ? '1' : '0');
   $('#mjob').innerHTML = 'uploading…';
   const r = await (await fetch('/api/music/install', { method: 'POST', body: fd })).json();
   if (r.error) { $('#mjob').innerHTML = `<span class="warn">${r.error}</span>`; return; }

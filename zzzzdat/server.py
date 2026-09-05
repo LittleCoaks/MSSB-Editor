@@ -17,6 +17,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from . import c3, music
+from .disc import Game, current_game, default_dump_dir, dump_iso, list_dir, set_game
 from .store import EXTRACT_DIR, Store
 
 JOBS: dict[str, dict] = {}
@@ -32,10 +33,11 @@ def run_install_job(job: dict, audio: Path, root, track: str, pad: bool) -> None
         job["state"] = "error"
         job["error"] = f"{type(ex).__name__}: {ex}"
     finally:
-        try:
-            audio.unlink()
-        except OSError:
-            pass
+        if audio.name.startswith("zzzzdat_"):  # only delete our own upload copies
+            try:
+                audio.unlink()
+            except OSError:
+                pass
 
 
 def parse_multipart(headers, body: bytes) -> dict:
@@ -77,8 +79,18 @@ def entry_detail(store: Store, e) -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
-    store: Store = None  # set by serve()
+    store: Store | None = None  # None when no game is configured yet
+    store_error: str = ""
     lock = threading.Lock()
+
+    @classmethod
+    def load_store(cls) -> None:
+        try:
+            cls.store = Store()
+            cls.store_error = ""
+        except Exception as ex:
+            cls.store = None
+            cls.store_error = str(ex)
 
     def log_message(self, fmt, *args):  # quieter
         pass
@@ -115,9 +127,44 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if parts[:2] == ["api", "music"]:
                 return self.music_post(parts[2:], q, body)
+            if parts[:2] == ["api", "game"]:
+                return self.game_post(parts[2:], q, body)
             return self.fail("not found")
         except Exception as ex:
             return self.fail(f"{type(ex).__name__}: {ex}", 500)
+
+    def game_post(self, rest, q, body):
+        if not rest:
+            path = q.get("path") or body.decode("utf-8", "replace").strip()
+            try:
+                g = set_game(path)
+            except FileNotFoundError as ex:
+                return self.fail(str(ex), 400)
+            with self.lock:
+                Handler.load_store()
+            return self.send_json({**g.describe(), "entries": len(self.store.entries) if self.store else 0,
+                                   "error": self.store_error or None})
+        if rest == ["dump"]:
+            g = current_game()
+            if not g.iso:
+                return self.fail("the current game is not an ISO", 400)
+            dest = q.get("dest") or str(default_dump_dir(g))
+            only = q.get("only") or None
+            job = {"id": uuid.uuid4().hex, "state": "running", "progress": 0.0, "dest": dest}
+            JOBS[job["id"]] = job
+
+            def work():
+                try:
+                    dump_iso(dest, only, progress=lambda d, t: job.__setitem__("progress", d / max(t, 1)), game=g)
+                    with self.lock:
+                        Handler.load_store()
+                    job["state"] = "done"
+                except Exception as ex:
+                    job["state"] = "error"
+                    job["error"] = f"{type(ex).__name__}: {ex}"
+            threading.Thread(target=work, daemon=True).start()
+            return self.send_json({"job": job["id"]})
+        return self.fail("not found")
 
     def music_post(self, rest, q, body):
         if rest == ["root"]:
@@ -131,11 +178,16 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"ok": True})
         if rest == ["install"]:
             form = parse_multipart(self.headers, body)
-            fname, payload = form["file"]
             track = form.get("track") or q.get("track")
             pad = (form.get("pad") or q.get("pad", "1")) not in ("0", "false", "")
-            tmp = Path(tempfile.gettempdir()) / f"zzzzdat_{uuid.uuid4().hex}_{Path(fname).name}"
-            tmp.write_bytes(payload)
+            if "file" in form:
+                fname, payload = form["file"]
+                tmp = Path(tempfile.gettempdir()) / f"zzzzdat_{uuid.uuid4().hex}_{Path(fname).name}"
+                tmp.write_bytes(payload)
+            else:  # a path picked with the native dialog: encode in place
+                tmp = Path(form["path"])
+                if not tmp.is_file():
+                    return self.fail(f"{tmp} not found", 400)
             job = {"id": uuid.uuid4().hex, "state": "running", "progress": 0.0, "track": track}
             JOBS[job["id"]] = job
             threading.Thread(target=run_install_job, args=(job, tmp, root, track, pad), daemon=True).start()
@@ -179,10 +231,23 @@ class Handler(BaseHTTPRequestHandler):
     def api(self, parts, q):
         st = self.store
         if parts == ["index"]:
+            if st is None:
+                return self.send_json({"meta": {}, "archive": None, "archive_size": 0, "entries": [],
+                                       "error": self.store_error or "no game selected"})
             doc = json.loads(st.index_path.read_text(encoding="utf-8")) if st.index_path.exists() else {}
             return self.send_json({"meta": doc.get("meta", {}), "archive": str(st.archive.path),
                                    "archive_size": st.archive.size, "extract_dir": str(EXTRACT_DIR),
                                    "entries": [entry_summary(e) for e in st.entries]})
+        if parts[0] == "game":
+            g = current_game()
+            return self.send_json({**g.describe(), "entries": len(st.entries) if st else 0,
+                                   "error": self.store_error or None, "default_dump": str(default_dump_dir(g)) if g.iso else None})
+        if parts[0] == "fs":
+            return self.send_json(list_dir(q.get("path") or None))
+        if parts[0] == "job" and len(parts) == 2:
+            return self.send_json(JOBS.get(parts[1]) or {"error": "no such job"})
+        if st is None:
+            return self.fail(self.store_error or "no game selected", 400)
         if parts[0] == "music":
             return self.music_get(parts[1:], q)
         if parts[0] != "entry" or len(parts) < 2:
@@ -229,10 +294,13 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(port: int = 8420, open_browser: bool = True):
-    Handler.store = Store()
+    Handler.load_store()
     httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"
-    print(f"zzzzdat viewer: {url}  (archive: {Handler.store.archive.path}, {len(Handler.store.entries)} entries)")
+    if Handler.store:
+        print(f"MSSB Editor: {url}  (archive: {Handler.store.archive.path}, {len(Handler.store.entries)} entries)")
+    else:
+        print(f"MSSB Editor: {url}  (no game selected yet: {Handler.store_error})")
     if open_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try:

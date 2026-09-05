@@ -16,23 +16,17 @@ import os
 from pathlib import Path
 
 from . import audioin, dolinfo, dtkadpcm, installer, tracks
-from ..disc import ORIG_DIR, VIEWER_ROOT
+from ..disc import current_game, set_game
 
 InstallError = installer.InstallError
-GAME_ROOT_FILE = VIEWER_ROOT / "game_root.txt"
 
 
 def game_root() -> Path | None:
-    """The writable game dump: game_root.txt, MSSB_GAME_ROOT, else the decomp's
-    orig/GYQE01/files (Dolphin "Extract Files" layout, sys/ beside files/)."""
-    cands = []
-    if os.environ.get("MSSB_GAME_ROOT"):
-        cands.append(os.environ["MSSB_GAME_ROOT"])
-    if GAME_ROOT_FILE.exists():
-        cands.append(str((VIEWER_ROOT / GAME_ROOT_FILE.read_text(encoding="utf-8").strip()).resolve()))
-    cands.append(str(ORIG_DIR / "files"))
-    for c in cands:
-        r = tracks.find_root(c)
+    """The writable game folder (files/ root with snd/my_snd_h), from the
+    editor's game setting. None when only an ISO is configured."""
+    g = current_game()
+    if g.files_dir:
+        r = tracks.find_root(str(g.files_dir))
         if r:
             return Path(r)
     return None
@@ -42,7 +36,11 @@ def set_game_root(path: str) -> Path:
     r = tracks.find_root(path)
     if not r:
         raise InstallError(f"{path} does not contain snd/my_snd_h with the game's music")
-    GAME_ROOT_FILE.write_text(str(Path(r)), encoding="utf-8")
+    g = current_game()
+    if g.layout == "iso" and g.iso:
+        set_game(g.iso, Path(r).parent if Path(r).name == "files" else Path(r))
+    else:
+        set_game(Path(r).parent if (Path(r).name == "files" and (Path(r).parent / "sys").is_dir()) else Path(r))
     return Path(r)
 
 

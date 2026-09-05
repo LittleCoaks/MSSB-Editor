@@ -27,9 +27,11 @@ import struct
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .disc import ORIG_DIR, PACKAGE_DATA, REPO_ROOT, VIEWER_ROOT
+from .disc import PACKAGE_DATA, REPO_ROOT, VIEWER_ROOT, Game, current_game
 
-CONFIG_DIR = REPO_ROOT / "config" / "GYQE01"
+# Symbol names come from the decomp repo when it is around; without it the
+# index still builds, entries are just named by address.
+CONFIG_DIR = (REPO_ROOT / "config" / "GYQE01") if REPO_ROOT else None
 INDEX_PATH = VIEWER_ROOT / "index" / "GYQE01.json"
 if not INDEX_PATH.exists() and (PACKAGE_DATA / "index" / "GYQE01.json").exists():
     INDEX_PATH = PACKAGE_DATA / "index" / "GYQE01.json"  # shipped inside a frozen bundle
@@ -135,6 +137,10 @@ class Binary:
 
 def load_dol(path: Path) -> Binary:
     d = path.read_bytes()
+    return Binary("dol", path, d, load_dol_sections(d))
+
+
+def load_dol_sections(d: bytes) -> list:
     offs = struct.unpack(">18I", d[0:0x48])
     addrs = struct.unpack(">18I", d[0x48:0x90])
     sizes = struct.unpack(">18I", d[0x90:0xD8])
@@ -151,11 +157,15 @@ def load_dol(path: Path) -> Binary:
             name = {0: "extab", 1: "extabindex"}.get(data_idx, ".data")
             data_idx += 1
         secs.append((o, s, name, a))
-    return Binary("dol", path, d, secs)
+    return secs
 
 
 def load_rel(module: str, path: Path) -> Binary:
-    d = path.read_bytes()
+    return load_rel_bytes(module, path.read_bytes())
+
+
+def load_rel_bytes(module: str, d: bytes) -> Binary:
+    path = Path(module + ".rel")
     num, sec_off = struct.unpack(">II", d[12:20])
     secs = []
     for i in range(num):
@@ -166,15 +176,38 @@ def load_rel(module: str, path: Path) -> Binary:
     return Binary(module, path, d, secs)
 
 
-def load_binaries(orig_dir: Path = ORIG_DIR) -> list[Binary]:
+def load_binaries(game: Game | None = None) -> list[Binary]:
+    """main.dol and the three RELs. The RELs are extracted files when the game
+    folder has them, otherwise they are decompressed out of aaaa.dat."""
+    from .lzss import decompress
+    game = game or current_game()
     bins = []
-    dol = orig_dir / "sys" / "main.dol"
-    if dol.exists():
+    dol = game.dol_path()
+    if dol:
         bins.append(load_dol(dol))
+    elif game.iso:
+        with open(game.iso, "rb") as f:
+            f.seek(0x420)
+            dol_off = struct.unpack(">I", f.read(4))[0]
+            f.seek(dol_off)
+            hdr = f.read(0x100)
+            offs = struct.unpack(">18I", hdr[0:0x48])
+            sizes = struct.unpack(">18I", hdr[0x90:0xD8])
+            f.seek(dol_off)
+            data = f.read(max((o + s for o, s in zip(offs, sizes) if s), default=0x100))
+        bins.append(Binary("dol", game.iso, data, load_dol_sections(data)))
+    aaaa = None
     for module, fname in REL_MODULES.items():
-        p = orig_dir / "files" / fname
-        if p.exists():
-            bins.append(load_rel(module, p))
+        data = game.read_file(fname)
+        if data is None:
+            if aaaa is None:
+                aaaa = game.read_file("aaaa.dat") or b""
+            for (off, cs), name in AAAA_ENTRIES.items():
+                if name == fname and aaaa:
+                    size = {"menus.rel": 0x1027E4, "game.rel": 0x2220F8, "debug.rel": 0x5912C}[name]
+                    data = bytes(decompress(aaaa[off:off + cs], 0xB, 4, size))
+        if data:
+            bins.append(load_rel_bytes(module, data))
     return bins
 
 
@@ -324,13 +357,13 @@ def verify_entries(entries: list[Entry], archive, probe: int = 0x2000) -> list[E
     return keep
 
 
-def build_index(archive_size: int, orig_dir: Path = ORIG_DIR) -> list[Entry]:
-    symtabs = {"dol": load_symbols(CONFIG_DIR / "symbols.txt")}
+def build_index(archive_size: int, game: Game | None = None) -> list[Entry]:
+    symtabs = {"dol": load_symbols(CONFIG_DIR / "symbols.txt") if CONFIG_DIR else {}}
     for module in REL_MODULES:
-        symtabs[module] = load_symbols(CONFIG_DIR / module / "symbols.txt")
+        symtabs[module] = load_symbols(CONFIG_DIR / module / "symbols.txt") if CONFIG_DIR else {}
 
     seen: dict[tuple, Entry] = {}
-    for b in load_binaries(orig_dir):
+    for b in load_binaries(game):
         for (p, fs, off, cs), ref in scan_binary(b, archive_size, symtabs):
             key = (off, cs, fs, p)
             e = seen.get(key)
