@@ -16,23 +16,31 @@ game never shipped. Community file names come from that repo and from
 also documents the C3 model format and can export character models to OBJ.
 See [Format notes](#format-notes) below.
 
-## Setup
+## Setup: choosing the game
 
-The viewer reads the disc files and symbol tables from the decomp repo. By
-default it expects that repo to be a sibling folder named `MSSB Decomp`:
+The editor needs your copy of the game, chosen once on the **Game** page (or
+with `python -m zzzzdat game <path>`), and saved in `config.json` next to the
+program. Either of these works:
 
-```
-E:\Project Rio\
-  MSSB Decomp\        orig/GYQE01/{sys/main.dol, files/*.rel, Mario Superstar Baseball.iso}
-  MSSB Editor\        this repo
-```
+- a **.iso / .gcm image** - drag it onto the Game page (desktop window), use
+  *Browse for ISO...*, pick it in the in-page file explorer, or type the path.
+  Everything can be viewed straight out of the image; nothing is extracted.
+- an **extracted folder** - Dolphin's *Extract Files* layout (`files/` and
+  `sys/` side by side, or the `files/` folder itself) or a GameCube Rebuilder
+  root (`&&systemdata/`). This is the writable form: custom music and, later,
+  asset replacement write into it.
 
-To point somewhere else, set `MSSB_DECOMP=<path>` or create `decomp_path.txt`
-in this folder containing the path (absolute, or relative to this folder).
+Viewing works from both; editing needs the folder. When an ISO is selected the
+Game page offers to extract it (all 1.4 GB, or just `sys/` + `snd/` for music)
+to `<iso name> (extracted)` beside the image, and pairs the two so the image
+stays the read source while the folder takes the writes. The decomp repo is
+not required: the index ships with the program, and a rebuild decompresses the
+RELs out of `aaaa.dat` itself (symbol names are only added when the decomp repo
+is present as a sibling `MSSB Decomp` folder or via `MSSB_DECOMP`).
 
-`ZZZZ.dat` itself is read either from `orig/GYQE01/files/ZZZZ.dat` if you have
-extracted it, or straight out of the ISO in `orig/GYQE01/` (the FST is parsed
-to find it, so no extraction is needed).
+Drag-and-drop of paths and the native Browse dialogs work in the desktop
+window; a plain browser tab cannot see dropped file paths, so it gets the
+in-page explorer instead.
 
 ## Usage
 
@@ -78,12 +86,13 @@ runs with `python -m zzzzdat.music.selftest`). It needs a **writable game
 dump** with `snd/my_snd_h` and `sys/main.dol`:
 
 ```bash
-python -m zzzzdat dump --only snd/      # pulls snd/ and sys/ out of the ISO into orig/GYQE01 (~180 MB)
+python -m zzzzdat game "D:\games\Mario Superstar Baseball.iso"   # or an extracted folder
+python -m zzzzdat dump --only snd/      # extracts snd/ and sys/ beside the ISO (~180 MB) and pairs them
 python -m zzzzdat dump                  # or the whole disc (1.4 GB), the folder Dolphin can boot
 python -m zzzzdat music list
 python -m zzzzdat music install song.mp3 --track mario_01_h.adp
 python -m zzzzdat music restore --track mario_01_h.adp
-python -m zzzzdat music --root "D:\dumps\GYQE01iles" list   # another dump (remembered in game_root.txt)
+python -m zzzzdat music --root "D:\dumps\GYQE01\files" list   # another dump (also sets the game)
 ```
 
 Any audio the decoders can open (wav always; mp3/flac/ogg with
@@ -143,10 +152,9 @@ python build.py            # -> dist/MSSB Editor/MSSB Editor.exe
 
 The bundle carries the UI, three.js and the shipped index; the executable
 opens the window when double-clicked and behaves like the CLI when given
-arguments (`"MSSB Editor.exe" list --kind hvqm4`). Users still need
-their own game files: either point `MSSB_DECOMP` / `decomp_path.txt` (next to
-the exe) at a folder laid out like the decomp repo's `orig/GYQE01`, or drop the
-ISO there. `extracted/` and `index/` are written next to the executable.
+arguments (`"MSSB Editor.exe" list --kind hvqm4`). Users pick their
+own ISO or extracted folder on the Game page the first time; `config.json`,
+`extracted/` and `index/` are written next to the executable.
 
 ## What is indexed
 
