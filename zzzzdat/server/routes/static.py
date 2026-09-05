@@ -1,4 +1,4 @@
-"""The UI itself: the built Svelte app at /, the legacy page at /legacy."""
+"""The UI itself: the built Svelte app (zzzzdat/ui/dist)."""
 from __future__ import annotations
 
 from ...paths import UI_DIR
@@ -12,13 +12,10 @@ MIME = {".js": "application/javascript", ".css": "text/css", ".html": "text/html
 
 @router.get(r"/")
 def index(req: Request):
-    page = DIST_DIR / "index.html" if (DIST_DIR / "index.html").exists() else UI_DIR / "index.html"
+    page = DIST_DIR / "index.html"
+    if not page.exists():
+        raise HttpError(500, "the UI is not built: run `npm install && npm run build` in frontend/")
     req.bytes(page.read_bytes(), "text/html; charset=utf-8")
-
-
-@router.get(r"/legacy")
-def legacy(req: Request):
-    req.bytes((UI_DIR / "index.html").read_bytes(), "text/html; charset=utf-8")
 
 
 @router.get(r"/assets/(?P<name>[A-Za-z0-9_.-]+)")
@@ -28,10 +25,3 @@ def asset(req: Request, name: str):
         raise HttpError(404, "not found")
     req.bytes(p.read_bytes(), MIME.get(p.suffix, "application/octet-stream"), cache="max-age=86400")
 
-
-@router.get(r"/vendor/(?P<name>[A-Za-z0-9_.-]+\.js)")
-def vendor(req: Request, name: str):
-    p = UI_DIR / "vendor" / name
-    if not p.is_file():
-        raise HttpError(404, "not found")
-    req.bytes(p.read_bytes(), "application/javascript", cache="max-age=86400")

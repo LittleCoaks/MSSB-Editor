@@ -163,7 +163,7 @@
             {#if editMsg}<span class={editMsg.startsWith('Replaced') || editMsg.startsWith('Original') ? 'ok' : 'warn'}>{editMsg}</span>{/if}
           </div>
         {/if}
-        <p class="dim" style="margin-top:14px">Need the raw entry table? Open the <a href="/legacy#{d.id}" target="_blank">advanced view</a>.</p>
+        <p class="dim" style="margin-top:14px">Every indexed file with offsets and references is listed under <a href="#files" onclick={() => app.go('files')}>All files</a>.</p>
       {:else if tab === 'hex'}
         <div class="row" style="margin-bottom:8px">
           <button onclick={() => { hexOff = Math.max(0, hexOff - 4096); loadHex() }}>◀</button>

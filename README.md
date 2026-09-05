@@ -33,7 +33,8 @@ It is organised for people who are not reverse engineers:
 - **Music** - a three-step replace flow (pick a song, choose the track, install)
   with the original always restorable.
 - **Game** - drop / browse / explore to pick the ISO or folder, extract for editing.
-- The original technical page is kept as **Advanced view** (`/legacy`).
+- **All files** - the raw entry table: every indexed file with offsets, sizes,
+  kind and the executable references it is loaded from; sortable and filterable.
 
 To work on the UI:
 
@@ -375,7 +376,6 @@ zzzzdat/
   texedit.py      in-place texture replacement inside an entry
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
   c3.py           C3 GeoPalette model parsing, OBJ and glTF export
-  ui/vendor/      three.js r128 (three.min.js, OrbitControls, GLTFLoader) for the model viewer
   app.py          desktop window (pywebview) around the server
 build.py          PyInstaller one-folder build
 pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
@@ -383,7 +383,6 @@ pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
   cli.py          command line
   paths.py        shipped vs per-user locations
   server/         local HTTP API: router + context + jobs, routes/{static,game,entries,media,music,edit}
-  ui/index.html   the legacy technical UI (served at /legacy)
   ui/dist/        the built Svelte UI (served at /)
   catalog.py      groups entries into characters / stadiums / menus / ... for the UI
   chars.py        the DOL character tables (54 slots x 19 sub-files, master descriptors)

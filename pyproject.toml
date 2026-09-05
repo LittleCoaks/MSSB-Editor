@@ -27,4 +27,4 @@ zzzzdat = "zzzzdat.cli:main"
 packages = ["zzzzdat", "zzzzdat.server", "zzzzdat.server.routes", "zzzzdat.music"]
 
 [tool.setuptools.package-data]
-zzzzdat = ["ui/*.html", "ui/vendor/*.js"]
+zzzzdat = ["ui/dist/*", "ui/dist/assets/*"]

@@ -4,9 +4,10 @@
   import GameSetup from './lib/GameSetup.svelte'
   import Browse from './lib/Browse.svelte'
   import Music from './lib/Music.svelte'
+  import Files from './lib/Files.svelte'
 
   const pages: { id: Page; label: string }[] = [
-    { id: 'browse', label: 'Browse assets' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
+    { id: 'browse', label: 'Browse assets' }, { id: 'files', label: 'All files' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
   ]
 
   onMount(() => {
@@ -35,7 +36,6 @@
     {:else}
       <span class="pill bad">no game selected</span>
     {/if}
-    <a href="/legacy" target="_blank" class="dim" title="The original technical view: raw entry table, hex viewer">Advanced view ↗</a>
   </div>
 </header>
 
@@ -46,6 +46,8 @@
     <GameSetup />
   {:else if app.page === 'browse'}
     <Browse />
+  {:else if app.page === 'files'}
+    <Files />
   {:else if app.page === 'music'}
     <Music />
   {/if}

@@ -1,6 +1,6 @@
 import { api, friendlyName, setCatalogNames, type Catalog, type EntrySummary, type GameInfo } from './api'
 
-export type Page = 'browse' | 'music' | 'game'
+export type Page = 'browse' | 'files' | 'music' | 'game'
 
 class AppState {
   page = $state<Page>('browse')
