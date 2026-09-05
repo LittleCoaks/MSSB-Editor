@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 extracted/
 decomp_path.txt
+build/
+dist/
+*.spec

@@ -162,6 +162,11 @@ def cmd_layout(a):
           f"{cov['gaps']} gaps totalling {cov['gap_bytes'] / 1e6:.1f} MB")
 
 
+def cmd_app(a):
+    from .app import run
+    run(a.port, a.width, a.height)
+
+
 def cmd_serve(a):
     from .server import serve
     serve(a.port, open_browser=not a.no_browser)
@@ -236,12 +241,18 @@ def main(argv=None):
     s = sub.add_parser("layout", help="print the archive layout and coverage")
     s.set_defaults(fn=cmd_layout)
 
+    s = sub.add_parser("app", help="open the viewer in a desktop window (pywebview)")
+    s.add_argument("--port", type=int, help="fixed port (default: any free port)")
+    s.add_argument("--width", type=int, default=1400)
+    s.add_argument("--height", type=int, default=900)
+    s.set_defaults(fn=cmd_app)
+
     s = sub.add_parser("serve", help="start the web browser UI")
     s.add_argument("--port", type=int, default=8420)
     s.add_argument("--no-browser", action="store_true")
     s.set_defaults(fn=cmd_serve)
 
-    a = ap.parse_args(argv)
+    a = ap.parse_args(argv or (sys.argv[1:] or ["app"]))
     a.fn(a)
 
 

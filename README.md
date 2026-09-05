@@ -37,7 +37,9 @@ to find it, so no extraction is needed).
 
 ```bash
 cd "MSSB Asset Viewer"
-python -m zzzzdat serve            # web UI at http://127.0.0.1:8420/
+pip install pywebview              # optional: needed for the desktop window
+python -m zzzzdat                  # desktop window (same as `python -m zzzzdat app`)
+python -m zzzzdat serve            # or the web UI in your browser at http://127.0.0.1:8420/
 python -m zzzzdat list             # all entries
 python -m zzzzdat list --kind textures --module menus
 python -m zzzzdat info 8           # sections, textures, references
@@ -92,6 +94,29 @@ Two ADPCM flavours are decoded to WAV on the fly (`zzzzdat/dsp.py`):
   presumably every voice clip and sound effect back to back; the cue table that
   splits it has not been located yet. The remaining sound effects, if any,
   are probably in the still-unknown `lbl_800EF508` series.
+
+## Desktop window and packaging
+
+`python -m zzzzdat app` runs the HTTP server on a random loopback port in a
+background thread and shows the UI in a native window through
+[pywebview](https://pywebview.flowrl.com/) (Edge WebView2 on Windows, WebKit
+elsewhere). Without pywebview installed it falls back to the browser. The page
+and the API are identical in both modes, so everything the browser tab can do,
+the window can do.
+
+To ship it as a standalone program:
+
+```bash
+pip install pywebview pyinstaller
+python build.py            # -> dist/MSSB Asset Viewer/MSSB Asset Viewer.exe
+```
+
+The bundle carries the UI, three.js and the shipped index; the executable
+opens the window when double-clicked and behaves like the CLI when given
+arguments (`"MSSB Asset Viewer.exe" list --kind hvqm4`). Users still need
+their own game files: either point `MSSB_DECOMP` / `decomp_path.txt` (next to
+the exe) at a folder laid out like the decomp repo's `orig/GYQE01`, or drop the
+ISO there. `extracted/` and `index/` are written next to the executable.
 
 ## What is indexed
 
@@ -199,6 +224,9 @@ zzzzdat/
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
   c3.py           C3 GeoPalette model parsing, OBJ and glTF export
   ui/vendor/      three.js r128 (three.min.js, OrbitControls, GLTFLoader) for the model viewer
+  app.py          desktop window (pywebview) around the server
+build.py          PyInstaller one-folder build
+pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
   store.py        index + archive + cache + extraction
   cli.py          command line
   server.py       local HTTP API

@@ -27,10 +27,12 @@ import struct
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .disc import ORIG_DIR, REPO_ROOT, VIEWER_ROOT
+from .disc import ORIG_DIR, PACKAGE_DATA, REPO_ROOT, VIEWER_ROOT
 
 CONFIG_DIR = REPO_ROOT / "config" / "GYQE01"
 INDEX_PATH = VIEWER_ROOT / "index" / "GYQE01.json"
+if not INDEX_PATH.exists() and (PACKAGE_DATA / "index" / "GYQE01.json").exists():
+    INDEX_PATH = PACKAGE_DATA / "index" / "GYQE01.json"  # shipped inside a frozen bundle
 
 FLAG_COMPRESSED = 4
 

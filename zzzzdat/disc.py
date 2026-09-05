@@ -6,7 +6,17 @@ import struct
 from dataclasses import dataclass
 from pathlib import Path
 
-VIEWER_ROOT = Path(__file__).resolve().parents[1]
+import sys
+
+# Where user-facing files live (index/, extracted/, decomp_path.txt). In a
+# PyInstaller bundle that is the folder next to the executable; bundled
+# read-only data (the shipped index) is found through PACKAGE_DATA.
+if getattr(sys, "frozen", False):
+    VIEWER_ROOT = Path(sys.executable).resolve().parent
+    PACKAGE_DATA = Path(getattr(sys, "_MEIPASS", VIEWER_ROOT))
+else:
+    VIEWER_ROOT = Path(__file__).resolve().parents[1]
+    PACKAGE_DATA = VIEWER_ROOT
 
 
 def _find_decomp_root() -> Path:
