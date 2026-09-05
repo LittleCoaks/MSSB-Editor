@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mssb-asset-viewer"
+name = "mssb-editor"
 version = "0.1.0"
 description = "Browse, view and extract the assets in Mario Superstar Baseball's ZZZZ.dat"
 readme = "README.md"

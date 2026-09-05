@@ -1,8 +1,9 @@
-# MSSB Asset Viewer
+# MSSB Editor
 
 Browse, view and extract the assets packed inside `ZZZZ.dat`, the 450 MB
-archive that holds nearly all of Mario Superstar Baseball's (GYQE01) data.
-Pure Python 3.10+, no third-party packages.
+archive that holds nearly all of Mario Superstar Baseball's (GYQE01) data,
+with editing and custom-music support on the roadmap. Pure Python 3.10+; the
+only optional dependency is pywebview for the desktop window.
 
 The archive has **no table of contents**. Most assets are described by a
 16-byte descriptor baked into `main.dol` or one of the RELs; this tool finds
@@ -23,7 +24,7 @@ default it expects that repo to be a sibling folder named `MSSB Decomp`:
 ```
 E:\Project Rio\
   MSSB Decomp\        orig/GYQE01/{sys/main.dol, files/*.rel, Mario Superstar Baseball.iso}
-  MSSB Asset Viewer\  this repo
+  MSSB Editor\        this repo
 ```
 
 To point somewhere else, set `MSSB_DECOMP=<path>` or create `decomp_path.txt`
@@ -36,7 +37,7 @@ to find it, so no extraction is needed).
 ## Usage
 
 ```bash
-cd "MSSB Asset Viewer"
+cd "MSSB Editor"
 pip install pywebview              # optional: needed for the desktop window
 python -m zzzzdat                  # desktop window (same as `python -m zzzzdat app`)
 python -m zzzzdat serve            # or the web UI in your browser at http://127.0.0.1:8420/
@@ -108,12 +109,12 @@ To ship it as a standalone program:
 
 ```bash
 pip install pywebview pyinstaller
-python build.py            # -> dist/MSSB Asset Viewer/MSSB Asset Viewer.exe
+python build.py            # -> dist/MSSB Editor/MSSB Editor.exe
 ```
 
 The bundle carries the UI, three.js and the shipped index; the executable
 opens the window when double-clicked and behaves like the CLI when given
-arguments (`"MSSB Asset Viewer.exe" list --kind hvqm4`). Users still need
+arguments (`"MSSB Editor.exe" list --kind hvqm4`). Users still need
 their own game files: either point `MSSB_DECOMP` / `decomp_path.txt` (next to
 the exe) at a folder laid out like the decomp repo's `orig/GYQE01`, or drop the
 ISO there. `extracted/` and `index/` are written next to the executable.

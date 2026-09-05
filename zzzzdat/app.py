@@ -15,7 +15,7 @@ from http.server import ThreadingHTTPServer
 from .server import Handler
 from .store import Store
 
-TITLE = "MSSB Asset Viewer"
+TITLE = "MSSB Editor"
 
 
 def free_port() -> int:
