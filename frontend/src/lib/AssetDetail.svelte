@@ -1,0 +1,143 @@
+<script lang="ts">
+  import { api, urls, kb, hex, friendlyName, KIND_LABEL, type EntryDetail } from './api'
+  import { app } from './state.svelte'
+  import ModelViewer from './ModelViewer.svelte'
+
+  let { id, onclose }: { id: number; onclose: () => void } = $props()
+  let d = $state<EntryDetail | null>(null)
+  let tab = $state('')
+  let msg = $state('')
+  let hexOff = $state(0)
+  let hexText = $state('')
+  let bigTex = $state<number | null>(null)
+
+  $effect(() => {
+    const cur = id
+    d = null; msg = ''; bigTex = null
+    api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : 'details' } })
+  })
+  $effect(() => { if (tab === 'hex' && d) loadHex() })
+
+  async function loadHex() {
+    const r = await api.hex(d!.id, hexOff)
+    const b = r.hex.match(/../g) ?? []
+    let out = ''
+    for (let i = 0; i < b.length; i += 16) {
+      const row = b.slice(i, i + 16)
+      out += (r.offset + i).toString(16).padStart(8, '0') + '  ' + row.join(' ').padEnd(47) + '  ' + row.map(x => { const c = parseInt(x, 16); return c >= 32 && c < 127 ? String.fromCharCode(c) : '.' }).join('') + '\n'
+    }
+    hexText = out || '(end of file)'
+  }
+  async function extract(opts: { png?: boolean; wav?: boolean; model?: string }) {
+    msg = 'exporting…'
+    try { const r = await api.extract(d!.id, opts); msg = `saved ${r.written.length} file(s) to ${r.written[0].replace(/[\\/][^\\/]*$/, '')}` } catch (e: any) { msg = e.message }
+  }
+  const kindLabel = (k: string) => KIND_LABEL[k] ?? k
+</script>
+
+<div class="wrap">
+  {#if !d}
+    <div class="dim" style="padding:16px">loading…</div>
+  {:else}
+    <div class="head">
+      <div>
+        <h2>{friendlyName(d)}</h2>
+        <div class="dim">
+          <span class="badge {kindLabel(d.kind).replace(' ', '-')}">{d.archive === 'disc' ? 'music' : kindLabel(d.kind)}</span>
+          {#if d.textures.length} · {d.textures.length} textures{/if}{#if d.models.length} · {d.models.reduce((s, m) => s + m.triangles, 0).toLocaleString()} triangles{/if}{#if d.audio.length} · {d.audio.map(a => a.seconds + ' s').join(', ')}{/if}
+          · {kb(d.size)}
+        </div>
+      </div>
+      <button onclick={onclose} title="close">✕</button>
+    </div>
+
+    <div class="tabs">
+      {#if d.models.length}<button class:on={tab === 'model'} onclick={() => (tab = 'model')}>3D model</button>{/if}
+      {#if d.textures.length}<button class:on={tab === 'textures'} onclick={() => (tab = 'textures')}>Textures</button>{/if}
+      {#if d.audio.length}<button class:on={tab === 'audio'} onclick={() => (tab = 'audio')}>Audio</button>{/if}
+      <button class:on={tab === 'details'} onclick={() => (tab = 'details')}>Details</button>
+      <button class:on={tab === 'hex'} onclick={() => (tab = 'hex')}>Hex</button>
+      <span style="flex:1"></span>
+      <div class="row">
+        {#if d.textures.length}<button onclick={() => extract({ png: true })}>Export PNGs</button>{/if}
+        {#if d.models.length}<button onclick={() => extract({ model: 'both' })}>Export model</button>{/if}
+        {#if d.audio.length}<button onclick={() => extract({ wav: true })}>Export WAV</button>{/if}
+        <a class="btn" href={urls.data(d.id)}>Raw file</a>
+      </div>
+    </div>
+    {#if msg}<div class="dim" style="padding:0 16px 6px">{msg}</div>{/if}
+
+    <div class="body">
+      {#if tab === 'model'}
+        <ModelViewer entry={d.id} models={d.models} />
+      {:else if tab === 'textures'}
+        {#if bigTex !== null}
+          <div class="big">
+            <button onclick={() => (bigTex = null)}>← back</button>
+            <span class="dim">#{bigTex} · {d.textures[bigTex].width}×{d.textures[bigTex].height} {d.textures[bigTex].fmt}</span>
+            <a class="btn" href={urls.tex(d.id, bigTex)} download>Download PNG</a>
+            <div class="checker" style="margin-top:8px;display:inline-block"><img src={urls.tex(d.id, bigTex)} alt="" style="max-width:100%;image-rendering:pixelated"></div>
+          </div>
+        {:else}
+          <div class="texgrid">
+            {#each d.textures as t}
+              <button class="tex" onclick={() => (bigTex = t.n)}>
+                <div class="checker"><img loading="lazy" src={urls.tex(d.id, t.n)} alt="" style="max-width:128px;max-height:128px"></div>
+                <span class="dim">{t.width}×{t.height} {t.fmt}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      {:else if tab === 'audio'}
+        {#each d.audio as s, n}
+          <div class="card" style="margin-bottom:10px">
+            <div class="row"><b>Stream {n + 1}</b> <span class="dim">{s.rate} Hz · {s.channels === 2 ? 'stereo' : 'mono'} · {s.seconds} s{s.loop ? ' · loops' : ''}</span> <a href={urls.audioDownload(d.id, n)}>download WAV</a></div>
+            <audio controls preload="metadata" src={urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
+          </div>
+        {/each}
+      {:else if tab === 'details'}
+        <table>
+          <tbody>
+            <tr><th>Location</th><td>{d.archive} at {hex(d.offset)}</td></tr>
+            <tr><th>Size</th><td>{kb(d.size)} ({hex(d.size)}), {d.compressed ? `LZSS compressed to ${kb(d.disc_size)}` : 'stored uncompressed'}</td></tr>
+            <tr><th>Loaded by</th><td>{d.refs.join(', ')}</td></tr>
+            {#if d.known}<tr><th>Community name</th><td>{d.known}</td></tr>{/if}
+            {#if d.names.length}<tr><th>Embedded names</th><td>{d.names.join(', ')}</td></tr>{/if}
+            {#if d.hvqm4}<tr><th>Movie</th><td>{d.hvqm4.width}×{d.hvqm4.height}, {d.hvqm4.video_frames} frames at {d.hvqm4.fps} fps, audio {d.hvqm4.audio_hz} Hz</td></tr>{/if}
+            <tr><th>Export name</th><td>{d.file_name}</td></tr>
+          </tbody>
+        </table>
+        {#if d.sections.length}
+          <h3 style="margin-top:14px">Sections</h3>
+          <table><thead><tr><th>#</th><th>offset</th><th>size</th><th>type</th><th>contents</th></tr></thead><tbody>
+            {#each d.sections as s}
+              <tr><td>{s.index}</td><td>{hex(s.offset)}</td><td>{kb(s.size)}</td><td>{hex(s.magic)}</td><td>{s.kind}{s.ntex ? ` (${s.ntex} textures)` : ''}</td></tr>
+            {/each}
+          </tbody></table>
+        {/if}
+        <p class="dim">Need the raw entry table? Open the <a href="/legacy#{d.id}" target="_blank">advanced view</a>.</p>
+      {:else if tab === 'hex'}
+        <div class="row" style="margin-bottom:8px">
+          <button onclick={() => { hexOff = Math.max(0, hexOff - 4096); loadHex() }}>◀</button>
+          <input type="text" value={hex(hexOff)} onkeydown={e => { if (e.key === 'Enter') { hexOff = parseInt((e.target as HTMLInputElement).value, 16) || 0; loadHex() } }} style="width:120px">
+          <button onclick={() => { hexOff += 4096; loadHex() }}>▶</button>
+          <span class="dim">of {kb(d.size)}</span>
+        </div>
+        <pre>{hexText}</pre>
+      {/if}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .wrap { display: flex; flex-direction: column; height: 100%; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; padding: 14px 16px 6px; }
+  .tabs { display: flex; gap: 4px; align-items: center; padding: 0 16px 8px; border-bottom: 1px solid var(--line); }
+  .tabs > button { background: none; border: none; border-bottom: 2px solid transparent; color: var(--dim); border-radius: 0; }
+  .tabs > button.on { color: var(--fg); border-bottom-color: var(--acc); }
+  .body { padding: 12px 16px; overflow: auto; flex: 1; }
+  .texgrid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tex { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px; background: var(--panel); }
+  .tex .checker { display: inline-block; }
+  .big .checker { max-width: 100%; }
+</style>

@@ -316,6 +316,8 @@ class Store:
                 e.kind = fi.kind
                 e.ntex = len(fi.all_textures())
                 e.naud = len(fi.audio)
+                texs = fi.all_textures()
+                e.thumb = max(range(len(texs)), key=lambda i: texs[i][1].width * texs[i][1].height) if texs else 0
                 e.nsec = len(fi.sections)
                 e.label = fi.label
                 e.names = fi.names[:16]

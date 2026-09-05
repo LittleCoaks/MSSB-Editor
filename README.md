@@ -16,6 +16,34 @@ game never shipped. Community file names come from that repo and from
 also documents the C3 model format and can export character models to OBJ.
 See [Format notes](#format-notes) below.
 
+## The interface
+
+The UI is a Svelte + TypeScript app in `frontend/`, built into
+`zzzzdat/ui/dist` (checked in, so nothing but Python is needed to run it).
+It is organised for people who are not reverse engineers:
+
+- **Home** - game status in plain words and the three things people come for:
+  browse assets, change the music, movies & sounds.
+- **Browse assets** - a catalog by *Characters*, *Stadiums*, *Menus & UI*,
+  *Props*, *Movies*, *Music*, *Sounds* and *Everything else*, built from the
+  community names, the model names inside the files and the executable tables
+  they are loaded from. Cards show a representative texture; the detail panel
+  has a 3D model tab, texture gallery, audio player, details and hex.
+- **Music** - a three-step replace flow (pick a song, choose the track, install)
+  with the original always restorable.
+- **Game** - drop / browse / explore to pick the ISO or folder, extract for editing.
+- The original technical page is kept as **Advanced view** (`/legacy`).
+
+To work on the UI:
+
+```bash
+cd frontend
+npm install
+npm run dev        # Vite dev server with hot reload, proxying /api to the Python server on 8420
+npm run build      # writes zzzzdat/ui/dist (commit the result)
+npm run check      # svelte-check / tsc
+```
+
 ## Setup: choosing the game
 
 The editor needs your copy of the game, chosen once on the **Game** page (or
@@ -268,7 +296,9 @@ pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
   store.py        index + archive + cache + extraction
   cli.py          command line
   server.py       local HTTP API
-  ui/index.html   the browser UI
+  ui/index.html   the legacy technical UI (served at /legacy)
+  ui/dist/        the built Svelte UI (served at /)
+  catalog.py      groups entries into characters / stadiums / menus / ... for the UI
 index/GYQE01.json the generated index (checked in; rebuild with `index`)
 extracted/        output folder (ignored)
 ```

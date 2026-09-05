@@ -65,6 +65,7 @@ class Entry:
     names: list[str] = field(default_factory=list)  # all embedded .gpc/.tpl names
     known: str = ""       # community name from index/known_names.json
     naud: int = 0         # audio streams found inside
+    thumb: int = 0        # index of the texture that best represents the entry
 
     @property
     def symbol(self) -> str:

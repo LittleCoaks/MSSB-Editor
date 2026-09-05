@@ -16,7 +16,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from . import c3, music
+from . import c3, catalog, music
 from .disc import Game, current_game, default_dump_dir, dump_iso, list_dir, set_game
 from .store import EXTRACT_DIR, Store
 
@@ -52,13 +52,16 @@ def parse_multipart(headers, body: bytes) -> dict:
     return out
 
 UI_DIR = Path(__file__).resolve().parent / "ui"
+DIST_DIR = UI_DIR / "dist"
+MIME = {".js": "application/javascript", ".css": "text/css", ".html": "text/html; charset=utf-8", ".svg": "image/svg+xml",
+        ".png": "image/png", ".ico": "image/x-icon", ".woff2": "font/woff2", ".json": "application/json", ".map": "application/json"}
 
 
 def entry_summary(e) -> dict:
     return {"id": e.id, "offset": e.offset, "disc_size": e.disc_size, "size": e.size,
             "compressed": e.compressed, "lookback_bits": e.lookback_bits, "repeat_bits": e.repeat_bits,
             "kind": e.kind, "ntex": e.ntex, "nsec": e.nsec, "module": e.module, "symbol": e.symbol,
-            "archive": e.archive, "name": e.name, "refs": e.refs, "label": e.label, "names": e.names, "known": e.known, "naud": e.naud}
+            "archive": e.archive, "name": e.name, "refs": e.refs, "label": e.label, "names": e.names, "known": e.known, "naud": e.naud, "thumb": e.thumb}
 
 
 def entry_detail(store: Store, e) -> dict:
@@ -237,7 +240,13 @@ class Handler(BaseHTTPRequestHandler):
         parts = [p for p in u.path.split("/") if p]
         try:
             if not parts:
+                page = DIST_DIR / "index.html" if (DIST_DIR / "index.html").exists() else UI_DIR / "index.html"
+                return self.send_bytes(page.read_bytes(), "text/html; charset=utf-8")
+            if parts == ["legacy"]:
                 return self.send_bytes((UI_DIR / "index.html").read_bytes(), "text/html; charset=utf-8")
+            if parts[0] == "assets" and len(parts) == 2 and (DIST_DIR / "assets" / parts[1]).is_file():
+                p = DIST_DIR / "assets" / parts[1]
+                return self.send_bytes(p.read_bytes(), MIME.get(p.suffix, "application/octet-stream"))
             if parts[0] == "vendor" and len(parts) == 2 and parts[1].endswith(".js"):
                 p = UI_DIR / "vendor" / parts[1]
                 if p.exists():
@@ -287,6 +296,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(JOBS.get(parts[1]) or {"error": "no such job"})
         if st is None:
             return self.fail(self.store_error or "no game selected", 400)
+        if parts == ["catalog"]:
+            return self.send_json(catalog.build_catalog(st.entries))
         if parts[0] == "music":
             return self.music_get(parts[1:], q)
         if parts[0] != "entry" or len(parts) < 2:
