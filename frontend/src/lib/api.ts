@@ -31,6 +31,8 @@ export interface Track {
 }
 export interface MusicInfo { root: string | null; tracks: Track[]; numpy: boolean; backends: string[]; can_install_decoder: boolean }
 export interface Job { id: string; state: 'running' | 'done' | 'error'; progress: number; error?: string; result?: any; dest?: string; track?: string }
+export interface ReplaceResult { offset: number; disc_size: number; size: number; in_place: boolean; descriptors: number }
+export interface ReplacedTexture { n: number; width: number; height: number; fmt: string; levels: number; source_width: number; source_height: number; resized: boolean; palette: number; truncated: number }
 export interface FsListing { path: string; parent: string | null; dirs: string[]; files: { name: string; size: number }[]; layout: string }
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
@@ -59,7 +61,9 @@ export const api = {
   musicInstall: (fd: FormData) => j<{ job: string }>('/api/music/install', { method: 'POST', body: fd }),
   modified: () => j<{ ids: number[] }>('/api/modified'),
   thumbs: () => j<{ running: boolean; done: number; total: number }>('/api/thumbs'),
-  replace: (id: number, fd: FormData) => j<{ offset: number; disc_size: number; size: number; in_place: boolean; descriptors: number }>(`/api/entry/${id}/replace`, { method: 'POST', body: fd }),
+  replace: (id: number, fd: FormData) => j<ReplaceResult>(`/api/entry/${id}/replace`, { method: 'POST', body: fd }),
+  replaceTexture: (id: number, n: number, fd: FormData) =>
+    j<ReplaceResult & { texture: ReplacedTexture }>(`/api/entry/${id}/tex/${n}/replace`, { method: 'POST', body: fd }),
   restoreEntry: (id: number) => j<{ ok: boolean }>(`/api/entry/${id}/restore`, { method: 'POST' }),
 }
 

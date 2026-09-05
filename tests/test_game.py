@@ -61,3 +61,35 @@ def test_replace_restore_is_exact(store):
         assert store.data(e) == orig
     assert sha(ed.dol) == dol0 and sha(ed.aaaa) == aaaa0
     assert store.modified_ids() == []
+
+
+def test_replace_texture_is_exact(store):
+    from zzzzdat import gx
+    from zzzzdat.edit import Editor, EditError
+    from zzzzdat.texedit import replace_texture
+    try:
+        ed = Editor(store.game)
+    except EditError:
+        pytest.skip("game folder not prepared for editing")
+    e = store.get(8)  # DOL-referenced menu pack; texture 12 is 256x256 CMPR with 3 mip levels
+    orig = store.data(e)
+    fi = store.info(e)
+    sec, t = fi.all_textures()[12]
+    assert (t.width, t.height, t.fmt_name, t.mips) == (256, 256, "CMPR", 3)
+    img = bytearray(t.decode_rgba(orig))
+    for y in range(t.height):
+        i = (y * t.width + y) * 4
+        img[i:i + 4] = bytes((255, 0, 0, 255))
+    new, info = replace_texture(orig, fi, 12, gx.to_png(t.width, t.height, img))
+    assert info.levels == 4 and not info.truncated and len(new) == len(orig)
+    ed.replace(e, new)
+    store.forget(e)
+    back = store.data(e)
+    t2 = store.info(e).all_textures()[12][1]
+    dec = t2.decode_rgba(back)
+    assert sum(abs(a - b) for a, b in zip(img, dec)) / len(img) < 2
+    others = [k for k in range(len(fi.all_textures())) if k != 12]
+    assert all(fi.all_textures()[k][1].decode_rgba(back) == fi.all_textures()[k][1].decode_rgba(orig) for k in others)
+    ed.restore(e)
+    store.forget(e)
+    assert store.data(e) == orig

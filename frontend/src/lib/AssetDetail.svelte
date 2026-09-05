@@ -45,6 +45,20 @@
       await app.refresh(); d = await api.entry(d.id)
     } catch (e: any) { editMsg = e.message } finally { replacing = false }
   }
+  let texMsg = $state('')
+  let texBusy = $state(false)
+  let texGen = $state(0)  // bumps so <img> tags reload after a replacement
+  async function replaceTexture(n: number, f: File | null) {
+    if (!f || !d) return
+    texBusy = true; texMsg = 'encoding…'
+    try {
+      const fd = new FormData(); fd.append('file', f)
+      const r = await api.replaceTexture(d.id, n, fd)
+      const t = r.texture
+      texMsg = `Replaced texture #${n} (${t.width}×${t.height} ${t.fmt}${t.levels > 1 ? `, ${t.levels} mip levels` : ''}${t.resized ? `, resized from ${t.source_width}×${t.source_height}` : ''}${t.palette ? `, ${t.palette}-colour palette` : ''}${t.truncated ? `; the last ${t.truncated} bytes of the encoding did not fit the room the file reserves and were dropped` : ''}). The original file is backed up.`
+      await app.refresh(); d = await api.entry(d.id); texGen++
+    } catch (e: any) { texMsg = e.message } finally { texBusy = false }
+  }
   async function restoreEntry() {
     if (!d) return
     try { await api.restoreEntry(d.id); editMsg = 'Original restored.'; await app.refresh(); d = await api.entry(d.id) } catch (e: any) { editMsg = e.message }
@@ -93,13 +107,19 @@
             <button onclick={() => (bigTex = null)}>← back</button>
             <span class="dim">#{bigTex} · {d.textures[bigTex].width}×{d.textures[bigTex].height} {d.textures[bigTex].fmt}</span>
             <a class="btn" href={urls.tex(d.id, bigTex)} download>Download PNG</a>
-            <div class="checker" style="margin-top:8px;display:inline-block"><img src={urls.tex(d.id, bigTex)} alt="" style="max-width:100%;image-rendering:pixelated"></div>
+            {#if app.game?.edit_ready && d.archive === 'ZZZZ.dat'}
+              <label class="btn">Replace with PNG… <input type="file" accept="image/png,.png" hidden disabled={texBusy} onchange={e => { const el = e.target as HTMLInputElement; replaceTexture(bigTex!, el.files?.[0] ?? null); el.value = '' }}></label>
+            {/if}
+            {#if modified}<button class="danger" onclick={restoreEntry}>Restore original file</button>{/if}
+            {#if texMsg}<div class={texMsg.startsWith('Replaced') ? 'ok' : texMsg === 'encoding…' ? 'dim' : 'warn'} style="margin-top:6px">{texMsg}</div>{/if}
+            {#if app.game?.edit_ready && d.archive === 'ZZZZ.dat'}<div class="dim" style="margin-top:4px">The PNG is converted to this texture's size and format ({d.textures[bigTex].width}×{d.textures[bigTex].height} {d.textures[bigTex].fmt}); a different size is resampled to fit.</div>{/if}
+            <div class="checker" style="margin-top:8px;display:inline-block"><img src={urls.tex(d.id, bigTex) + '?v=' + texGen} alt="" style="max-width:100%;image-rendering:pixelated"></div>
           </div>
         {:else}
           <div class="texgrid">
             {#each d.textures as t}
               <button class="tex" onclick={() => (bigTex = t.n)}>
-                <div class="checker"><img loading="lazy" src={urls.tex(d.id, t.n)} alt="" style="max-width:128px;max-height:128px"></div>
+                <div class="checker"><img loading="lazy" src={urls.tex(d.id, t.n) + '?v=' + texGen} alt="" style="max-width:128px;max-height:128px"></div>
                 <span class="dim">{t.width}×{t.height} {t.fmt}</span>
               </button>
             {/each}
@@ -136,7 +156,7 @@
         {#if !app.game?.edit_ready}
           <p class="dim">To replace files, the game needs to be extracted with ZZZZ.dat and aaaa.dat. Use <a href="#game" onclick={() => app.go('game')}>Prepare for editing</a> on the Game page.</p>
         {:else}
-          <p class="dim">Swap this file's raw contents ({kb(d.size)}, the same format as "Raw file"). It is compressed and the game's references are repointed automatically; if it doesn't fit its old slot it is appended to the archive. Textures and models still have to be edited in the raw format for now.</p>
+          <p class="dim">Swap this file's raw contents ({kb(d.size)}, the same format as "Raw file"). It is compressed and the game's references are repointed automatically; if it doesn't fit its old slot it is appended to the archive. Single textures can be swapped from the Textures tab; models still have to be edited in the raw format for now.</p>
           <div class="row">
             <label class="btn">Choose replacement file… <input type="file" hidden onchange={e => replaceWith((e.target as HTMLInputElement).files?.[0] ?? null)} disabled={replacing}></label>
             {#if modified}<button class="danger" onclick={restoreEntry}>Restore original</button>{/if}

@@ -225,6 +225,20 @@ def cmd_replace(a):
           f"({'in place' if r['in_place'] else 'appended to ZZZZ.dat'}), {r['descriptors']} descriptor(s) updated")
 
 
+def cmd_replace_texture(a):
+    from .edit import Editor
+    from .texedit import replace_texture
+    store = Store()
+    e = store.get(a.entry)
+    new, info = replace_texture(store.data(e), store.info(e), a.texture, Path(a.png).read_bytes())
+    r = Editor(store.game).replace(e, new)
+    store.forget(e)
+    print(f"texture {info.n} of entry {e.id}: {info.width}x{info.height} {info.fmt}, {info.levels} level(s)"
+          + (f", resized from {info.source_width}x{info.source_height}" if info.resized else "")
+          + (f", {info.palette} palette colours" if info.palette else "")
+          + f"; entry written {'in place' if r['in_place'] else 'appended to ZZZZ.dat'}, {r['descriptors']} descriptor(s) updated")
+
+
 def cmd_restore_entry(a):
     from .edit import Editor
     store = Store()
@@ -368,6 +382,12 @@ def main(argv=None):
     s.add_argument("entry")
     s.add_argument("file")
     s.set_defaults(fn=cmd_replace)
+
+    s = sub.add_parser("replace-texture", help="replace one texture of an entry with a PNG (same size/format, resized if needed)")
+    s.add_argument("entry")
+    s.add_argument("texture", type=int, help="texture number as shown by `info`")
+    s.add_argument("png")
+    s.set_defaults(fn=cmd_replace_texture)
 
     s = sub.add_parser("restore-entry", help="undo a replacement")
     s.add_argument("entry")

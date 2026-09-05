@@ -28,7 +28,8 @@ It is organised for people who are not reverse engineers:
   *Props*, *Movies*, *Music*, *Sounds* and *Everything else*, built from the
   community names, the model names inside the files and the executable tables
   they are loaded from. Cards show a representative texture; the detail panel
-  has a 3D model tab, texture gallery, audio player, details and hex.
+  has a 3D model tab, texture gallery (with *Replace with PNG* on an extracted
+  game), audio player, details and hex.
 - **Music** - a three-step replace flow (pick a song, choose the track, install)
   with the original always restorable.
 - **Game** - drop / browse / explore to pick the ISO or folder, extract for editing.
@@ -334,7 +335,22 @@ u16 TLUT entries            u8 TLUT format  u8 pad
 ```
 
 All GX formats (I4, I8, IA4, IA8, RGB565, RGB5A3, RGBA8, C4, C8, C14X2, CMPR)
-are decoded by `zzzzdat/gx.py`.
+are decoded and encoded by `zzzzdat/gx.py`. Mip levels follow the base level
+contiguously, each at the block-rounded size of its dimensions, so a record
+with `mip levels = n` owns `n + 1` levels. A few tables reserve fewer bytes
+than the block-rounded size (the last block row of an odd-sized C8 image runs
+into the next texture) and some records share pixel data.
+
+### Replacing a texture
+
+`replace-texture` (and *Replace with PNG* in the gallery) re-encodes a PNG in
+the record's own format, size, mip count and palette size and writes it over
+the original bytes, so nothing else in the file moves. A PNG of another size is
+resampled to fit; palette formats get a median-cut palette in the record's
+TLUT format; CMPR uses a small DXT1 encoder with 1-bit alpha. Writes are
+capped at the room the table reserves for that record. The whole entry then
+goes through the usual replace path (recompress, repoint, backup), so
+*Restore original* undoes it.
 
 ## Layout
 
@@ -354,7 +370,9 @@ zzzzdat/
   lzss.py         decompressor
   descriptors.py  scan executables for descriptors, verify, build/load the index
   formats.py      identify contents: container / textures / HVQM4 / ADPCM / anim bank
-  gx.py           GX texture decoding + PNG writer
+  gx.py           GX texture decoding/encoding + PNG writer
+  png.py          PNG reader (stdlib only) and resampling
+  texedit.py      in-place texture replacement inside an entry
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
   c3.py           C3 GeoPalette model parsing, OBJ and glTF export
   ui/vendor/      three.js r128 (three.min.js, OrbitControls, GLTFLoader) for the model viewer
