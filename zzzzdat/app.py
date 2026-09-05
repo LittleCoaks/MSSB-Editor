@@ -19,22 +19,22 @@ class Api:
     """Native dialogs exposed to the page as window.pywebview.api.*"""
 
     def __init__(self):
-        self.window = None
+        self._window = None
 
     def pick_iso(self):
         import webview
-        r = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False,
+        r = self._window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False,
                                            file_types=("GameCube images (*.iso;*.gcm)", "All files (*.*)"))
         return r[0] if r else None
 
     def pick_folder(self):
         import webview
-        r = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        r = self._window.create_file_dialog(webview.FOLDER_DIALOG)
         return r[0] if r else None
 
     def pick_audio(self):
         import webview
-        r = self.window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False,
+        r = self._window.create_file_dialog(webview.OPEN_DIALOG, allow_multiple=False,
                                            file_types=("Audio (*.wav;*.mp3;*.flac;*.ogg;*.m4a;*.aac;*.opus;*.wma)", "All files (*.*)"))
         return r[0] if r else None
 
@@ -53,6 +53,6 @@ def run(port: int | None = None, width: int = 1400, height: int = 900) -> None:
             pass
     else:
         api = Api()
-        api.window = webview.create_window(TITLE, url, width=width, height=height, min_size=(900, 600), js_api=api)
+        api._window = webview.create_window(TITLE, url, width=width, height=height, min_size=(900, 600), js_api=api)
         webview.start()
     httpd.shutdown()
