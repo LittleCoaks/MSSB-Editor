@@ -32,6 +32,12 @@ def _find_decomp_root() -> Path:
     cfg = VIEWER_ROOT / "decomp_path.txt"
     if cfg.exists():
         return (VIEWER_ROOT / cfg.read_text(encoding="utf-8").strip()).resolve()
+    # sibling "MSSB Decomp" of this folder or of any parent (so a build under
+    # dist/ still finds it during development)
+    for parent in [VIEWER_ROOT] + list(VIEWER_ROOT.parents):
+        cand = parent / "MSSB Decomp"
+        if (cand / "orig").is_dir():
+            return cand.resolve()
     return (VIEWER_ROOT.parent / "MSSB Decomp").resolve()
 
 
