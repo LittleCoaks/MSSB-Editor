@@ -343,3 +343,119 @@ def _unit(n):
     x, y, z = n
     l = (x * x + y * y + z * z) ** 0.5
     return (x / l, y / l, z / l) if l > 1e-9 else (0.0, 1.0, 0.0)
+
+
+# ---------------------------------------------------------------- actors --
+# ACT (actor) sections share the 0x007B7960 version word with ANIM banks.
+# Layout (Nintendo CharPipeline ACTLayout, offsets relative to the section):
+#   0x00 version  0x04 u16 actorID, u16 totalBones  0x08 DSTree{offset 0xc, root 0x20}
+#   0x10 geoPalette id  0x14 u16 skinFileID ...  bones from 0x20, 0x1c each:
+#   u32 pControl, DSBranch{prev,next,parent,children}, u16 geoFileID (0xffff = none),
+#   u16 boneID, u8 inheritanceFlag, u8 drawingPriority
+# CTRLControl (0x34): u8 type flags (1 scale, 2 euler, 4 quat, 8 translation),
+#   pad[3], Vec scale, Quaternion (x,y,z,w), Vec translation, pad.
+
+ACT_VERSION = 0x007B7960
+
+
+@dataclass
+class Bone:
+    offset: int
+    id: int
+    parent: int  # offset, 0 = root
+    geo: int | None
+    inherit: bool
+    scale: tuple
+    quat: tuple
+    trans: tuple
+    world: list | None = None
+
+
+def is_actor(data: bytes, base: int) -> bool:
+    if base + 0x20 > len(data):
+        return False
+    v, _a, off, root = struct.unpack_from(">IIII", data, base)
+    return v == ACT_VERSION and off == 0xC and root == 0x20
+
+
+def parse_actor(data: bytes, base: int) -> list[Bone] | None:
+    if not is_actor(data, base):
+        return None
+    nb = struct.unpack_from(">H", data, base + 6)[0]
+    bones = []
+    for i in range(nb):
+        off = 0x20 + i * 0x1C
+        ctrl, _prev, _next, parent, _child, geo, bid, inh, _prio = struct.unpack_from(">IIIIIHHBB", data, base + off)
+        typ = data[base + ctrl]
+        scale = struct.unpack_from(">3f", data, base + ctrl + 4)
+        quat = struct.unpack_from(">4f", data, base + ctrl + 16)
+        trans = struct.unpack_from(">3f", data, base + ctrl + 32)
+        if not typ & 1:
+            scale = (1.0, 1.0, 1.0)
+        if not typ & 4:
+            quat = (0.0, 0.0, 0.0, 1.0)
+        if not typ & 8:
+            trans = (0.0, 0.0, 0.0)
+        bones.append(Bone(off, bid, parent, None if geo == 0xFFFF else geo, bool(inh), scale, quat, trans))
+    _compute_world(bones)
+    return bones
+
+
+def _srt(b: Bone) -> list:
+    x, y, z, w = b.quat
+    sx, sy, sz = b.scale
+    r = [[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+         [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+         [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]]
+    m = [[r[i][0] * sx, r[i][1] * sy, r[i][2] * sz, b.trans[i]] for i in range(3)]
+    m.append([0.0, 0.0, 0.0, 1.0])
+    return m
+
+
+def _mul(a: list, b: list) -> list:
+    return [[sum(a[i][k] * b[k][j] for k in range(4)) for j in range(4)] for i in range(4)]
+
+
+def _compute_world(bones: list[Bone]) -> None:
+    by_off = {b.offset: b for b in bones}
+
+    def world(b: Bone) -> list:
+        if b.world is None:
+            local = _srt(b)
+            p = by_off.get(b.parent) if b.parent else None
+            b.world = _mul(world(p), local) if (p and b.inherit) else local
+        return b.world
+
+    for b in bones:
+        world(b)
+
+
+def skeleton_root(bones: list[Bone]) -> Bone | None:
+    """The root bone that actually carries the hierarchy (has children)."""
+    parents = {b.parent for b in bones if b.parent}
+    roots = [b for b in bones if not b.parent]
+    for r in roots:
+        if r.offset in parents:
+            return r
+    return roots[0] if roots else None
+
+
+def apply_actor(model: "Model", bones: list[Bone]) -> None:
+    """Move each mesh into actor space using its bone's world matrix. Meshes no
+    bone points at (skinned bodies such as mario_body) are already stored in
+    actor space and are left alone."""
+    for i, m in enumerate(model.meshes):
+        b = next((b for b in bones if b.geo == i), None)
+        if b:
+            w = b.world
+            m.positions = [_xform(w, p, 1.0) for p in m.positions]
+            m.normals = [_unit(_xform(w, n, 0.0)) for n in m.normals]
+        # actor space has the character standing along -Y; turn it upright
+        # (180 degrees about X keeps the winding intact)
+        m.positions = [(x, -y, -z) for x, y, z in m.positions]
+        m.normals = [(x, -y, -z) for x, y, z in m.normals]
+
+
+def _xform(m: list, v: tuple, w: float) -> tuple:
+    x, y, z = v
+    return tuple(m[i][0] * x + m[i][1] * y + m[i][2] * z + m[i][3] * w for i in range(3))

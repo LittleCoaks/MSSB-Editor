@@ -154,12 +154,21 @@ class Store:
                         "textures": sorted({d.texture for mm in m.meshes for d in mm.draws if d.texture is not None})})
         return out
 
-    def model(self, e: Entry, section: int) -> c3.Model:
+    def model(self, e: Entry, section: int, posed: bool = True) -> c3.Model:
         data = self.data(e)
-        s = self.info(e).sections[section]
+        secs = self.info(e).sections
+        s = secs[section]
         m = c3.parse_geopalette(data, s.offset)
         if not m:
             raise KeyError(f"section {section} of entry {e.id} is not a GeoPalette")
+        if posed:
+            # the actor (skeleton) is the nearest preceding ACT section
+            for prev in reversed(secs[:section]):
+                if prev.magic == c3.ACT_VERSION:
+                    bones = c3.parse_actor(data, prev.offset)
+                    if bones:
+                        c3.apply_actor(m, bones)
+                    break
         return m
 
     def glb(self, e: Entry, section: int) -> bytes:
