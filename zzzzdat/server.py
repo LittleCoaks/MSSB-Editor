@@ -20,7 +20,7 @@ def entry_summary(e) -> dict:
     return {"id": e.id, "offset": e.offset, "disc_size": e.disc_size, "size": e.size,
             "compressed": e.compressed, "lookback_bits": e.lookback_bits, "repeat_bits": e.repeat_bits,
             "kind": e.kind, "ntex": e.ntex, "nsec": e.nsec, "module": e.module, "symbol": e.symbol,
-            "archive": e.archive, "name": e.name, "refs": e.refs}
+            "archive": e.archive, "name": e.name, "refs": e.refs, "label": e.label, "names": e.names}
 
 
 def entry_detail(store: Store, e) -> dict:
@@ -58,6 +58,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
         if filename:
             self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
         self.end_headers()

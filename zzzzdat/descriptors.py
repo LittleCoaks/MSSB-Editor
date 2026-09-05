@@ -57,6 +57,8 @@ class Entry:
     kind: str = ""        # filled in by classify (formats.identify)
     ntex: int = 0         # textures found inside
     nsec: int = 0         # container sections
+    label: str = ""       # embedded asset name (e.g. stadium0.gpc)
+    names: list[str] = field(default_factory=list)  # all embedded .gpc/.tpl names
 
     @property
     def symbol(self) -> str:

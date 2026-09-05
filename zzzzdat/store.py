@@ -14,7 +14,7 @@ from .lzss import decompress
 EXTRACT_DIR = VIEWER_ROOT / "extracted"
 
 EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin",
-               "animbank": "anm", "unknown": "bin", "": "bin"}
+               "anim": "anm", "unknown": "bin", "": "bin"}
 
 
 def safe_name(s: str) -> str:
@@ -77,7 +77,8 @@ class Store:
     def file_name(self, e: Entry, ext: str | None = None) -> str:
         ext = ext or EXT_BY_KIND.get(e.kind, "bin")
         sym = safe_name(e.symbol.replace(" ", "_"))
-        return f"{e.id:04d}_{e.offset:08x}" + (f"_{sym}" if sym else "") + f".{ext}"
+        lab = safe_name(e.label.rsplit(".", 1)[0]) if e.label else ""
+        return f"{e.id:04d}_{e.offset:08x}" + (f"_{lab}" if lab else "") + (f"_{sym}" if sym else "") + f".{ext}"
 
     # ---------------------------------------------------------- extraction --
     def extract(self, e: Entry, dest: Path = EXTRACT_DIR, raw: bool = False, png: bool = False) -> list[Path]:
@@ -133,6 +134,8 @@ class Store:
                 e.kind = fi.kind
                 e.ntex = len(fi.all_textures())
                 e.nsec = len(fi.sections)
+                e.label = fi.label
+                e.names = fi.names[:16]
                 if i % 100 == 0:
                     log(f"  classified {i}/{len(ents)} ({time.time() - t0:.0f}s)")
         cov = coverage(ents, self.archive.size)

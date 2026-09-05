@@ -21,11 +21,21 @@ documentation in the decomp repo). Known shapes:
 * **HVQM4** - Nintendo's HVQM4 1.3 movie container ("HVQM4 1.3" magic).
 * **DSP-ADPCM** - raw 8-byte DSP frames (header nibble byte < 0x80 on every
   8th byte); this is how the un-indexed audio region looks.
-* **0x007B7960 bank** - animation banks used by the character model tables:
-  header `u32 magic, u32 stride?, u32 count, u32 ...` then `count` records.
+* **0x007B7960 block** - `u32 magic, u32 a, u32 count, u32 b` then `count`
+  fixed-stride records. As a small container section it holds an object's
+  transform floats and ends with its source file name (e.g. `stadium0.gpc`).
+  The 544 standalone files of this kind (kind "anim") are large, carry no
+  names, hold s16 keyframe-looking data, and are pointed at by the DOL's
+  per-character tables, so they are most likely animation sets. Unverified.
+* **0x005BBC61 / 0x00184300** - geometry chunks that end with the name of the
+  `.tpl` texture set they use plus group names (`Group01`...).
+
+Asset names embedded this way are collected into `FileInfo.names`; the first
+`.gpc` name is the best human label for an entry.
 """
 from __future__ import annotations
 
+import re
 import struct
 from dataclasses import dataclass, field
 
@@ -169,12 +179,25 @@ def classify_blob(data: bytes) -> str:
     if is_hvqm4(data):
         return "hvqm4"
     if data[:4] == b"\x00\x7b\x79\x60":
-        return "animbank"
+        return "anim"
     if parse_texture_table(data):
         return "textures"
     if looks_like_dsp_adpcm(data):
         return "dsp-adpcm"
     return "unknown"
+
+
+_NAME_RE = re.compile(rb"(?<![A-Za-z0-9_])[A-Za-z][A-Za-z0-9_\-]{0,39}\.(?:gpc|tpl)(?![A-Za-z0-9_])")
+
+
+def find_names(data: bytes, limit: int = 64) -> list[str]:
+    """Distinct embedded asset names (*.gpc models, *.tpl texture sets), in order."""
+    seen: dict[str, None] = {}
+    for m in _NAME_RE.finditer(data):
+        seen.setdefault(m.group().decode("ascii"), None)
+        if len(seen) >= limit:
+            break
+    return list(seen)
 
 
 @dataclass
@@ -183,6 +206,12 @@ class FileInfo:
     sections: list[Section] = field(default_factory=list)
     textures: list[Texture] = field(default_factory=list)
     hvqm4: dict | None = None
+    names: list[str] = field(default_factory=list)
+
+    @property
+    def label(self) -> str:
+        gpc = [n for n in self.names if n.endswith(".gpc")]
+        return gpc[0] if gpc else (self.names[0] if self.names else "")
 
     def all_textures(self) -> list[tuple[Section | None, Texture]]:
         out = [(None, t) for t in self.textures]
@@ -196,8 +225,10 @@ def identify(data: bytes) -> FileInfo:
         return FileInfo("hvqm4", hvqm4=hvqm4_info(data))
     texs = parse_texture_table(data)
     if texs:
-        return FileInfo("textures", textures=texs)
-    secs = parse_container(data)
-    if secs:
-        return FileInfo("container", sections=secs)
-    return FileInfo(classify_blob(data))
+        fi = FileInfo("textures", textures=texs)
+    else:
+        secs = parse_container(data)
+        fi = FileInfo("container", sections=secs) if secs else FileInfo(classify_blob(data))
+    if fi.kind != "dsp-adpcm":
+        fi.names = find_names(data)
+    return fi

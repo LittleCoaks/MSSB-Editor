@@ -44,8 +44,10 @@ python -m zzzzdat index            # rebuild index/GYQE01.json (~40 s)
 ```
 
 Extracted files land in `extracted/` (git-ignored). Names are
-`<id>_<archive offset>_<module>_<symbol>.<ext>` so an entry can always be
-traced back to the code that loads it.
+`<id>_<archive offset>_<embedded name>_<module>_<symbol>.<ext>` so an entry can
+always be traced back to the code that loads it. The embedded name (e.g.
+`stadium0`, `packun`, `taru_clash`) comes from `.gpc`/`.tpl` strings the game
+left inside the files; about half the entries carry one.
 
 The web UI lists every entry with filters and sorting, and shows per entry:
 the descriptor, which executables reference it, the container's sections,
@@ -69,7 +71,7 @@ Index entries are classified by content:
 | kind | count | notes |
 | --- | --- | --- |
 | `container` | 571 | Table of u32 section offsets; sections hold textures, animation banks, models, etc. |
-| `animbank` | 544 | Files starting with `00 7B 79 60` (character animation tables, 0x18-byte records) |
+| `anim` | 544 | Files starting with `00 7B 79 60`: large record tables pointed at by the per-character tables, probably animation sets (unverified) |
 | `textures` | 19 | A bare texture table |
 | `hvqm4` | 3 | Nintendo HVQM4 1.3 movies (intro 82 MB, 23 MB, 3 MB) |
 | `dsp-adpcm` | 14 | Raw DSP-ADPCM sample data |
@@ -109,8 +111,10 @@ faster, behaviour-identical rewrite. Two parameter sets occur: `0x040B`
 
 Header of u32 offsets; the first is the header size (0x20/0x40/0x60/...), unused
 slots are 0. Each section starts with a 32-bit type word; observed values include
-`0x007B7960` (animation bank), `0x005BBC61`, `0x00184300`, and texture tables
-whose first halfword is the texture count.
+`0x007B7960` (record table; as a small section it ends with the object's `name.gpc`), `0x005BBC61` and
+`0x00184300` (geometry chunks, end with the `name.tpl` they texture from plus
+`GroupNN` strings), and texture tables whose first halfword is the texture
+count.
 
 ### Texture table
 

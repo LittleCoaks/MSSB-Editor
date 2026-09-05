@@ -23,7 +23,7 @@
   td.sym { max-width:220px; overflow:hidden; text-overflow:ellipsis; }
   .kind { display:inline-block; padding:0 6px; border-radius:8px; font-size:11px; background:#3a3f4a; }
   .kind.textures { background:#2f5d3a; } .kind.container { background:#2f4a6a; } .kind.hvqm4 { background:#6a2f5d; }
-  .kind.animbank { background:#6a4f2f; } .kind.dsp-adpcm { background:#5d5d2f; } .kind.rel { background:#444; }
+  .kind.anim { background:#6a4f2f; } .kind.dsp-adpcm { background:#5d5d2f; } .kind.rel { background:#444; }
   #detail { flex:1; overflow:auto; padding:12px 16px; min-width:0; }
   #detail h2 { margin:0 0 6px; font-size:16px; }
   .row { color:var(--dim); margin-bottom:4px; } .row b { color:var(--fg); font-weight:500; }
@@ -57,7 +57,7 @@
   <div id="list"><table>
     <thead><tr>
       <th data-k="id">id</th><th data-k="offset">offset</th><th data-k="size">size</th><th data-k="kind">kind</th>
-      <th data-k="ntex">tex</th><th data-k="module">mod</th><th data-k="symbol">symbol</th>
+      <th data-k="ntex">tex</th><th data-k="label">name</th><th data-k="module">mod</th><th data-k="symbol">symbol</th>
     </tr></thead>
     <tbody id="rows"></tbody>
   </table></div>
@@ -85,13 +85,13 @@ async function load() {
 function refilter() {
   const q = $('#q').value.trim().toLowerCase(), k = $('#kind').value, m = $('#module').value, t = $('#texonly').checked;
   view = all.filter(e => (!k || e.kind === k) && (!m || e.module === m) && (!t || e.ntex > 0) &&
-    (!q || e.symbol.toLowerCase().includes(q) || String(e.id) === q || hex(e.offset).includes(q) || e.name.includes(q) || e.kind.includes(q)));
+    (!q || e.symbol.toLowerCase().includes(q) || String(e.id) === q || hex(e.offset).includes(q) || e.name.includes(q) || e.kind.includes(q) || e.names.some(n => n.toLowerCase().includes(q))));
   view.sort((a, b) => (a[sortK] > b[sortK] ? 1 : a[sortK] < b[sortK] ? -1 : a.id - b.id) * sortD);
   const tb = $('#rows'); tb.innerHTML = '';
   for (const e of view) {
     const tr = document.createElement('tr'); tr.dataset.id = e.id; if (sel && sel.id === e.id) tr.className = 'sel';
     tr.innerHTML = `<td class="num">${e.id}</td><td class="num">${hex(e.offset)}</td><td class="num">${kb(e.size)}</td>
-      <td><span class="kind ${e.kind}">${e.kind||'?'}</span></td><td class="num">${e.ntex||''}</td><td>${e.module}</td><td class="sym" title="${e.symbol}">${e.symbol}</td>`;
+      <td><span class="kind ${e.kind}">${e.kind||'?'}</span></td><td class="num">${e.ntex||''}</td><td class="sym" title="${e.names.join(', ')}">${e.label}</td><td>${e.module}</td><td class="sym" title="${e.symbol}">${e.symbol}</td>`;
     tr.onclick = () => open(e.id);
     tb.append(tr);
   }
@@ -111,10 +111,11 @@ async function open(id) {
 function render() {
   const d = sel;
   const comp = d.compressed ? `LZSS (lookback ${d.lookback_bits} bits, length ${d.repeat_bits} bits)` : 'stored';
-  let h = `<h2>#${d.id} · ${d.symbol || d.name}</h2>
+  let h = `<h2>#${d.id} · ${d.label ? d.label + ' · ' : ''}${d.symbol || d.name}</h2>
     <div class="row">${d.archive} @ <b>${hex(d.offset)}</b> · on disc <b>${kb(d.disc_size)}</b> (${hex(d.disc_size)}) · decompressed <b>${kb(d.size)}</b> (${hex(d.size)}) · ${comp}</div>
     <div class="row">content: <b>${d.file_kind}</b>${d.sections.length ? ` · ${d.sections.length} sections` : ''}${d.textures.length ? ` · ${d.textures.length} textures` : ''} · file name <b>${d.file_name}</b></div>
     <div class="row">referenced from: ${d.refs.map(r => `<b>${r}</b>`).join(', ')}</div>
+    ${d.names.length ? `<div class="row">embedded names: ${d.names.map(n => `<b>${n}</b>`).join(', ')}</div>` : ''}
     <div style="margin:8px 0">
       <a class="btn" href="/api/entry/${d.id}/data">Download decompressed</a>
       <a class="btn" href="/api/entry/${d.id}/raw">Download raw</a>
@@ -131,7 +132,7 @@ function render() {
   const body = $('#tabbody');
   if (tab === 'info') {
     if (d.hvqm4) body.innerHTML = '<pre>' + Object.entries(d.hvqm4).map(([k, v]) => `${k.padEnd(16)} ${v}`).join('\n') + '</pre>';
-    else body.innerHTML = `<div class="row">Movies are HVQM4 (extract and play with an HVQM4 decoder). Containers are tables of section offsets; texture tables decode in the textures tab. Animation banks and most other sections are not decoded yet.</div>`;
+    else body.innerHTML = `<div class="row">Movies are HVQM4 (extract and play with an HVQM4 decoder). Containers are tables of section offsets; texture tables decode in the textures tab. Object headers (0x007B7960) and geometry sections are not decoded yet beyond their embedded names.</div>`;
   } else if (tab === 'sections') {
     body.innerHTML = `<table class="secs"><tr><th>#</th><th>offset</th><th>size</th><th>magic</th><th>kind</th><th>tex</th><th></th></tr>` +
       d.sections.map(s => `<tr><td>${s.index}</td><td>${hex(s.offset)}</td><td>${hex(s.size)}</td><td>${hex(s.magic)}</td><td>${s.kind}</td><td>${s.ntex||''}</td>
