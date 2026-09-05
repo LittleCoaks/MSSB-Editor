@@ -1,4 +1,4 @@
-import { api, setCatalogNames, type Catalog, type EntrySummary, type GameInfo } from './api'
+import { api, friendlyName, setCatalogNames, type Catalog, type EntrySummary, type GameInfo } from './api'
 
 export type Page = 'home' | 'browse' | 'music' | 'game'
 
@@ -36,6 +36,11 @@ class AppState {
     } finally {
       this.loading = false
     }
+  }
+
+  nameOf(e: EntrySummary): string {
+    const n = this.catalog?.names?.[String(e.id)]
+    return n ?? friendlyName(e)
   }
 
   go(page: Page) { this.page = page; location.hash = page }

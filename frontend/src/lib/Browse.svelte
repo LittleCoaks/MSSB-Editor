@@ -15,7 +15,7 @@
     else if (grp) ids = grp.items
     else ids = groups.flatMap(g => g.items)
     let list = ids.map(id => app.entries.get(id)!).filter(Boolean)
-    if (q) list = list.filter(e => friendlyName(e).toLowerCase().includes(q) || e.names.some(n => n.toLowerCase().includes(q)) || String(e.id) === q || e.symbol.toLowerCase().includes(q))
+    if (q) list = list.filter(e => app.nameOf(e).toLowerCase().includes(q) || e.names.some(n => n.toLowerCase().includes(q)) || String(e.id) === q || e.symbol.toLowerCase().includes(q))
     return list.slice(0, 600)
   })
   const kindLabel = (e: EntrySummary) => e.archive === 'disc' ? 'music' : (KIND_LABEL[e.kind] ?? e.kind)
@@ -50,7 +50,7 @@
           <div class="thumb checker">
             {#if e.ntex}<img loading="lazy" src={urls.tex(e.id, e.thumb)} alt="">{:else}<span class="noimg">{kindLabel(e) === 'music' ? '🎵' : kindLabel(e) === 'movie' ? '🎬' : kindLabel(e) === 'animation' ? '🏃' : '▫'}</span>{/if}
           </div>
-          <div class="name">{friendlyName(e)}</div>
+          <div class="name">{app.nameOf(e)}</div>
           <div class="meta"><span class="badge {kindLabel(e).replace(' ', '-')}">{kindLabel(e)}</span>{#if e.ntex}<span class="dim">{e.ntex} tex</span>{/if}</div>
         </button>
       {/each}

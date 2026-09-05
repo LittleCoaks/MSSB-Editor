@@ -41,7 +41,7 @@
   {:else}
     <div class="head">
       <div>
-        <h2>{friendlyName(d)}</h2>
+        <h2>{app.nameOf(d)}</h2>
         <div class="dim">
           <span class="badge {kindLabel(d.kind).replace(' ', '-')}">{d.archive === 'disc' ? 'music' : kindLabel(d.kind)}</span>
           {#if d.textures.length} · {d.textures.length} textures{/if}{#if d.models.length} · {d.models.reduce((s, m) => s + m.triangles, 0).toLocaleString()} triangles{/if}{#if d.audio.length} · {d.audio.map(a => a.seconds + ' s').join(', ')}{/if}
