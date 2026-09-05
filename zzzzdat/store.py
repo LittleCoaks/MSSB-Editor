@@ -6,7 +6,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import dsp, formats
+from . import c3, dsp, formats
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
 from .disc import ORIG_DIR, VIEWER_ROOT, Archive, find_archive, read_fst
@@ -34,6 +34,7 @@ class Store:
         self._data: OrderedDict[int, bytes] = OrderedDict()
         self._info: dict[int, formats.FileInfo] = {}
         self._wav: OrderedDict[tuple, bytes] = OrderedDict()
+        self._glb: OrderedDict[tuple, bytes] = OrderedDict()
 
     def disc_entries(self) -> list[Entry]:
         """The streamed .adp music files on the disc, as synthetic entries
@@ -125,6 +126,71 @@ class Store:
             self._wav.popitem(last=False)
         return w
 
+    # -------------------------------------------------------------- models --
+    def models(self, e: Entry) -> list[dict]:
+        """Summaries of every parseable GeoPalette section in an entry."""
+        out = []
+        fi = self.info(e)
+        data = self.data(e)
+        for s in fi.sections:
+            if s.kind != "geopalette":
+                continue
+            m = c3.parse_geopalette(data, s.offset)
+            if not m or not m.triangle_count:
+                continue
+            out.append({"section": s.index, "offset": s.offset, "meshes": [mm.name for mm in m.meshes],
+                        "triangles": m.triangle_count,
+                        "textures": sorted({d.texture for mm in m.meshes for d in mm.draws if d.texture is not None})})
+        return out
+
+    def model(self, e: Entry, section: int) -> c3.Model:
+        data = self.data(e)
+        s = self.info(e).sections[section]
+        m = c3.parse_geopalette(data, s.offset)
+        if not m:
+            raise KeyError(f"section {section} of entry {e.id} is not a GeoPalette")
+        return m
+
+    def glb(self, e: Entry, section: int) -> bytes:
+        key = (e.id, section)
+        if key in self._glb:
+            return self._glb[key]
+        m = self.model(e, section)
+        data = self.data(e)
+        texs = self.info(e).all_textures()
+        used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
+        pngs = {i: t.decode_png(data) for i, (_sec, t) in enumerate(texs) if i in used}
+        g = c3.to_glb(m, pngs)
+        self._glb[key] = g
+        while len(self._glb) > 8:
+            self._glb.popitem(last=False)
+        return g
+
+    def extract_models(self, e: Entry, dest: Path, fmt: str = "glb") -> list[Path]:
+        out = []
+        for md in self.models(e):
+            dest.mkdir(parents=True, exist_ok=True)
+            stem = f"s{md['section']}_{safe_name(md['meshes'][0])}"
+            if fmt in ("glb", "both"):
+                p = dest / f"{stem}.glb"
+                p.write_bytes(self.glb(e, md["section"]))
+                out.append(p)
+            if fmt in ("obj", "both"):
+                m = self.model(e, md["section"])
+                p = dest / f"{stem}.obj"
+                p.write_text(c3.to_obj(m, f"{stem}.mtl"), encoding="utf-8")
+                out.append(p)
+                data = self.data(e)
+                texs = self.info(e).all_textures()
+                mtl = []
+                for i in md["textures"]:
+                    if i < len(texs):
+                        png = dest / f"{stem}_tex{i}.png"
+                        png.write_bytes(texs[i][1].decode_png(data))
+                        mtl.append(f"newmtl tex{i}\nKd 1 1 1\nmap_Kd {png.name}\n")
+                (dest / f"{stem}.mtl").write_text("".join(mtl), encoding="utf-8")
+        return out
+
     def extract_audio(self, e: Entry, dest: Path, max_seconds: float | None = None) -> list[Path]:
         streams = self.info(e).audio
         if not streams:
@@ -146,7 +212,7 @@ class Store:
 
     # ---------------------------------------------------------- extraction --
     def extract(self, e: Entry, dest: Path = EXTRACT_DIR, raw: bool = False, png: bool = False,
-                wav: bool = False) -> list[Path]:
+                wav: bool = False, model: str | None = None) -> list[Path]:
         dest.mkdir(parents=True, exist_ok=True)
         written = []
         if raw:
@@ -161,6 +227,8 @@ class Store:
             written += self.extract_textures(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_tex"))
         if wav:
             written += self.extract_audio(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_wav"))
+        if model:
+            written += self.extract_models(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_model"), model)
         return written
 
     def extract_textures(self, e: Entry, dest: Path) -> list[Path]:

@@ -11,6 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from . import c3
 from .store import EXTRACT_DIR, Store
 
 UI_DIR = Path(__file__).resolve().parent / "ui"
@@ -35,6 +36,7 @@ def entry_detail(store: Store, e) -> dict:
                       "size": t.data_size, "tlut": t.tlut_count, "flags": t.flags.hex()}
                      for n, (sec, t) in enumerate(fi.all_textures())]
     d["audio"] = fi.audio
+    d["models"] = store.models(e) if fi.kind == "container" else []
     d["file_name"] = store.file_name(e)
     return d
 
@@ -76,6 +78,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not parts:
                 return self.send_bytes((UI_DIR / "index.html").read_bytes(), "text/html; charset=utf-8")
+            if parts[0] == "vendor" and len(parts) == 2 and parts[1].endswith(".js"):
+                p = UI_DIR / "vendor" / parts[1]
+                if p.exists():
+                    return self.send_bytes(p.read_bytes(), "application/javascript")
+                return self.fail("not found")
             if parts[0] != "api":
                 return self.fail("not found")
             with self.lock:
@@ -116,12 +123,21 @@ class Handler(BaseHTTPRequestHandler):
             n = int(rest[1].split(".")[0])
             sec, t = st.info(e).all_textures()[n]
             return self.send_bytes(t.decode_png(st.data(e)), "image/png")
+        if rest[0] == "model" and len(rest) == 2:
+            sec, ext = rest[1].rsplit(".", 1)
+            stem = f"{st.file_name(e).rsplit('.', 1)[0]}_s{sec}"
+            if ext == "glb":
+                return self.send_bytes(st.glb(e, int(sec)), "model/gltf-binary", stem + ".glb")
+            if ext == "obj":
+                return self.send_bytes(c3.to_obj(st.model(e, int(sec))).encode(), "text/plain", stem + ".obj")
+            return self.fail("not found")
         if rest[0] == "audio" and len(rest) == 2:
             n = int(rest[1].split(".")[0])
             secs = float(q["seconds"]) if q.get("seconds") else None
             return self.send_bytes(st.wav(e, n, secs), "audio/wav")
         if rest == ["extract"]:
-            paths = st.extract(e, EXTRACT_DIR, raw=bool(q.get("raw")), png=bool(q.get("png")), wav=bool(q.get("wav")))
+            paths = st.extract(e, EXTRACT_DIR, raw=bool(q.get("raw")), png=bool(q.get("png")), wav=bool(q.get("wav")),
+                               model=q.get("model"))
             return self.send_json({"written": [str(p) for p in paths]})
         return self.fail("not found")
 

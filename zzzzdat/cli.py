@@ -59,6 +59,9 @@ def cmd_info(a):
     for s in fi.sections:
         print(f"  section {s.index:2d} @ {s.offset:#8x} size {s.size:#8x} magic {s.magic:#010x} {s.kind}"
               + (f" ({len(s.textures)} textures)" if s.textures else ""))
+    for md in store.models(e):
+        print(f"  model: section {md['section']} @ {md['offset']:#x}: {', '.join(md['meshes'])} ({md['triangles']} triangles, "
+              f"{len(md['textures'])} textures)")
     for n, st in enumerate(fi.audio):
         print(f"  audio {n}: {st['kind']} {st['rate']} Hz {st['channels']}ch {st['seconds']} s @ {st['pos']:#x}"
               + (" loop" if st.get("loop") else ""))
@@ -87,7 +90,7 @@ def cmd_extract(a):
     dest = Path(a.out) if a.out else EXTRACT_DIR
     for name in a.entries:
         e = store.get(name)
-        for p in store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav):
+        for p in store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav, model=a.model):
             print(p)
 
 
@@ -103,7 +106,7 @@ def cmd_extract_all(a):
             print(f"skip {e.id} ({fmt_size(e.size)})")
             continue
         try:
-            store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav)
+            store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav, model=a.model)
             n += 1
         except Exception as ex:
             print(f"entry {e.id}: {ex}", file=sys.stderr)
@@ -131,6 +134,16 @@ def cmd_wav(a):
         paths = [p]
     for p in paths:
         print(p)
+
+
+def cmd_model(a):
+    store = Store()
+    e = store.get(a.entry)
+    dest = Path(a.out) if a.out else EXTRACT_DIR / (store.file_name(e).rsplit(".", 1)[0] + "_model")
+    for p in store.extract_models(e, dest, a.format):
+        print(p)
+    if not store.models(e):
+        print("no GeoPalette sections in this entry")
 
 
 def cmd_layout(a):
@@ -189,6 +202,7 @@ def main(argv=None):
     s.add_argument("--raw", action="store_true", help="write the compressed on-disc bytes")
     s.add_argument("--png", action="store_true", help="also decode textures to PNG")
     s.add_argument("--wav", action="store_true", help="also decode audio to WAV")
+    s.add_argument("--model", choices=["glb", "obj", "both"], help="also export models")
     s.set_defaults(fn=cmd_extract)
 
     s = sub.add_parser("extract-all", help="extract every indexed entry")
@@ -197,8 +211,15 @@ def main(argv=None):
     s.add_argument("--raw", action="store_true")
     s.add_argument("--png", action="store_true")
     s.add_argument("--wav", action="store_true")
+    s.add_argument("--model", choices=["glb", "obj", "both"])
     s.add_argument("--max-size", type=lambda v: int(v, 0), default=1 << 30)
     s.set_defaults(fn=cmd_extract_all)
+
+    s = sub.add_parser("model", help="export an entry's models (glTF binary and/or OBJ+MTL+PNG)")
+    s.add_argument("entry")
+    s.add_argument("--format", choices=["glb", "obj", "both"], default="glb")
+    s.add_argument("-o", "--out")
+    s.set_defaults(fn=cmd_model)
 
     s = sub.add_parser("wav", help="decode an entry's audio to WAV (disc .adp music or DSP streams)")
     s.add_argument("entry")

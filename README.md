@@ -47,6 +47,8 @@ python -m zzzzdat extract-all --png
 python -m zzzzdat textures 8       # only the PNGs
 python -m zzzzdat wav 10005        # decode audio to WAV (disc music, or DSP streams inside an entry)
 python -m zzzzdat extract 89 --wav
+python -m zzzzdat model 893 --format both   # glTF (.glb) and OBJ+MTL+PNG of "First Found Mario"
+python -m zzzzdat extract-all --model glb
 python -m zzzzdat layout           # coverage map of the archive
 python -m zzzzdat index            # rebuild index/GYQE01.json (~3 min; --no-scan for ~40 s)
 ```
@@ -59,9 +61,22 @@ left inside the files; about half the entries carry one.
 
 The web UI lists every entry with filters and sorting, and shows per entry:
 the descriptor, which executables reference it, the container's sections,
-every decoded texture (click for full size), an audio tab with an in-page
+every decoded texture (click for full size), a model tab with a textured 3D
+viewer (three.js, orbit/zoom/pan, wireframe), an audio tab with an in-page
 player for each stream, a paged hex viewer, and buttons to download or extract
-(with PNGs / WAVs) into `extracted/`.
+(with PNGs / WAVs / models) into `extracted/`.
+
+## Models
+
+`zzzzdat/c3.py` parses Nintendo CharPipeline (C3) **GeoPalette** sections
+(the `0x005BBC61` sections of a container) following roeming's
+MSSB-Export-Models: descriptors, display-object layouts, quantized
+position/normal/UV arrays, display-state lists and GX display-list primitives
+(quads, triangles, strips, fans). Every parseable section is exported as a
+binary glTF with its textures embedded (texture indices in the display states
+index the container's texture table), or as OBJ + MTL + PNGs. Skinning,
+bones and animations are not handled yet: character models come out in their
+bind pose, split into their named parts.
 
 ## Audio
 
@@ -182,6 +197,8 @@ zzzzdat/
   formats.py      identify contents: container / textures / HVQM4 / ADPCM / anim bank
   gx.py           GX texture decoding + PNG writer
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
+  c3.py           C3 GeoPalette model parsing, OBJ and glTF export
+  ui/vendor/      three.js r128 (three.min.js, OrbitControls, GLTFLoader) for the model viewer
   store.py        index + archive + cache + extraction
   cli.py          command line
   server.py       local HTTP API

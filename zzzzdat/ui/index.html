@@ -27,6 +27,9 @@
   .kind.dtk-adpcm { background:#5d4a2f; }
   .aud { background:#15171b; border:1px solid var(--line); border-radius:4px; padding:8px 10px; margin-bottom:8px; }
   .aud audio { width:100%; margin-top:6px; }
+  #view3d { width:100%; height:70vh; min-height:360px; background:#101216; border:1px solid var(--line); border-radius:4px; display:block; }
+  .mdlbar { display:flex; gap:10px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  .mdlbar select { background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:3px 6px; border-radius:4px; }
   #detail { flex:1; overflow:auto; padding:12px 16px; min-width:0; }
   #detail h2 { margin:0 0 6px; font-size:16px; }
   .row { color:var(--dim); margin-bottom:4px; } .row b { color:var(--fg); font-weight:500; }
@@ -67,6 +70,9 @@
   </table></div>
   <div id="detail"><div class="row">Select an entry on the left. Click column headers to sort.</div></div>
 </main>
+<script src="/vendor/three.min.js"></script>
+<script src="/vendor/OrbitControls.js"></script>
+<script src="/vendor/GLTFLoader.js"></script>
 <script>
 const $ = s => document.querySelector(s);
 const hex = (n, w=8) => '0x' + n.toString(16).padStart(w, '0');
@@ -126,12 +132,14 @@ function render() {
       <button class="btn" onclick="extract(${d.id}, false)">Extract to folder</button>
       ${d.textures.length ? `<button class="btn" onclick="extract(${d.id}, true)">Extract + PNGs</button>` : ''}
       ${d.audio.length ? `<button class="btn" onclick="extract(${d.id}, false, true)">Extract + WAVs</button>` : ''}
+      ${d.models.length ? `<button class="btn" onclick="extract(${d.id}, false, false, 'both')">Extract + models</button>` : ''}
       <span class="msg" id="msg"></span>
     </div>`;
   const tabs = ['info', 'hex'];
   if (d.sections.length) tabs.splice(1, 0, 'sections');
   if (d.textures.length) tabs.splice(1, 0, 'textures');
   if (d.audio.length) tabs.splice(1, 0, 'audio');
+  if (d.models.length) tabs.splice(1, 0, 'model');
   if (!tabs.includes(tab)) tab = tabs[0];
   h += `<div class="tabs">${tabs.map(t => `<button class="${t === tab ? 'on' : ''}" onclick="tab='${t}';render()">${t}</button>`).join('')}</div><div id="tabbody"></div>`;
   $('#detail').innerHTML = h;
@@ -139,6 +147,14 @@ function render() {
   if (tab === 'info') {
     if (d.hvqm4) body.innerHTML = '<pre>' + Object.entries(d.hvqm4).map(([k, v]) => `${k.padEnd(16)} ${v}`).join('\n') + '</pre>';
     else body.innerHTML = `<div class="row">Movies are HVQM4 (extract and play with an HVQM4 decoder). Containers are tables of section offsets; texture tables decode in the textures tab. Object headers (0x007B7960) and geometry sections are not decoded yet beyond their embedded names.</div>`;
+  } else if (tab === 'model') {
+    body.innerHTML = `<div class="mdlbar">section <select id="mdlsec">${d.models.map(m => `<option value="${m.section}">s${m.section}: ${m.meshes.join(', ')} (${m.triangles} tris)</option>`).join('')}</select>
+      <label><input type="checkbox" id="wire" onchange="setWire(this.checked)"> wireframe</label>
+      <button class="btn" onclick="resetView()">reset view</button>
+      <a class="btn" id="dlglb" href="#">download .glb</a><a class="btn" id="dlobj" href="#">download .obj</a>
+      <span class="row" id="mdlmsg"></span></div><canvas id="view3d"></canvas>`;
+    $('#mdlsec').onchange = () => loadModel(d.id, +$('#mdlsec').value);
+    loadModel(d.id, d.models[0].section);
   } else if (tab === 'audio') {
     body.innerHTML = d.audio.map((s, n) => `<div class="aud">#${n} · ${s.kind} · ${s.rate} Hz · ${s.channels === 2 ? 'stereo' : 'mono'} · ${s.seconds} s${s.loop ? ' · loop' : ''} · @${hex(s.pos)}
       · <a href="/api/entry/${d.id}/audio/${n}.wav" download="${d.file_name.replace(/\.[^.]+$/, '')}_${n}.wav">download wav</a>
@@ -172,10 +188,52 @@ async function loadHex(id) {
   }
   $('#hexpre').innerHTML = out || '(end of file)';
 }
-async function extract(id, png, wav) {
+async function extract(id, png, wav, model) {
   $('#msg').textContent = 'extracting…';
-  const r = await (await fetch(`/api/entry/${id}/extract?${png ? 'png=1' : ''}${wav ? '&wav=1' : ''}`)).json();
+  const r = await (await fetch(`/api/entry/${id}/extract?${png ? 'png=1' : ''}${wav ? '&wav=1' : ''}${model ? '&model=' + model : ''}`)).json();
   $('#msg').textContent = r.error ? 'error: ' + r.error : `wrote ${r.written.length} file(s) → ${r.written[0]}`;
+}
+
+// ---- 3D viewer -------------------------------------------------------
+let three = null;
+function initThree(canvas) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x101216);
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.1));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.6); dir.position.set(1, 2, 1.5); scene.add(dir);
+  const grid = new THREE.GridHelper(1000, 20, 0x334, 0x223); scene.add(grid);
+  three = { renderer, scene, camera, controls, root: null, grid };
+  const tick = () => { if (!document.body.contains(canvas)) { three = null; return; }
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== w * devicePixelRatio || canvas.height !== h * devicePixelRatio) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+    controls.update(); renderer.render(scene, camera); requestAnimationFrame(tick); };
+  tick();
+}
+function loadModel(id, sec) {
+  const canvas = $('#view3d'); if (!canvas) return;
+  if (!three || three.renderer.domElement !== canvas) initThree(canvas);
+  $('#dlglb').href = `/api/entry/${id}/model/${sec}.glb`; $('#dlobj').href = `/api/entry/${id}/model/${sec}.obj`;
+  $('#mdlmsg').textContent = 'loading…';
+  new THREE.GLTFLoader().load(`/api/entry/${id}/model/${sec}.glb`, g => {
+    if (three.root) three.scene.remove(three.root);
+    three.root = g.scene; three.scene.add(g.scene);
+    let tris = 0; g.scene.traverse(o => { if (o.isMesh) { tris += o.geometry.index ? o.geometry.index.count / 3 : 0; o.material.side = THREE.DoubleSide; } });
+    setWire($('#wire') && $('#wire').checked); resetView();
+    $('#mdlmsg').textContent = `${Math.round(tris)} triangles · drag to orbit, wheel to zoom, right-drag to pan`;
+  }, undefined, err => { $('#mdlmsg').textContent = 'failed: ' + err; });
+}
+function setWire(on) { if (three && three.root) three.root.traverse(o => { if (o.isMesh) o.material.wireframe = !!on; }); }
+function resetView() {
+  if (!three || !three.root) return;
+  const box = new THREE.Box3().setFromObject(three.root); const size = box.getSize(new THREE.Vector3()); const c = box.getCenter(new THREE.Vector3());
+  const r = Math.max(size.x, size.y, size.z, 1);
+  three.grid.position.y = box.min.y; three.grid.scale.setScalar(r / 500);
+  three.camera.position.set(c.x + r * 0.9, c.y + r * 0.6, c.z + r * 1.2); three.camera.near = r / 1000; three.camera.far = r * 50; three.camera.updateProjectionMatrix();
+  three.controls.target.copy(c); three.controls.update();
 }
 load();
 </script>
