@@ -27,6 +27,23 @@ STOCK_TRACKS = [
 
 CUSTOM_SLOTS = [('custom_%02d_h.adp' % i, 'Custom Slot %02d' % i) for i in range(1, 11)]
 
+# What kind of stream each file is, for labelling in menus.
+CATEGORIES = {
+    'mario_01_h.adp': 'stadium music', 'koopa_h.adp': 'stadium music', 'wario_h.adp': 'stadium music',
+    'yoshi_h.adp': 'stadium music', 'peach_h.adp': 'stadium music', 'donkey_h.adp': 'stadium music',
+    'toy_h.adp': 'stadium music',
+    'replay_h.adp': 'music', 'result_h.adp': 'music', 'cha_s_roll_h.adp': 'music',
+    'cha_demo_h.adp': 'music', 'cha_map_h.adp': 'menu music',
+    'cha_victry_h.adp': 'jingle', 'home_in_h.adp': 'jingle', 'cha_end_jin_h.adp': 'jingle',
+    'star_01_h.adp': 'jingle', 'star_03_h.adp': 'jingle (unused)',
+}
+
+
+def category(filename):
+    if filename.startswith('custom_'):
+        return 'custom slot'
+    return CATEGORIES.get(filename, 'stream')
+
 BACKUP_DIRNAME = '_original_backup'
 
 

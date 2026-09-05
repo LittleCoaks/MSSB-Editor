@@ -79,6 +79,7 @@ def entry_detail(store: Store, e) -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"  # keep-alive + ranges, which <audio> needs
     store: Store | None = None  # None when no game is configured yet
     store_error: str = ""
     lock = threading.Lock()
@@ -116,6 +117,42 @@ class Handler(BaseHTTPRequestHandler):
 
     def fail(self, msg, status=404):
         self.send_json({"error": msg}, status)
+
+    def send_stream(self, total: int, gen, ctype: str):
+        """Stream a body of known length, honouring a single byte Range."""
+        rng = self.headers.get("Range")
+        start, end = 0, total - 1
+        if rng and rng.startswith("bytes="):
+            a, _, b = rng[6:].partition("-")
+            start = int(a) if a else max(0, total - int(b))
+            end = int(b) if (b and a) else total - 1
+            end = min(end, total - 1)
+        partial = rng is not None
+        self.send_response(206 if partial else 200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Cache-Control", "no-cache")
+        if partial:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
+        self.send_header("Content-Length", str(end - start + 1))
+        self.end_headers()
+        pos = 0
+        left = end - start + 1
+        try:
+            for chunk in gen:
+                if left <= 0:
+                    break
+                cstart, cend = pos, pos + len(chunk)
+                pos = cend
+                if cend <= start:
+                    continue
+                piece = chunk[max(0, start - cstart):]
+                piece = piece[:left]
+                self.wfile.write(piece)
+                left -= len(piece)
+            self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            pass
 
     # ------------------------------------------------------------ routes --
     def do_POST(self):
@@ -208,6 +245,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.fail("not found")
             if parts[0] != "api":
                 return self.fail("not found")
+            if len(parts) >= 4 and parts[1] == "entry" and parts[3] == "audio":
+                return self.api(parts[1:], q)  # streamed; must not block other requests
             with self.lock:
                 return self.api(parts[1:], q)
         except KeyError as ex:
@@ -285,7 +324,9 @@ class Handler(BaseHTTPRequestHandler):
         if rest[0] == "audio" and len(rest) == 2:
             n = int(rest[1].split(".")[0])
             secs = float(q["seconds"]) if q.get("seconds") else None
-            return self.send_bytes(st.wav(e, n, secs), "audio/wav")
+            if q.get("download"):
+                return self.send_bytes(st.wav(e, n, secs), "audio/wav", f"{st.file_name(e).rsplit('.', 1)[0]}_{n}.wav")
+            return self.send_stream(st.wav_size(e, n, secs), st.wav_stream(e, n, secs), "audio/wav")
         if rest == ["extract"]:
             paths = st.extract(e, EXTRACT_DIR, raw=bool(q.get("raw")), png=bool(q.get("png")), wav=bool(q.get("wav")),
                                model=q.get("model"))

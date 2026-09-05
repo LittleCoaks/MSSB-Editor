@@ -106,10 +106,49 @@ def decode(hdr: DspHeader, frames: bytes, max_samples: int | None = None) -> byt
     return bytes(out[:i * 2])
 
 
-def wav(pcm: bytes, rate: int, channels: int = 1) -> bytes:
-    return (b"RIFF" + struct.pack("<I", 36 + len(pcm)) + b"WAVEfmt "
+def wav_header(pcm_len: int, rate: int, channels: int = 1) -> bytes:
+    return (b"RIFF" + struct.pack("<I", 36 + pcm_len) + b"WAVEfmt "
             + struct.pack("<IHHIIHH", 16, 1, channels, rate, rate * channels * 2, channels * 2, 16)
-            + b"data" + struct.pack("<I", len(pcm)) + pcm)
+            + b"data" + struct.pack("<I", pcm_len))
+
+
+def wav(pcm: bytes, rate: int, channels: int = 1) -> bytes:
+    return wav_header(len(pcm), rate, channels) + pcm
+
+
+def dsp_wav_stream(data: bytes, pos: int, max_seconds: float | None = None, chunk_frames: int = 4096):
+    """Yield a WAV file progressively: header, then PCM as it is decoded.
+    The header carries the final length, so the total size is known up front
+    (see dsp_wav_size)."""
+    h = parse_header(data, pos)
+    if h is None:
+        raise ValueError(f"no DSP header at {pos:#x}")
+    n = h.sample_count if max_seconds is None else min(h.sample_count, int(max_seconds * h.sample_rate))
+    yield wav_header(n * 2, h.sample_rate, 1)
+    frames = data[pos + HEADER_SIZE:pos + HEADER_SIZE + h.data_size]
+    # decode in runs of frames, carrying the predictor history across runs
+    done = 0
+    fpos = 0
+    hist = (h.hist1, h.hist2)
+    while done < n and fpos < len(frames):
+        run = frames[fpos:fpos + chunk_frames * 8]
+        want = min(n - done, (len(run) // 8) * 14)
+        sub = DspHeader(want, 0, h.sample_rate, 0, 0, 0, 0, h.coefs, 0, hist[0], hist[1])
+        pcm = decode(sub, run, want)
+        if not pcm:
+            break
+        hist = (struct.unpack_from("<h", pcm, len(pcm) - 2)[0], struct.unpack_from("<h", pcm, len(pcm) - 4)[0] if len(pcm) >= 4 else hist[0])
+        yield pcm
+        done += len(pcm) // 2
+        fpos += len(run)
+    if done < n:
+        yield bytes((n - done) * 2)
+
+
+def dsp_wav_size(data: bytes, pos: int, max_seconds: float | None = None) -> int:
+    h = parse_header(data, pos)
+    n = h.sample_count if max_seconds is None else min(h.sample_count, int(max_seconds * h.sample_rate))
+    return 44 + n * 2
 
 
 def find_dsp_streams(data: bytes, step: int = 4, limit: int = 256) -> list[tuple[int, DspHeader]]:
@@ -196,3 +235,58 @@ def dtk_seconds(size: int) -> float:
 def dtk_wav(data: bytes, max_seconds: float | None = None) -> bytes:
     n = None if max_seconds is None else int(max_seconds * DTK_RATE / 28)
     return wav(dtk_decode(data, n), DTK_RATE, 2)
+
+
+def dtk_wav_size(size: int, max_seconds: float | None = None) -> int:
+    n = size // DTK_FRAME
+    if max_seconds is not None:
+        n = min(n, int(max_seconds * DTK_RATE / 28))
+    return 44 + n * 28 * 4
+
+
+def dtk_wav_stream(data: bytes, max_seconds: float | None = None, chunk_frames: int = 2048):
+    """Yield a WAV progressively (header, then decoded PCM in ~1.2 s chunks)."""
+    nframes = len(data) // DTK_FRAME
+    if max_seconds is not None:
+        nframes = min(nframes, int(max_seconds * DTK_RATE / 28))
+    yield wav_header(nframes * 28 * 4, DTK_RATE, 2)
+    hist = [[0, 0], [0, 0]]
+    f = 0
+    while f < nframes:
+        run = min(chunk_frames, nframes - f)
+        yield _dtk_decode_run(data, f, run, hist)
+        f += run
+
+
+def _dtk_decode_run(data: bytes, first: int, nframes: int, hist: list) -> bytes:
+    out = bytearray(nframes * 28 * 4)
+    o = 0
+    pack_into = struct.pack_into
+    for f in range(first, first + nframes):
+        base = f * DTK_FRAME
+        for ch in range(2):
+            hdr = data[base + ch]
+            shift = hdr & 0xF
+            c1, c2 = DTK_COEFS[(hdr >> 4) & 3]
+            h1, h2 = hist[ch]
+            for i in range(28):
+                b = data[base + 4 + i]
+                v = (b & 0xF) if ch == 0 else (b >> 4)
+                if v >= 8:
+                    v -= 16
+                pred = (h1 * c1 - h2 * c2 + 32) >> 6
+                if pred > 2097151:
+                    pred = 2097151
+                elif pred < -2097152:
+                    pred = -2097152
+                s = (((v << 12) >> shift) << 6) + pred
+                h2, h1 = h1, s
+                o16 = s >> 6
+                if o16 > 32767:
+                    o16 = 32767
+                elif o16 < -32768:
+                    o16 = -32768
+                pack_into("<h", out, (o + i) * 4 + ch * 2, o16)
+            hist[ch] = [h1, h2]
+        o += 28
+    return bytes(out)

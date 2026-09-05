@@ -58,7 +58,7 @@ def status(root: Path | str) -> list[dict]:
         backup = os.path.isfile(bpath)
         modified = backup and exists and not filecmp.cmp(bpath, p, shallow=False)
         out.append({
-            "file": name, "label": label, "custom": name.startswith("custom_"),
+            "file": name, "label": label, "custom": name.startswith("custom_"), "category": tracks.category(name),
             "exists": exists, "size": size,
             "seconds": round(dtkadpcm.decode.__globals__["SAMPLES_PER_FRAME"] * (size // dtkadpcm.FRAME_BYTES) / dtkadpcm.SAMPLE_RATE, 2) if exists else 0,
             "stock_size": info["size"] if info else None,

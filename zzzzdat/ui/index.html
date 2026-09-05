@@ -115,7 +115,7 @@
     · install as <select id="mtrack"></select> · <label><input type="checkbox" id="mpad" checked> pad short tracks to the stock length</label>
     <button class="btn" onclick="installMusic()">Install</button> <span id="mfilename"></span></div>
   <div id="mjob"></div>
-  <table><thead><tr><th>track</th><th>file</th><th>status</th><th>length</th><th>size</th><th>stock size</th><th></th></tr></thead><tbody id="mrows"></tbody></table>
+  <table><thead><tr><th>track</th><th>type</th><th>file</th><th>status</th><th>length</th><th>size</th><th>stock size</th><th></th></tr></thead><tbody id="mrows"></tbody></table>
   <div class="row" id="mback" style="margin-top:10px"></div>
 </div>
 <main>
@@ -218,7 +218,7 @@ function render() {
     loadModel(d.id, d.models[0].section);
   } else if (tab === 'audio') {
     body.innerHTML = d.audio.map((s, n) => `<div class="aud">#${n} · ${s.kind} · ${s.rate} Hz · ${s.channels === 2 ? 'stereo' : 'mono'} · ${s.seconds} s${s.loop ? ' · loop' : ''} · @${hex(s.pos)}
-      · <a href="/api/entry/${d.id}/audio/${n}.wav" download="${d.file_name.replace(/\.[^.]+$/, '')}_${n}.wav">download wav</a>
+      · <a href="/api/entry/${d.id}/audio/${n}.wav?download=1">download wav</a>
       <audio controls preload="none" src="/api/entry/${d.id}/audio/${n}.wav"></audio></div>`).join('');
   } else if (tab === 'sections') {
     body.innerHTML = `<table class="secs"><tr><th>#</th><th>offset</th><th>size</th><th>magic</th><th>kind</th><th>tex</th><th></th></tr>` +
@@ -365,10 +365,10 @@ async function loadMusic() {
   $('#mrootmsg').innerHTML = r.root ? '' : `<span class="warn">the game is read-only (ISO). Go to the <a href="#" onclick="showPage('game');return false">Game</a> page and extract it to a folder, or point this at an extracted folder.</span>`;
   $('#mback').textContent = `decoders: ${r.backends.length ? r.backends.join(', ') : 'wav only (pip install miniaudio for mp3/flac/ogg)'} · numpy: ${r.numpy ? 'on (fast encoding)' : 'off (slow encoding; pip install numpy)'}`;
   const sel = $('#mtrack'); sel.innerHTML = '';
-  for (const t of r.tracks) sel.append(new Option(`${t.label} (${t.file})`, t.file));
+  for (const t of r.tracks) sel.append(new Option(`${t.label} (${t.category}) — ${t.file}`, t.file));
   $('#mrows').innerHTML = r.tracks.map(t => {
     const st = !t.exists ? 'missing' : t.modified ? 'modified' : t.custom ? 'custom' : 'stock';
-    return `<tr><td>${t.label}</td><td>${t.file}</td><td class="status-${st}">${st}${t.mismatch ? ' <span class="warn">size ≠ DOL table</span>' : ''}</td>
+    return `<tr><td>${t.label}</td><td class="status-stock">${t.category}</td><td>${t.file}</td><td class="status-${st}">${st}${t.mismatch ? ' <span class="warn">size ≠ DOL table</span>' : ''}</td>
       <td class="num">${t.exists ? t.seconds + ' s' : ''}</td><td class="num">${t.exists ? kb(t.size) : ''}</td><td class="num">${t.stock_size ? kb(t.stock_size) : (t.custom ? '' : 'not in table')}</td>
       <td>${t.exists && t.entry !== undefined && t.entry !== null ? `<audio controls preload="none" src="/api/entry/${t.entry}/audio/0.wav" style="height:28px;vertical-align:middle"></audio>` : ''}
           ${t.modified ? `<button class="btn" onclick="restoreMusic('${t.file}')">restore original</button>` : ''}</td></tr>`;

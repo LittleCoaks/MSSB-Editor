@@ -175,11 +175,11 @@ def cmd_music(a):
         sys.exit(1)
     if a.music_cmd == "list":
         print(f"game root: {root}")
-        print(f"{'file':20} {'track':24} {'status':9} {'size':>10} {'stock':>10} note")
+        print(f"{'file':20} {'track':24} {'type':16} {'status':9} {'size':>10} {'stock':>10} note")
         for t in music.status(root):
             status = "missing" if not t["exists"] else ("modified" if t["modified"] else ("custom" if t["custom"] else "stock"))
             note = "SIZE != DOL table" if t["mismatch"] else ("" if t["in_table"] or t["custom"] else "not in DOL table")
-            print(f"{t['file']:20} {t['label']:24} {status:9} {t['size']:>10} {t['stock_size'] or '-':>10} {note}")
+            print(f"{t['file']:20} {t['label']:24} {t['category']:16} {status:9} {t['size']:>10} {t['stock_size'] or '-':>10} {note}")
     elif a.music_cmd == "install":
         def prog(done, total):
             print(f"\r  encoding {100 * done // max(total, 1):3d}%", end="", flush=True)

@@ -202,6 +202,29 @@ class Store:
                 (dest / f"{stem}.mtl").write_text("".join(mtl), encoding="utf-8")
         return out
 
+    def wav_size(self, e: Entry, n: int = 0, max_seconds: float | None = None) -> int:
+        st = self.info(e).audio[n]
+        if st["kind"] == "dtk-adpcm":
+            return dsp.dtk_wav_size(e.size, max_seconds)
+        return dsp.dsp_wav_size(self.data(e), st["pos"], max_seconds)
+
+    def wav_stream(self, e: Entry, n: int = 0, max_seconds: float | None = None):
+        """Generator of WAV bytes; the complete file is cached when it finishes."""
+        key = (e.id, n, max_seconds)
+        if key in self._wav:
+            yield self._wav[key]
+            return
+        st = self.info(e).audio[n]
+        data = self.data(e)
+        gen = dsp.dtk_wav_stream(data, max_seconds) if st["kind"] == "dtk-adpcm" else dsp.dsp_wav_stream(data, st["pos"], max_seconds)
+        parts = []
+        for chunk in gen:
+            parts.append(chunk)
+            yield chunk
+        self._wav[key] = b"".join(parts)
+        while len(self._wav) > 8:
+            self._wav.popitem(last=False)
+
     def extract_audio(self, e: Entry, dest: Path, max_seconds: float | None = None) -> list[Path]:
         streams = self.info(e).audio
         if not streams:
