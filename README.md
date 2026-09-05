@@ -45,6 +45,8 @@ python -m zzzzdat hexdump 8 --offset 0x48f40 --length 0x80
 python -m zzzzdat extract 8 --png  # -> extracted/0008_06cfd000_dol_StadiumFiles.bin (+ PNGs)
 python -m zzzzdat extract-all --png
 python -m zzzzdat textures 8       # only the PNGs
+python -m zzzzdat wav 10005        # decode audio to WAV (disc music, or DSP streams inside an entry)
+python -m zzzzdat extract 89 --wav
 python -m zzzzdat layout           # coverage map of the archive
 python -m zzzzdat index            # rebuild index/GYQE01.json (~3 min; --no-scan for ~40 s)
 ```
@@ -57,8 +59,24 @@ left inside the files; about half the entries carry one.
 
 The web UI lists every entry with filters and sorting, and shows per entry:
 the descriptor, which executables reference it, the container's sections,
-every decoded texture (click for full size), a paged hex viewer, and buttons
-to download or extract (with PNGs) into `extracted/`.
+every decoded texture (click for full size), an audio tab with an in-page
+player for each stream, a paged hex viewer, and buttons to download or extract
+(with PNGs / WAVs) into `extracted/`.
+
+## Audio
+
+Two ADPCM flavours are decoded to WAV on the fly (`zzzzdat/dsp.py`):
+
+- **Disc music** - the 17 `snd/my_snd_h/*.adp` files are GameCube DTK
+  streams (48 kHz stereo, 32-byte frames, XA coefficients, arithmetic as in
+  vgmstream's `ngc_dtk_decoder.c`). They are listed as entries 10000+ with
+  archive `disc`, read straight from the ISO.
+- **DSP-ADPCM** - any standard 0x60-byte DSPADPCM header found inside an
+  entry becomes an audio stream. So far exactly one exists: the 288 s, 32 kHz
+  mono bank inside the `AdGCForm` file at 0x8F2E808 (entry 89), which is
+  presumably every voice clip and sound effect back to back; the cue table that
+  splits it has not been located yet. The remaining sound effects, if any,
+  are probably in the still-unknown `lbl_800EF508` series.
 
 ## What is indexed
 
@@ -68,21 +86,22 @@ archive (the rest is 0x800 padding). Where they come from:
 | source (`refs`) | count | how |
 | --- | --- | --- |
 | `dol`, `menus`, `game`, `debug` | 1226 | 16-byte descriptors in the executables, each test-decoded |
-| `scan:AdGCForm` | 345 | `AdGCForm` sound-bank files (one 5 MB stored bank at 0x8F2E800, 344 compressed ones packed back to back at 0x19C86800-0x1A15E800) |
+| `scan:AdGCForm` | 345 | files tagged with an `AdGCForm` fingerprint: one 5 MB stored DSP-ADPCM bank at 0x8F2E800, plus 344 compressed texture containers packed back to back at 0x19C86800-0x1A15E800 |
 | `scan:lzss-probe` | 641 | every 0x800 boundary in the remaining gaps that decodes as LZSS; a stream is assumed to run to the next hit. Their decompressed sizes are approximate (a little trailing junk decoded from padding is possible). |
 
 Index entries are classified by content:
 
 | kind | count | notes |
 | --- | --- | --- |
-| `anim` | 1129 | Files starting with `00 7B 79 60`: large record tables pointed at by the per-character tables, probably animation sets (unverified) |
-| `container` | 616 | Table of u32 section offsets; sections hold textures, C3 geometry palettes, etc. |
-| `adgc` | 345 | `AdGCForm` sound banks (DSP-ADPCM inside) |
-| `textures` | 19 | A bare texture table |
-| `dsp-adpcm` | 14 | Raw DSP-ADPCM sample data |
+| `anim` | 1161 | Files starting with `00 7B 79 60`: large record tables pointed at by the per-character tables, probably animation sets (unverified) |
+| `container` | 779 | Table of u32 section offsets; sections hold textures, C3 geometry palettes, etc. |
+| `textures` | 40 | A bare texture table |
 | `hvqm4` | 3 | Nintendo HVQM4 1.3 movies (intro 82 MB, 23 MB, 3 MB) |
 | `rel` | 3 | `menus.rel`, `game.rel`, `debug.rel` in `aaaa.dat` (listed for completeness) |
-| `unknown` | 83 | |
+| `adgc` | 1 | the DSP-ADPCM sound bank |
+| `dsp-adpcm` | 2 | headerless ADPCM-looking data |
+| `unknown` | 223 | includes the 52 large stored files of the `lbl_800EF508` table (24 MB, a different container layout, not decoded) |
+| `dtk-adpcm` | 17 | disc `.adp` music (not in the archive; ids 10000+) |
 
 About 9,300 textures are decodable across all entries. Sixty entries carry a
 community name (`index/known_names.json`: the three movies, the stadiums, and
@@ -116,12 +135,15 @@ same scheme as `decompress.py` in the decomp repo; `zzzzdat/lzss.py` is a
 faster, behaviour-identical rewrite. Two parameter sets occur: `0x040B`
 (R=4, L=11) and `0x050E` (R=5, L=14).
 
-### AdGCForm sound banks
+### AdGCForm fingerprint
 
 `u32 flags|size, u32 params` (both **little**-endian, same meaning as the
 descriptor fields) immediately followed by the ASCII magic `AdGCForm`; for
-compressed banks the LZSS stream starts right after the magic. Found by
-scanning the archive for the magic.
+compressed files the LZSS stream starts right after the magic. Found by
+scanning the archive for the magic. Despite the name, most files tagged this
+way are ordinary texture containers; the one stored file is a DSP-ADPCM bank
+(magic, 0x20 bytes of zero form header, standard DSPADPCM header at 0x28,
+frames from 0x88).
 
 ### Section container
 
@@ -159,6 +181,7 @@ zzzzdat/
   descriptors.py  scan executables for descriptors, verify, build/load the index
   formats.py      identify contents: container / textures / HVQM4 / ADPCM / anim bank
   gx.py           GX texture decoding + PNG writer
+  dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
   store.py        index + archive + cache + extraction
   cli.py          command line
   server.py       local HTTP API

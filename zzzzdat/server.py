@@ -20,7 +20,7 @@ def entry_summary(e) -> dict:
     return {"id": e.id, "offset": e.offset, "disc_size": e.disc_size, "size": e.size,
             "compressed": e.compressed, "lookback_bits": e.lookback_bits, "repeat_bits": e.repeat_bits,
             "kind": e.kind, "ntex": e.ntex, "nsec": e.nsec, "module": e.module, "symbol": e.symbol,
-            "archive": e.archive, "name": e.name, "refs": e.refs, "label": e.label, "names": e.names, "known": e.known}
+            "archive": e.archive, "name": e.name, "refs": e.refs, "label": e.label, "names": e.names, "known": e.known, "naud": e.naud}
 
 
 def entry_detail(store: Store, e) -> dict:
@@ -34,6 +34,7 @@ def entry_detail(store: Store, e) -> dict:
                       "height": t.height, "fmt": t.fmt_name, "mips": t.mips, "offset": t.abs_data_offset,
                       "size": t.data_size, "tlut": t.tlut_count, "flags": t.flags.hex()}
                      for n, (sec, t) in enumerate(fi.all_textures())]
+    d["audio"] = fi.audio
     d["file_name"] = store.file_name(e)
     return d
 
@@ -115,8 +116,12 @@ class Handler(BaseHTTPRequestHandler):
             n = int(rest[1].split(".")[0])
             sec, t = st.info(e).all_textures()[n]
             return self.send_bytes(t.decode_png(st.data(e)), "image/png")
+        if rest[0] == "audio" and len(rest) == 2:
+            n = int(rest[1].split(".")[0])
+            secs = float(q["seconds"]) if q.get("seconds") else None
+            return self.send_bytes(st.wav(e, n, secs), "audio/wav")
         if rest == ["extract"]:
-            paths = st.extract(e, EXTRACT_DIR, raw=bool(q.get("raw")), png=bool(q.get("png")))
+            paths = st.extract(e, EXTRACT_DIR, raw=bool(q.get("raw")), png=bool(q.get("png")), wav=bool(q.get("wav")))
             return self.send_json({"written": [str(p) for p in paths]})
         return self.fail("not found")
 

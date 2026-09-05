@@ -24,7 +24,7 @@ def cmd_index(a):
 
 def cmd_list(a):
     store = Store()
-    ents = store.entries if a.all else store.zzzz_entries()
+    ents = [e for e in store.entries if a.all or e.archive != "aaaa.dat"]
     if a.kind:
         ents = [e for e in ents if e.kind == a.kind]
     if a.module:
@@ -33,10 +33,10 @@ def cmd_list(a):
         g = a.grep.lower()
         ents = [e for e in ents if g in e.symbol.lower() or g in e.name or g in e.known.lower()
                 or any(g in n.lower() for n in e.names)]
-    print(f"{'id':>5} {'offset':>10} {'size':>8} {'disc':>8} {'c':1} {'kind':10} {'tex':>4} {'label':22} symbol")
+    print(f"{'id':>5} {'offset':>10} {'size':>8} {'disc':>8} {'c':1} {'kind':10} {'tex':>4} {'aud':>3} {'label':22} symbol")
     for e in ents:
         print(f"{e.id:5d} {e.offset:#10x} {fmt_size(e.size):>8} {fmt_size(e.disc_size):>8} "
-              f"{'z' if e.compressed else '-'} {e.kind:10} {e.ntex:4d} {(e.known or e.label):22} {e.symbol}")
+              f"{'z' if e.compressed else '-'} {e.kind:10} {e.ntex:4d} {e.naud:3d} {(e.known or e.label):22} {e.symbol}")
     print(f"{len(ents)} entries")
 
 
@@ -59,6 +59,9 @@ def cmd_info(a):
     for s in fi.sections:
         print(f"  section {s.index:2d} @ {s.offset:#8x} size {s.size:#8x} magic {s.magic:#010x} {s.kind}"
               + (f" ({len(s.textures)} textures)" if s.textures else ""))
+    for n, st in enumerate(fi.audio):
+        print(f"  audio {n}: {st['kind']} {st['rate']} Hz {st['channels']}ch {st['seconds']} s @ {st['pos']:#x}"
+              + (" loop" if st.get("loop") else ""))
     for n, (sec, t) in enumerate(fi.all_textures()):
         if n >= a.max_textures:
             print(f"  ... {len(fi.all_textures()) - n} more textures")
@@ -84,7 +87,7 @@ def cmd_extract(a):
     dest = Path(a.out) if a.out else EXTRACT_DIR
     for name in a.entries:
         e = store.get(name)
-        for p in store.extract(e, dest, raw=a.raw, png=a.png):
+        for p in store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav):
             print(p)
 
 
@@ -100,7 +103,7 @@ def cmd_extract_all(a):
             print(f"skip {e.id} ({fmt_size(e.size)})")
             continue
         try:
-            store.extract(e, dest, raw=a.raw, png=a.png)
+            store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav)
             n += 1
         except Exception as ex:
             print(f"entry {e.id}: {ex}", file=sys.stderr)
@@ -113,6 +116,21 @@ def cmd_textures(a):
     dest = Path(a.out) if a.out else EXTRACT_DIR / (store.file_name(e).rsplit(".", 1)[0] + "_tex")
     paths = store.extract_textures(e, dest)
     print(f"{len(paths)} textures -> {dest}")
+
+
+def cmd_wav(a):
+    store = Store()
+    e = store.get(a.entry)
+    dest = Path(a.out) if a.out else EXTRACT_DIR / (store.file_name(e).rsplit(".", 1)[0] + "_wav")
+    if a.n is None:
+        paths = store.extract_audio(e, dest, a.seconds)
+    else:
+        dest.mkdir(parents=True, exist_ok=True)
+        p = dest / f"{a.n:02d}.wav"
+        p.write_bytes(store.wav(e, a.n, a.seconds))
+        paths = [p]
+    for p in paths:
+        print(p)
 
 
 def cmd_layout(a):
@@ -170,6 +188,7 @@ def main(argv=None):
     s.add_argument("-o", "--out")
     s.add_argument("--raw", action="store_true", help="write the compressed on-disc bytes")
     s.add_argument("--png", action="store_true", help="also decode textures to PNG")
+    s.add_argument("--wav", action="store_true", help="also decode audio to WAV")
     s.set_defaults(fn=cmd_extract)
 
     s = sub.add_parser("extract-all", help="extract every indexed entry")
@@ -177,8 +196,16 @@ def main(argv=None):
     s.add_argument("--kind")
     s.add_argument("--raw", action="store_true")
     s.add_argument("--png", action="store_true")
+    s.add_argument("--wav", action="store_true")
     s.add_argument("--max-size", type=lambda v: int(v, 0), default=1 << 30)
     s.set_defaults(fn=cmd_extract_all)
+
+    s = sub.add_parser("wav", help="decode an entry's audio to WAV (disc .adp music or DSP streams)")
+    s.add_argument("entry")
+    s.add_argument("-n", type=int, help="stream index (default: all)")
+    s.add_argument("--seconds", type=float, help="only the first N seconds")
+    s.add_argument("-o", "--out")
+    s.set_defaults(fn=cmd_wav)
 
     s = sub.add_parser("textures", help="decode an entry's textures to PNG files")
     s.add_argument("entry")

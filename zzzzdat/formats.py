@@ -39,7 +39,7 @@ import re
 import struct
 from dataclasses import dataclass, field
 
-from . import gx
+from . import dsp, gx
 
 
 @dataclass
@@ -170,7 +170,7 @@ def hvqm4_info(data: bytes) -> dict:
 
 def looks_like_dsp_adpcm(data: bytes) -> bool:
     n = min(len(data), 0x4000) // 8
-    if n < 64:
+    if len(data) < 0x2000 or n < 64:
         return False
     return all(data[i * 8] < 0x80 for i in range(n)) and sum(data[i * 8 + 1] for i in range(n)) > 0
 
@@ -220,6 +220,7 @@ class FileInfo:
     textures: list[Texture] = field(default_factory=list)
     hvqm4: dict | None = None
     names: list[str] = field(default_factory=list)
+    audio: list[dict] = field(default_factory=list)  # {pos, kind, rate, channels, seconds, samples}
 
     @property
     def label(self) -> str:
@@ -244,4 +245,15 @@ def identify(data: bytes) -> FileInfo:
         fi = FileInfo("container", sections=secs) if secs else FileInfo(classify_blob(data))
     if fi.kind != "dsp-adpcm":
         fi.names = find_names(data)
+    for pos, h in dsp.find_dsp_streams(data):
+        fi.audio.append({"pos": pos, "kind": "dsp-adpcm", "rate": h.sample_rate, "channels": 1,
+                         "seconds": round(h.seconds, 2), "samples": h.sample_count, "loop": bool(h.loop_flag)})
+    return fi
+
+
+def dtk_info(size: int) -> FileInfo:
+    """FileInfo for a disc .adp (DTK) stream, which has no header to parse."""
+    fi = FileInfo("dtk-adpcm")
+    fi.audio.append({"pos": 0, "kind": "dtk-adpcm", "rate": dsp.DTK_RATE, "channels": 2,
+                     "seconds": round(dsp.dtk_seconds(size), 2), "samples": size // dsp.DTK_FRAME * 28, "loop": False})
     return fi

@@ -24,6 +24,9 @@
   .kind { display:inline-block; padding:0 6px; border-radius:8px; font-size:11px; background:#3a3f4a; }
   .kind.textures { background:#2f5d3a; } .kind.container { background:#2f4a6a; } .kind.hvqm4 { background:#6a2f5d; }
   .kind.anim { background:#6a4f2f; } .kind.adgc { background:#5d5d2f; } .kind.geopalette { background:#2f4a6a; } .kind.dsp-adpcm { background:#5d5d2f; } .kind.rel { background:#444; }
+  .kind.dtk-adpcm { background:#5d4a2f; }
+  .aud { background:#15171b; border:1px solid var(--line); border-radius:4px; padding:8px 10px; margin-bottom:8px; }
+  .aud audio { width:100%; margin-top:6px; }
   #detail { flex:1; overflow:auto; padding:12px 16px; min-width:0; }
   #detail h2 { margin:0 0 6px; font-size:16px; }
   .row { color:var(--dim); margin-bottom:4px; } .row b { color:var(--fg); font-weight:500; }
@@ -51,6 +54,7 @@
   <select id="kind"><option value="">all kinds</option></select>
   <select id="module"><option value="">all modules</option></select>
   <label><input type="checkbox" id="texonly"> has textures</label>
+  <label><input type="checkbox" id="audonly"> has audio</label>
   <span class="stat" id="stat"></span>
 </header>
 <main>
@@ -83,8 +87,8 @@ async function load() {
 }
 
 function refilter() {
-  const q = $('#q').value.trim().toLowerCase(), k = $('#kind').value, m = $('#module').value, t = $('#texonly').checked;
-  view = all.filter(e => (!k || e.kind === k) && (!m || e.module === m) && (!t || e.ntex > 0) &&
+  const q = $('#q').value.trim().toLowerCase(), k = $('#kind').value, m = $('#module').value, t = $('#texonly').checked, au = $('#audonly').checked;
+  view = all.filter(e => (!k || e.kind === k) && (!m || e.module === m) && (!t || e.ntex > 0) && (!au || e.naud > 0) &&
     (!q || e.symbol.toLowerCase().includes(q) || String(e.id) === q || hex(e.offset).includes(q) || e.name.includes(q) || e.kind.includes(q) || e.known.toLowerCase().includes(q) || e.names.some(n => n.toLowerCase().includes(q))));
   view.sort((a, b) => (a[sortK] > b[sortK] ? 1 : a[sortK] < b[sortK] ? -1 : a.id - b.id) * sortD);
   const tb = $('#rows'); tb.innerHTML = '';
@@ -96,7 +100,7 @@ function refilter() {
     tb.append(tr);
   }
 }
-for (const el of ['#q', '#kind', '#module', '#texonly']) $(el).addEventListener('input', refilter);
+for (const el of ['#q', '#kind', '#module', '#texonly', '#audonly']) $(el).addEventListener('input', refilter);
 document.querySelectorAll('th').forEach(th => th.onclick = () => { const k = th.dataset.k; sortD = (sortK === k) ? -sortD : 1; sortK = k; refilter(); });
 
 let tab = 'info';
@@ -121,11 +125,13 @@ function render() {
       <a class="btn" href="/api/entry/${d.id}/raw">Download raw</a>
       <button class="btn" onclick="extract(${d.id}, false)">Extract to folder</button>
       ${d.textures.length ? `<button class="btn" onclick="extract(${d.id}, true)">Extract + PNGs</button>` : ''}
+      ${d.audio.length ? `<button class="btn" onclick="extract(${d.id}, false, true)">Extract + WAVs</button>` : ''}
       <span class="msg" id="msg"></span>
     </div>`;
   const tabs = ['info', 'hex'];
   if (d.sections.length) tabs.splice(1, 0, 'sections');
   if (d.textures.length) tabs.splice(1, 0, 'textures');
+  if (d.audio.length) tabs.splice(1, 0, 'audio');
   if (!tabs.includes(tab)) tab = tabs[0];
   h += `<div class="tabs">${tabs.map(t => `<button class="${t === tab ? 'on' : ''}" onclick="tab='${t}';render()">${t}</button>`).join('')}</div><div id="tabbody"></div>`;
   $('#detail').innerHTML = h;
@@ -133,6 +139,10 @@ function render() {
   if (tab === 'info') {
     if (d.hvqm4) body.innerHTML = '<pre>' + Object.entries(d.hvqm4).map(([k, v]) => `${k.padEnd(16)} ${v}`).join('\n') + '</pre>';
     else body.innerHTML = `<div class="row">Movies are HVQM4 (extract and play with an HVQM4 decoder). Containers are tables of section offsets; texture tables decode in the textures tab. Object headers (0x007B7960) and geometry sections are not decoded yet beyond their embedded names.</div>`;
+  } else if (tab === 'audio') {
+    body.innerHTML = d.audio.map((s, n) => `<div class="aud">#${n} · ${s.kind} · ${s.rate} Hz · ${s.channels === 2 ? 'stereo' : 'mono'} · ${s.seconds} s${s.loop ? ' · loop' : ''} · @${hex(s.pos)}
+      · <a href="/api/entry/${d.id}/audio/${n}.wav" download="${d.file_name.replace(/\.[^.]+$/, '')}_${n}.wav">download wav</a>
+      <audio controls preload="none" src="/api/entry/${d.id}/audio/${n}.wav"></audio></div>`).join('');
   } else if (tab === 'sections') {
     body.innerHTML = `<table class="secs"><tr><th>#</th><th>offset</th><th>size</th><th>magic</th><th>kind</th><th>tex</th><th></th></tr>` +
       d.sections.map(s => `<tr><td>${s.index}</td><td>${hex(s.offset)}</td><td>${hex(s.size)}</td><td>${hex(s.magic)}</td><td>${s.kind}</td><td>${s.ntex||''}</td>
@@ -162,9 +172,9 @@ async function loadHex(id) {
   }
   $('#hexpre').innerHTML = out || '(end of file)';
 }
-async function extract(id, png) {
+async function extract(id, png, wav) {
   $('#msg').textContent = 'extracting…';
-  const r = await (await fetch(`/api/entry/${id}/extract${png ? '?png=1' : ''}`)).json();
+  const r = await (await fetch(`/api/entry/${id}/extract?${png ? 'png=1' : ''}${wav ? '&wav=1' : ''}`)).json();
   $('#msg').textContent = r.error ? 'error: ' + r.error : `wrote ${r.written.length} file(s) → ${r.written[0]}`;
 }
 load();

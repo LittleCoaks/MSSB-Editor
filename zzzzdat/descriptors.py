@@ -60,13 +60,14 @@ class Entry:
     label: str = ""       # embedded asset name (e.g. stadium0.gpc)
     names: list[str] = field(default_factory=list)  # all embedded .gpc/.tpl names
     known: str = ""       # community name from index/known_names.json
+    naud: int = 0         # audio streams found inside
 
     @property
     def symbol(self) -> str:
         """Best symbol hint: 'module symbol+off' of the first reference."""
         if not self.refs:
             return ""
-        if self.refs[0].startswith("scan:"):
+        if self.refs[0].startswith("scan:") or self.refs[0].startswith("disc:"):
             return self.refs[0]
         mod = self.refs[0].split(":")[0]
         parts = self.refs[0].split(" ", 1)

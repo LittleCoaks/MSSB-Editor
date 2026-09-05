@@ -6,17 +6,18 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import formats
+from . import dsp, formats
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
-from .disc import VIEWER_ROOT, Archive, find_archive
+from .disc import ORIG_DIR, VIEWER_ROOT, Archive, find_archive, read_fst
 from .lzss import decompress
 
 EXTRACT_DIR = VIEWER_ROOT / "extracted"
 KNOWN_NAMES_PATH = VIEWER_ROOT / "index" / "known_names.json"
 
 EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin",
-               "anim": "anm", "adgc": "adgc", "geopalette": "geo", "unknown": "bin", "": "bin"}
+               "anim": "anm", "adgc": "adgc", "geopalette": "geo", "dtk-adpcm": "adp", "unknown": "bin", "": "bin"}
+DISC_ID_BASE = 10000
 
 
 def safe_name(s: str) -> str:
@@ -28,9 +29,31 @@ class Store:
         self.index_path = index_path
         self.archive = archive or find_archive()
         self.entries: list[Entry] = load_index(index_path) if index_path.exists() else []
+        self.entries += self.disc_entries()
         self.by_id = {e.id: e for e in self.entries}
         self._data: OrderedDict[int, bytes] = OrderedDict()
         self._info: dict[int, formats.FileInfo] = {}
+        self._wav: OrderedDict[tuple, bytes] = OrderedDict()
+
+    def disc_entries(self) -> list[Entry]:
+        """The streamed .adp music files on the disc, as synthetic entries
+        (archive 'disc'). Read from the ISO or from orig/GYQE01/files/."""
+        out = []
+        files: dict[str, tuple[int, int]] = {}
+        if self.archive.source == "iso":
+            with open(self.archive.path, "rb") as f:
+                files = read_fst(f)
+        else:
+            root = ORIG_DIR / "files"
+            for p in sorted(root.rglob("*.adp")):
+                files[p.relative_to(root).as_posix()] = (0, p.stat().st_size)
+        for i, (path, (off, size)) in enumerate(sorted(files.items())):
+            if not path.endswith(".adp"):
+                continue
+            e = Entry(DISC_ID_BASE + i, off, size, size, 0, 0, 0, name=path, refs=[f"disc:{path}"],
+                      archive="disc", kind="dtk-adpcm", label=path.rsplit("/", 1)[-1], naud=1)
+            out.append(e)
+        return out
 
     # ------------------------------------------------------------ lookup --
     def get(self, id_or_name) -> Entry:
@@ -48,6 +71,12 @@ class Store:
 
     # -------------------------------------------------------------- bytes --
     def raw(self, e: Entry) -> bytes:
+        if e.archive == "disc":
+            if self.archive.source == "iso":
+                with open(self.archive.path, "rb") as f:
+                    f.seek(e.offset)
+                    return f.read(e.disc_size)
+            return (ORIG_DIR / "files" / e.name).read_bytes()
         if e.archive != "ZZZZ.dat":
             from .disc import ORIG_DIR
             with open(ORIG_DIR / "files" / e.archive, "rb") as f:
@@ -71,9 +100,42 @@ class Store:
     def info(self, e: Entry) -> formats.FileInfo:
         fi = self._info.get(e.id)
         if fi is None:
-            fi = formats.identify(self.data(e))
+            fi = formats.dtk_info(e.size) if e.archive == "disc" else formats.identify(self.data(e))
             self._info[e.id] = fi
         return fi
+
+    # -------------------------------------------------------------- audio --
+    def wav(self, e: Entry, n: int = 0, max_seconds: float | None = None) -> bytes:
+        """Decode audio stream `n` of an entry to a WAV file (cached)."""
+        key = (e.id, n, max_seconds)
+        if key in self._wav:
+            self._wav.move_to_end(key)
+            return self._wav[key]
+        streams = self.info(e).audio
+        if n >= len(streams):
+            raise KeyError(f"entry {e.id} has no audio stream {n}")
+        st = streams[n]
+        data = self.data(e)
+        if st["kind"] == "dtk-adpcm":
+            w = dsp.dtk_wav(data, max_seconds)
+        else:
+            _, w = dsp.decode_stream(data, st["pos"], max_seconds)
+        self._wav[key] = w
+        while len(self._wav) > 8:
+            self._wav.popitem(last=False)
+        return w
+
+    def extract_audio(self, e: Entry, dest: Path, max_seconds: float | None = None) -> list[Path]:
+        streams = self.info(e).audio
+        if not streams:
+            return []
+        dest.mkdir(parents=True, exist_ok=True)
+        out = []
+        for n, st in enumerate(streams):
+            p = dest / f"{n:02d}_{st['kind']}_{st['rate']}Hz_{st['seconds']}s.wav"
+            p.write_bytes(self.wav(e, n, max_seconds))
+            out.append(p)
+        return out
 
     # ------------------------------------------------------------- naming --
     def file_name(self, e: Entry, ext: str | None = None) -> str:
@@ -83,7 +145,8 @@ class Store:
         return f"{e.id:04d}_{e.offset:08x}" + (f"_{lab}" if lab else "") + (f"_{sym}" if sym else "") + f".{ext}"
 
     # ---------------------------------------------------------- extraction --
-    def extract(self, e: Entry, dest: Path = EXTRACT_DIR, raw: bool = False, png: bool = False) -> list[Path]:
+    def extract(self, e: Entry, dest: Path = EXTRACT_DIR, raw: bool = False, png: bool = False,
+                wav: bool = False) -> list[Path]:
         dest.mkdir(parents=True, exist_ok=True)
         written = []
         if raw:
@@ -96,6 +159,8 @@ class Store:
             written.append(p)
         if png:
             written += self.extract_textures(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_tex"))
+        if wav:
+            written += self.extract_audio(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_wav"))
         return written
 
     def extract_textures(self, e: Entry, dest: Path) -> list[Path]:
@@ -146,8 +211,9 @@ class Store:
                     log(f"  entry {e.id}: {ex}")
                     e.kind = "error"
                     continue
-                e.kind = "adgc" if e.refs and e.refs[0] == "scan:AdGCForm" else fi.kind
+                e.kind = fi.kind
                 e.ntex = len(fi.all_textures())
+                e.naud = len(fi.audio)
                 e.nsec = len(fi.sections)
                 e.label = fi.label
                 e.names = fi.names[:16]
@@ -158,8 +224,8 @@ class Store:
                 "source": self.archive.source, "covered_bytes": cov["covered"],
                 "built": time.strftime("%Y-%m-%d %H:%M:%S")}
         save_index(ents, self.index_path, meta)
-        self.entries = ents
-        self.by_id = {e.id: e for e in ents}
+        self.entries = ents + self.disc_entries()
+        self.by_id = {e.id: e for e in self.entries}
         self._data.clear()
         self._info.clear()
         log(f"wrote {self.index_path} ({len(ents)} entries, {cov['covered'] / 1e6:.1f} of "
