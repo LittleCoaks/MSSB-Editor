@@ -28,6 +28,7 @@
     {#if app.loading}
       <span class="dim">loading…</span>
     {:else if app.game?.ok}
+      {#if app.thumbs.running}<span class="dim" title="Thumbnails are made from your game files after it is selected">building thumbnails {app.thumbs.done}/{app.thumbs.total}…</span>{/if}
       <span class="pill" class:rw={app.game.writable} title={app.game.setting ?? ''}>
         {app.game.layout === 'iso' ? 'ISO' : 'Extracted folder'} · {app.game.writable ? 'editable' : 'view only'}
       </span>

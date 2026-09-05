@@ -19,7 +19,7 @@ def fmt_size(n: int) -> str:
 
 def cmd_index(a):
     store = Store()
-    store.rebuild_index(verify=not a.no_verify, classify=not a.no_classify, scan=not a.no_scan, thumbnails=not a.no_thumbs)
+    store.rebuild_index(verify=not a.no_verify, classify=not a.no_classify, scan=not a.no_scan)
 
 
 def cmd_thumbs(a):
@@ -276,10 +276,9 @@ def main(argv=None):
     s.add_argument("--no-verify", action="store_true", help="skip decode verification (faster, noisier)")
     s.add_argument("--no-classify", action="store_true", help="skip content classification")
     s.add_argument("--no-scan", action="store_true", help="skip the AdGCForm and brute-force gap scans")
-    s.add_argument("--no-thumbs", action="store_true", help="skip thumbnail generation")
     s.set_defaults(fn=cmd_index)
 
-    s = sub.add_parser("thumbs", help="(re)generate the shipped thumbnails in index/thumbs")
+    s = sub.add_parser("thumbs", help="build this game's thumbnail cache now (the app does it in the background)")
     s.add_argument("--force", action="store_true")
     s.set_defaults(fn=cmd_thumbs)
 

@@ -5,3 +5,5 @@ decomp_path.txt
 build/
 dist/
 *.spec
+cache/
+config.json

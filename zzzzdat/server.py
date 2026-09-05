@@ -18,6 +18,9 @@ from urllib.parse import parse_qs, urlparse
 
 from . import c3, catalog, music
 from .edit import EditError, Editor
+from .thumbs import ThumbJob
+
+THUMBS = ThumbJob()
 from .disc import Game, current_game, default_dump_dir, dump_iso, list_dir, set_game
 from .store import EXTRACT_DIR, Store
 
@@ -90,9 +93,11 @@ class Handler(BaseHTTPRequestHandler):
 
     @classmethod
     def load_store(cls) -> None:
+        THUMBS.stop()
         try:
             cls.store = Store()
             cls.store_error = ""
+            THUMBS.start(cls.store)
         except Exception as ex:
             cls.store = None
             cls.store_error = str(ex)
@@ -226,6 +231,7 @@ class Handler(BaseHTTPRequestHandler):
                     payload = Path(form["path"]).read_bytes()
                 r = ed.replace(e, payload)
                 st.forget(e)
+                st.thumb_png(e, build=True)
                 return self.send_json(r)
             if action == "restore":
                 ed.restore(e)
@@ -316,6 +322,7 @@ class Handler(BaseHTTPRequestHandler):
             g = current_game()
             edit_ready = bool(g.files_dir and (g.files_dir / "ZZZZ.dat").exists() and (g.files_dir / "aaaa.dat").exists() and g.dol_path())
             return self.send_json({**g.describe(), "entries": len(st.entries) if st else 0, "edit_ready": edit_ready,
+                                   "thumbs": THUMBS.state(),
                                    "error": self.store_error or None, "default_dump": str(default_dump_dir(g)) if g.iso else None})
         if parts[0] == "fs":
             return self.send_json(list_dir(q.get("path") or None))
@@ -325,9 +332,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.fail(self.store_error or "no game selected", 400)
         if parts[0] == "thumb" and len(parts) == 2:
             e = st.get(parts[1].split(".")[0])
-            png = st.thumb_png(e)
+            png = st.thumb_png(e, build=bool(q.get("build")))
             if png is None:
-                return self.fail("no textures")
+                return self.fail("not built yet")
             self.send_response(200)
             self.send_header("Content-Type", "image/png")
             self.send_header("Content-Length", str(len(png)))
@@ -337,6 +344,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parts == ["modified"]:
             return self.send_json({"ids": st.modified_ids()})
+        if parts == ["thumbs"]:
+            return self.send_json(THUMBS.state())
         if parts == ["catalog"]:
             return self.send_json(catalog.build_catalog(st.entries))
         if parts[0] == "music":
@@ -381,6 +390,7 @@ class Handler(BaseHTTPRequestHandler):
         if rest == ["extract"]:
             paths = st.extract(e, EXTRACT_DIR, raw=bool(q.get("raw")), png=bool(q.get("png")), wav=bool(q.get("wav")),
                                model=q.get("model"))
+            return self.send_json({"written": [str(p) for p in paths]})
             return self.send_json({"written": [str(p) for p in paths]})
         return self.fail("not found")
 

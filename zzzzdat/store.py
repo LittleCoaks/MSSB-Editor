@@ -85,9 +85,10 @@ class Store:
         """Drop cached data/info for an entry after it changed on disk."""
         self._data.pop(e.id, None)
         self._info.pop(e.id, None)
-        from .thumbs import cache_dir
+        from .thumbs import cache_dir, thumb_dir
         for p in cache_dir(self.game).glob(f"{e.id}_*.png"):
             p.unlink(missing_ok=True)
+        (thumb_dir(self.game) / f"{e.id}.png").unlink(missing_ok=True)
         for k in [k for k in self._wav if k[0] == e.id]:
             del self._wav[k]
         for k in [k for k in self._glb if k[0] == e.id]:
@@ -179,18 +180,17 @@ class Store:
             pass
         return png
 
-    def thumb_png(self, e: Entry) -> bytes | None:
-        """Small representative image: shipped thumbnail, else made on demand."""
-        from .thumbs import SHIPPED_THUMBS, cache_dir, make_thumb_png
+    def thumb_png(self, e: Entry, build: bool = False) -> bytes | None:
+        """Thumbnail from this game's cache; None until the background build
+        has produced it (unless `build`, used when a single card is opened)."""
+        from .thumbs import make_thumb_png, thumb_dir
         if not e.ntex:
             return None
-        if e.id not in self.modified_ids():
-            p = SHIPPED_THUMBS / f"{e.id}.png"
-            if p.exists():
-                return p.read_bytes()
-        p = cache_dir(self.game) / f"{e.id}_thumb.png"
+        p = thumb_dir(self.game) / f"{e.id}.png"
         if p.exists():
             return p.read_bytes()
+        if not build:
+            return None
         texs = self.info(e).all_textures()
         png = make_thumb_png(self.data(e), texs[min(e.thumb, len(texs) - 1)][1])
         try:
@@ -198,6 +198,10 @@ class Store:
         except OSError:
             pass
         return png
+
+    def forget_memory(self, e: Entry) -> None:
+        self._data.pop(e.id, None)
+        self._info.pop(e.id, None)
 
     # -------------------------------------------------------------- audio --
     def wav(self, e: Entry, n: int = 0, max_seconds: float | None = None) -> bytes:
@@ -372,7 +376,7 @@ class Store:
         return out
 
     # ---------------------------------------------------------- indexing --
-    def rebuild_index(self, verify: bool = True, classify: bool = True, scan: bool = True, thumbnails: bool = True, log=print) -> None:
+    def rebuild_index(self, verify: bool = True, classify: bool = True, scan: bool = True, log=print) -> None:
         t0 = time.time()
         ents = build_index(self.archive.size, self.game)
         log(f"scanned executables: {len(ents)} candidate descriptors")
@@ -415,11 +419,6 @@ class Store:
                 e.names = fi.names[:16]
                 if i % 100 == 0:
                     log(f"  classified {i}/{len(ents)} ({time.time() - t0:.0f}s)")
-        if thumbnails:
-            from .thumbs import build_all
-            self.entries = ents + self.disc_entries()
-            self.by_id = {e.id: e for e in self.entries}
-            log(f"thumbnails: {build_all(self, log=log)} written")
         cov = coverage(ents, self.archive.size)
         meta = {"archive": self.archive.path.name, "archive_size": self.archive.size,
                 "source": self.archive.source, "covered_bytes": cov["covered"],

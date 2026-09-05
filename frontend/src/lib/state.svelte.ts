@@ -15,6 +15,16 @@ class AppState {
   selected = $state<number | null>(null)
   search = $state('')
   modified = $state<number[]>([])
+  thumbs = $state<{ running: boolean; done: number; total: number }>({ running: false, done: 0, total: 0 })
+  thumbGen = $state(0)  // bumps when the thumbnail build finishes so cards reload their images
+
+  async watchThumbs() {
+    for (;;) {
+      try { this.thumbs = await api.thumbs() } catch { return }
+      if (!this.thumbs.running) { this.thumbGen++; return }
+      await new Promise(r => setTimeout(r, 1500))
+    }
+  }
 
   async refresh() {
     this.loading = true
@@ -27,6 +37,7 @@ class AppState {
         this.catalog = cat
         setCatalogNames(cat.names ?? {})
         this.modified = (await api.modified()).ids
+        this.watchThumbs()
         if (!cat.categories.some(c => c.id === this.category)) this.category = cat.categories[0]?.id ?? ''
       } else {
         this.entries = new Map()

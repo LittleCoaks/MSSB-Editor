@@ -54,7 +54,7 @@
       {#each visible as e (e.id)}
         <button class="item" class:on={app.selected === e.id} onclick={() => (app.selected = e.id)} title={e.symbol}>
           <div class="thumb checker">
-            {#if e.ntex}<img loading="lazy" src={urls.thumb(e.id)} alt="">{:else}<span class="noimg">{kindLabel(e) === 'music' ? '🎵' : kindLabel(e) === 'movie' ? '🎬' : kindLabel(e) === 'animation' ? '🏃' : '▫'}</span>{/if}
+            {#if e.ntex}<img loading="lazy" src="{urls.thumb(e.id)}?g={app.thumbGen}" alt="" onerror={e => ((e.target as HTMLImageElement).style.visibility = 'hidden')}>{:else}<span class="noimg">{kindLabel(e) === 'music' ? '🎵' : kindLabel(e) === 'movie' ? '🎬' : kindLabel(e) === 'animation' ? '🏃' : '▫'}</span>{/if}
           </div>
           <div class="name">{#if app.modified.includes(e.id)}<span title="replaced" class="ok">● </span>{/if}{app.nameOf(e)}</div>
           <div class="meta"><span class="badge {kindLabel(e).replace(' ', '-')}">{kindLabel(e)}</span>{#if e.ntex}<span class="dim">{e.ntex} tex</span>{/if}</div>

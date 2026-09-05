@@ -105,6 +105,19 @@ viewer (three.js, orbit/zoom/pan, wireframe), an audio tab with an in-page
 player for each stream, a paged hex viewer, and buttons to download or extract
 (with PNGs / WAVs / models) into `extracted/`.
 
+## What ships, what is generated
+
+The program never carries game data. The repository and the built binary
+contain only the index (offsets, sizes, names) and the UI. Everything visual is
+produced from the user's own copy after a game is selected:
+
+- thumbnails are built in the background into `cache/<game>/thumbs/` (the
+  header shows progress; cards fill in as they finish, and a replaced entry's
+  thumbnail is rebuilt);
+- full-size textures, WAVs and models are decoded on demand into `cache/`.
+
+`cache/` can be deleted at any time.
+
 ## Editing: replacing files
 
 With ZZZZ.dat and aaaa.dat in the game folder (*Prepare for editing* on the
