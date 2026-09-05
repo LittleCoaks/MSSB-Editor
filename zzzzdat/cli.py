@@ -6,7 +6,8 @@ import sys
 from pathlib import Path
 
 from .descriptors import coverage
-from .store import EXTRACT_DIR, Store
+from .paths import EXTRACT_DIR
+from .store import Store
 
 
 def fmt_size(n: int) -> str:

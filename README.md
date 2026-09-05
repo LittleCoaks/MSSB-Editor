@@ -338,6 +338,16 @@ are decoded by `zzzzdat/gx.py`.
 
 ## Layout
 
+Per-user files (`config.json`, `cache/`, `extracted/`) live in the repository
+root during development and, when frozen, in the platform's app-data folder
+(`%APPDATA%\MSSB Editor`, `~/Library/Application Support/MSSB Editor`,
+`~/.local/share/mssb-editor`); `MSSB_EDITOR_HOME` overrides that. Shipped
+read-only data (the index, the built UI) comes from the bundle. See
+`zzzzdat/paths.py`.
+
+Tests: `pip install pytest` then `pytest` (unit tests on synthetic data; the
+`game`-marked tests use the configured game and skip without one).
+
 ```
 zzzzdat/
   disc.py         find ZZZZ.dat (file or inside the ISO), FST parsing, decomp-repo path
@@ -353,7 +363,8 @@ build.py          PyInstaller one-folder build
 pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
   store.py        index + archive + cache + extraction
   cli.py          command line
-  server.py       local HTTP API
+  paths.py        shipped vs per-user locations
+  server/         local HTTP API: router + context + jobs, routes/{static,game,entries,media,music,edit}
   ui/index.html   the legacy technical UI (served at /legacy)
   ui/dist/        the built Svelte UI (served at /)
   catalog.py      groups entries into characters / stadiums / menus / ... for the UI

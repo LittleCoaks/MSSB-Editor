@@ -18,6 +18,7 @@ cmd = [
     "--add-data", f"{ROOT / 'zzzzdat' / 'ui'}{sep}zzzzdat/ui",
     "--add-data", f"{ROOT / 'index'}{sep}index",
     "--collect-all", "webview",
+    "--collect-submodules", "zzzzdat",
     "--collect-all", "miniaudio",
     "--hidden-import", "numpy",
     str(ROOT / "run.py"),

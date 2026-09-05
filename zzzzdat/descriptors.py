@@ -27,14 +27,13 @@ import struct
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from .disc import PACKAGE_DATA, REPO_ROOT, VIEWER_ROOT, Game, current_game
+from .disc import REPO_ROOT, Game, current_game
+from .paths import INDEX_DIR
 
 # Symbol names come from the decomp repo when it is around; without it the
 # index still builds, entries are just named by address.
 CONFIG_DIR = (REPO_ROOT / "config" / "GYQE01") if REPO_ROOT else None
-INDEX_PATH = VIEWER_ROOT / "index" / "GYQE01.json"
-if not INDEX_PATH.exists() and (PACKAGE_DATA / "index" / "GYQE01.json").exists():
-    INDEX_PATH = PACKAGE_DATA / "index" / "GYQE01.json"  # shipped inside a frozen bundle
+INDEX_PATH = INDEX_DIR / "GYQE01.json"
 
 FLAG_COMPRESSED = 4
 

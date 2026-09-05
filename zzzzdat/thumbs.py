@@ -17,7 +17,8 @@ import threading
 from pathlib import Path
 
 from . import gx
-from .disc import VIEWER_ROOT, Game
+from .disc import Game
+from .paths import CACHE_DIR
 
 THUMB_SIZE = 96
 
@@ -27,13 +28,13 @@ def game_key(game: Game) -> str:
 
 
 def cache_dir(game: Game) -> Path:
-    d = VIEWER_ROOT / "cache" / game_key(game) / "tex"
+    d = CACHE_DIR / game_key(game) / "tex"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def thumb_dir(game: Game) -> Path:
-    d = VIEWER_ROOT / "cache" / game_key(game) / "thumbs"
+    d = CACHE_DIR / game_key(game) / "thumbs"
     d.mkdir(parents=True, exist_ok=True)
     return d
 

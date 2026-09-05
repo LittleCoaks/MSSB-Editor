@@ -7,29 +7,12 @@ back to the default browser so the tool still works.
 """
 from __future__ import annotations
 
-import socket
 import threading
 import webbrowser
-from http.server import ThreadingHTTPServer
 
-from .server import Handler
-from .store import Store
+from .server import start_server
 
 TITLE = "MSSB Editor"
-
-
-def free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
-
-
-def start_server(port: int | None = None) -> tuple[ThreadingHTTPServer, str]:
-    Handler.load_store()
-    port = port or free_port()
-    httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
-    return httpd, f"http://127.0.0.1:{port}/"
 
 
 class Api:
@@ -57,8 +40,8 @@ class Api:
 
 
 def run(port: int | None = None, width: int = 1400, height: int = 900) -> None:
-    httpd, url = start_server(port)
-    print(f"{TITLE}: {url}  ({len(Handler.store.entries)} entries)")
+    httpd, url, ctx = start_server(port)
+    print(f"{TITLE}: {url}  ({len(ctx.store.entries) if ctx.store else 0} entries)")
     try:
         import webview
     except ImportError:

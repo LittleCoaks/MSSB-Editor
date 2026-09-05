@@ -14,13 +14,17 @@ dependencies = []
 [project.optional-dependencies]
 app = ["pywebview>=5"]
 music = ["numpy", "miniaudio"]
+dev = ["pytest>=8"]
 build = ["pywebview>=5", "numpy", "miniaudio", "pyinstaller>=6"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [project.scripts]
 zzzzdat = "zzzzdat.cli:main"
 
 [tool.setuptools]
-packages = ["zzzzdat"]
+packages = ["zzzzdat", "zzzzdat.server", "zzzzdat.server.routes", "zzzzdat.music"]
 
 [tool.setuptools.package-data]
 zzzzdat = ["ui/*.html", "ui/vendor/*.js"]

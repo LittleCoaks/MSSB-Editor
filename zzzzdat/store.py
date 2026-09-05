@@ -10,14 +10,11 @@ from pathlib import Path
 from . import c3, dsp, formats
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
-from .disc import VIEWER_ROOT, Archive, Game, current_game, find_archive
+from .disc import Archive, Game, current_game, find_archive
+from .paths import EXTRACT_DIR, INDEX_DIR
 from .lzss import decompress
 
-EXTRACT_DIR = VIEWER_ROOT / "extracted"
-KNOWN_NAMES_PATH = VIEWER_ROOT / "index" / "known_names.json"
-if not KNOWN_NAMES_PATH.exists():
-    from .disc import PACKAGE_DATA
-    KNOWN_NAMES_PATH = PACKAGE_DATA / "index" / "known_names.json"
+KNOWN_NAMES_PATH = INDEX_DIR / "known_names.json"
 
 EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin",
                "anim": "anm", "adgc": "adgc", "geopalette": "geo", "dtk-adpcm": "adp", "unknown": "bin", "": "bin"}

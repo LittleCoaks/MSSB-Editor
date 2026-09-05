@@ -25,17 +25,9 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-# Where user-facing files live (index/, extracted/, config.json). In a
-# PyInstaller bundle that is the folder next to the executable; bundled
-# read-only data (the shipped index) is found through PACKAGE_DATA.
-if getattr(sys, "frozen", False):
-    VIEWER_ROOT = Path(sys.executable).resolve().parent
-    PACKAGE_DATA = Path(getattr(sys, "_MEIPASS", VIEWER_ROOT))
-else:
-    VIEWER_ROOT = Path(__file__).resolve().parents[1]
-    PACKAGE_DATA = VIEWER_ROOT
+from .paths import CONFIG_PATH, DATA_DIR, EXE_DIR, PACKAGE_DATA
 
-CONFIG_PATH = VIEWER_ROOT / "config.json"
+VIEWER_ROOT = DATA_DIR  # kept for older imports: the per-user data folder
 ARCHIVE_NAME = "ZZZZ.dat"
 ISO_SUFFIXES = (".iso", ".gcm")
 
@@ -52,6 +44,7 @@ def load_config() -> dict:
 
 
 def save_config(cfg: dict) -> None:
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     CONFIG_PATH.write_text(json.dumps(cfg, indent=1), encoding="utf-8")
 
 
@@ -59,10 +52,10 @@ def _find_decomp_root() -> Path | None:
     env = os.environ.get("MSSB_DECOMP")
     if env:
         return Path(env)
-    cfg = VIEWER_ROOT / "decomp_path.txt"
+    cfg = EXE_DIR / "decomp_path.txt"
     if cfg.exists():
-        return (VIEWER_ROOT / cfg.read_text(encoding="utf-8").strip()).resolve()
-    for parent in [VIEWER_ROOT] + list(VIEWER_ROOT.parents):
+        return (EXE_DIR / cfg.read_text(encoding="utf-8").strip()).resolve()
+    for parent in [EXE_DIR] + list(EXE_DIR.parents):
         cand = parent / "MSSB Decomp"
         if (cand / "orig").is_dir():
             return cand.resolve()
