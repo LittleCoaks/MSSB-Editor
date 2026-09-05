@@ -26,7 +26,8 @@ def get_model(req: Request, eid: str, sec: str, ext: str):
     e = st.get(eid)
     stem = f"{st.file_name(e).rsplit('.', 1)[0]}_s{sec}"
     if ext == "glb":
-        req.bytes(st.glb(e, int(sec)), "model/gltf-binary", stem + ".glb")
+        banks = tuple(k for k in (req.q("anim") or "").split(",") if k)
+        req.bytes(st.glb(e, int(sec), rig=bool(banks) or req.flag("rig"), bank_keys=banks), "model/gltf-binary", stem + ".glb")
     else:
         req.bytes(c3.to_obj(st.model(e, int(sec))).encode(), "text/plain", stem + ".obj")
 

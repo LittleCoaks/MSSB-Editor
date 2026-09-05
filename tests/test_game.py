@@ -93,3 +93,19 @@ def test_replace_texture_is_exact(store):
     ed.restore(e)
     store.forget(e)
     assert store.data(e) == orig
+
+
+def test_rigged_glb_with_animations(store):
+    import json
+    import struct
+    e = store.get(893)  # menu Mario: actor, skin and a 3-sequence bank in one container
+    banks = store.banks(e)
+    assert banks and banks[0]["key"] == "893:4" and banks[0]["sequences"] == 3
+    sk = store.skin(e)
+    assert sk and sk.vertex_count == 679 and sk.weights[200][0][0] == 4
+    glb = store.glb(e, 2, rig=True, bank_keys=("893:4",))
+    n = struct.unpack_from("<I", glb, 12)[0]
+    doc = json.loads(glb[20:20 + n])
+    assert len(doc["skins"]) == 1 and len(doc["skins"][0]["joints"]) == 37
+    assert [a["name"] for a in doc["animations"]] == ["section 4 / sequence 1", "section 4 / sequence 2", "section 4 / sequence 3"]
+    assert sum(len(a["channels"]) for a in doc["animations"]) == 75

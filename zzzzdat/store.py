@@ -7,7 +7,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import c3, dsp, formats
+from . import anim, c3, chars, dsp, formats
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
 from .disc import Archive, Game, current_game, find_archive
@@ -255,16 +255,78 @@ class Store:
                     break
         return m
 
-    def glb(self, e: Entry, section: int) -> bytes:
-        key = (e.id, section)
+    # ---------------------------------------------------------- animation --
+    def actor(self, e: Entry) -> list[c3.Bone] | None:
+        """The skeleton of a container: bones of its first ACT section."""
+        data = self.data(e)
+        for s in self.info(e).sections:
+            if s.magic == c3.ACT_VERSION and c3.is_actor(data, s.offset):
+                return c3.parse_actor(data, s.offset)
+        return None
+
+    def skin(self, e: Entry) -> anim.Skin | None:
+        data = self.data(e)
+        for s in self.info(e).sections:
+            if s.kind == "unknown" and anim.is_skin(data, s.offset):
+                return anim.parse_skin(data, s.offset)
+        return None
+
+    def banks(self, e: Entry) -> list[dict]:
+        """Animation banks usable with this entry's skeleton: ANIM sections in
+        the file itself, then the character's standalone banks (same slot in
+        the DOL sub-file table)."""
+        if e.archive != "ZZZZ.dat" or self.actor(e) is None:
+            return []
+        out = []
+        data = self.data(e)
+        for s in self.info(e).sections:
+            if s.magic == c3.ACT_VERSION and anim.is_bank(data, s.offset):
+                b = anim.parse_bank(data, s.offset)
+                if b and b.sequences:
+                    out.append({"key": f"{e.id}:{s.index}", "entry": e.id, "section": s.index,
+                                "label": f"in this file (section {s.index})", "sequences": len(b.sequences)})
+        c = chars.classify_entry(e.refs)
+        if c and c.get("slot") is not None:
+            for x in self.entries:
+                if x.kind != "anim" or x.archive != "ZZZZ.dat":
+                    continue
+                cx = chars.classify_entry(x.refs)
+                if cx and cx.get("slot") == c["slot"]:
+                    out.append({"key": f"{x.id}:0", "entry": x.id, "section": 0,
+                                "label": f"{cx['character']} {cx['role']} (file {x.id})", "sequences": None})
+        return out
+
+    def bank(self, key: str) -> tuple[str, anim.Bank] | None:
+        """(label, Bank) for a key from `banks`: '<entry>:<section>'."""
+        eid, _, sec = key.partition(":")
+        x = self.get(eid)
+        data = self.data(x)
+        base = 0
+        if sec and int(sec) and x.kind == "container":
+            base = self.info(x).sections[int(sec)].offset
+        b = anim.parse_bank(data, base)
+        if not b:
+            return None
+        c = chars.classify_entry(x.refs)
+        label = f"{c['role']}" if (c and x.kind == "anim") else (f"section {sec}" if base else f"file {x.id}")
+        return label, b
+
+    def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = ()) -> bytes:
+        key = (e.id, section, rig, bank_keys)
         if key in self._glb:
             return self._glb[key]
-        m = self.model(e, section)
+        bones = self.actor(e) if rig else None
+        m = self.model(e, section, posed=not bones)
         data = self.data(e)
         texs = self.info(e).all_textures()
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
         pngs = {i: t.decode_png(data) for i, (_sec, t) in enumerate(texs) if i in used}
-        g = c3.to_glb(m, pngs)
+        if bones:
+            sk = self.skin(e)
+            banks = [b for b in (self.bank(k) for k in bank_keys) if b]
+            g = c3.to_glb(m, pngs, bones=bones, skin_weights=sk.weights if sk else None, banks=banks)
+        else:
+            g = c3.to_glb(m, pngs)
         self._glb[key] = g
         while len(self._glb) > 8:
             self._glb.popitem(last=False)

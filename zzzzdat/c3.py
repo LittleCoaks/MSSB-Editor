@@ -239,8 +239,16 @@ def to_obj(model: Model, mtl_name: str | None = None) -> str:
 
 # ----------------------------------------------------------------- glTF --
 
-def to_glb(model: Model, textures: dict[int, bytes] | None = None) -> bytes:
-    """Build a binary glTF 2.0 with one primitive per draw and embedded PNG textures."""
+def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list | None = None,
+           skin_weights: dict | None = None, banks: list | None = None) -> bytes:
+    """Build a binary glTF 2.0 with one primitive per draw and embedded PNG textures.
+
+    With `bones` (from `parse_actor`, unposed model) the file carries the
+    skeleton as a node hierarchy: rigid meshes hang from their bone, the
+    skinned mesh (per-vertex `skin_weights`, bone indices in pre-order, see
+    anim.py) gets a glTF skin, and each (label, Bank) in `banks` becomes a set
+    of glTF animations named "label / sequence". Without bones the meshes are
+    exported flat, as `apply_actor` left them."""
     textures = textures or {}
     bufs = bytearray()
     views = []
@@ -282,11 +290,17 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None) -> bytes:
         mat_for_tex[tex] = len(materials) - 1
         return mat_for_tex[tex]
 
-    for m in model.meshes:
+    skinned_mesh = None
+    if bones and skin_weights:
+        attached = {b.geo for b in bones if b.geo is not None}
+        skinned_mesh = next((i for i, m in enumerate(model.meshes) if i not in attached and m.positions), None)
+    mesh_node_of: dict[int, int] = {}
+    for mi, m in enumerate(model.meshes):
         prims = []
         for d in m.draws:
             vmap: dict[tuple, int] = {}
             pos, nrm, uv, idx = [], [], [], []
+            joints, weights = [], []
             has_n = any(v[1] is not None for tri in d.tris for v in tri) and m.normals
             has_t = any(v[2] is not None for tri in d.tris for v in tri) and m.uvs
             for tri in d.tris:
@@ -297,6 +311,11 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None) -> bytes:
                     if key not in vmap:
                         vmap[key] = len(pos)
                         pos.append(m.positions[key[0]])
+                        if mi == skinned_mesh:
+                            ws = (skin_weights.get(key[0]) or [(0, 1.0)])[:4]
+                            ws += [(0, 0.0)] * (4 - len(ws))
+                            joints.append([b for b, _ in ws])
+                            weights.append([w for _, w in ws])
                         if has_n:
                             n = m.normals[key[1]] if key[1] is not None and key[1] < len(m.normals) else (0.0, 1.0, 0.0)
                             nrm.append(n)
@@ -314,18 +333,32 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None) -> bytes:
                 attrs["NORMAL"] = add_accessor(add_view(b"".join(struct.pack("<fff", *_unit(n)) for n in nrm), 34962), len(nrm), 5126, "VEC3")
             if has_t:
                 attrs["TEXCOORD_0"] = add_accessor(add_view(b"".join(struct.pack("<ff", *t) for t in uv), 34962), len(uv), 5126, "VEC2")
+            if mi == skinned_mesh:
+                attrs["JOINTS_0"] = add_accessor(add_view(b"".join(struct.pack("<4H", *j) for j in joints), 34962), len(joints), 5123, "VEC4")
+                attrs["WEIGHTS_0"] = add_accessor(add_view(b"".join(struct.pack("<4f", *w) for w in weights), 34962), len(weights), 5126, "VEC4")
             iblob = b"".join(struct.pack("<I", i) for i in idx)
             prims.append({"attributes": attrs, "indices": add_accessor(add_view(iblob, 34963), len(idx), 5125, "SCALAR"),
                           "material": material(d.texture), "mode": 4})
         if prims:
             meshes.append({"name": m.name, "primitives": prims})
             nodes.append({"mesh": len(meshes) - 1, "name": m.name})
+            mesh_node_of[mi] = len(nodes) - 1
 
+    scene_nodes = list(range(len(nodes)))
+    skins = []
+    animations = []
+    if bones:
+        scene_nodes, skins, animations = _rig(nodes, bones, mesh_node_of, skinned_mesh, banks or [],
+                                              add_view, add_accessor)
     doc = {"asset": {"version": "2.0", "generator": "zzzzdat"}, "scene": 0,
-           "scenes": [{"nodes": list(range(len(nodes)))}], "nodes": nodes, "meshes": meshes,
+           "scenes": [{"nodes": scene_nodes}], "nodes": nodes, "meshes": meshes,
            "materials": materials, "accessors": accessors, "bufferViews": views,
            "buffers": [{"byteLength": len(bufs)}],
            "samplers": [{"magFilter": 9729, "minFilter": 9987, "wrapS": 10497, "wrapT": 10497}]}
+    if skins:
+        doc["skins"] = skins
+    if animations:
+        doc["animations"] = animations
     if images:
         doc["images"] = images
         doc["textures"] = gtextures
@@ -337,6 +370,89 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None) -> bytes:
     total = 12 + 8 + len(js) + 8 + len(bufs)
     return (b"glTF" + struct.pack("<II", 2, total) + struct.pack("<I", len(js)) + b"JSON" + js
             + struct.pack("<I", len(bufs)) + b"BIN\0" + bytes(bufs))
+
+
+def _rig(nodes: list, bones: list, mesh_node_of: dict, skinned_mesh, banks: list, add_view, add_accessor):
+    """Append bone nodes (and a root that turns the actor upright) to `nodes`;
+    return (scene root nodes, skins, animations). Bone node order is the
+    pre-order traversal so skin joint indices need no remapping."""
+    from .anim import FRAME_RATE, bone_order
+    order = bone_order(bones)
+    node_of: dict[int, int] = {}   # bone offset -> node index
+    for b in order:
+        node_of[b.offset] = len(nodes)
+        nodes.append({"name": f"bone{b.id}", "translation": list(b.trans), "rotation": list(b.quat),
+                      "scale": list(b.scale), "children": []})
+    for b in order:
+        pb = node_of.get(b.parent) if b.parent else None
+        if pb is not None and b.inherit:
+            nodes[pb]["children"].append(node_of[b.offset])
+    flip = len(nodes)
+    nodes.append({"name": "actor", "rotation": [1.0, 0.0, 0.0, 0.0], "children": []})  # 180 deg about X
+    for b in order:
+        pb = node_of.get(b.parent) if b.parent else None
+        if pb is None or not b.inherit:
+            nodes[flip]["children"].append(node_of[b.offset])
+    for mi, ni in mesh_node_of.items():
+        owner = next((b for b in order if b.geo == mi), None)
+        if owner and mi != skinned_mesh:
+            nodes[node_of[owner.offset]]["children"].append(ni)
+        else:
+            nodes[flip]["children"].append(ni)
+    for n in nodes:
+        if "children" in n and not n["children"]:
+            del n["children"]
+    skins = []
+    if skinned_mesh is not None and skinned_mesh in mesh_node_of:
+        ibm = b"".join(_mtx_column_major(_invert(b.world)) for b in order)
+        skins.append({"joints": [node_of[b.offset] for b in order], "skeleton": flip,
+                      "inverseBindMatrices": add_accessor(add_view(ibm), len(order), 5126, "MAT4")})
+        nodes[mesh_node_of[skinned_mesh]]["skin"] = 0
+    by_id = {b.id: b for b in bones}
+    animations = []
+    for label, bank in banks:
+        for seq in bank.sequences:
+            samplers, channels = [], []
+            for tr in seq.tracks:
+                b = by_id.get(tr.bone)
+                if b is None or not tr.keys:
+                    continue
+                times = b"".join(struct.pack("<f", k.time / FRAME_RATE) for k in tr.keys)
+                tacc = add_accessor(add_view(times), len(tr.keys), 5126, "SCALAR",
+                                    [tr.keys[0].time / FRAME_RATE], [tr.keys[-1].time / FRAME_RATE])
+                if tr.keys[0].quat is not None:
+                    q = b"".join(struct.pack("<4f", *(k.quat or (0, 0, 0, 1))) for k in tr.keys)
+                    samplers.append({"input": tacc, "output": add_accessor(add_view(q), len(tr.keys), 5126, "VEC4"),
+                                     "interpolation": "STEP" if tr.quat_step else "LINEAR"})
+                    channels.append({"sampler": len(samplers) - 1, "target": {"node": node_of[b.offset], "path": "rotation"}})
+                if tr.keys[0].trans is not None:
+                    t = b"".join(struct.pack("<3f", *(k.trans or (0, 0, 0))) for k in tr.keys)
+                    samplers.append({"input": tacc, "output": add_accessor(add_view(t), len(tr.keys), 5126, "VEC3"),
+                                     "interpolation": "STEP" if tr.trans_step else "LINEAR"})
+                    channels.append({"sampler": len(samplers) - 1, "target": {"node": node_of[b.offset], "path": "translation"}})
+            if channels:
+                animations.append({"name": f"{label} / {seq.name}" if label else seq.name, "samplers": samplers, "channels": channels})
+    return [flip], skins, animations
+
+
+def _mtx_column_major(m: list) -> bytes:
+    return b"".join(struct.pack("<f", m[r][c]) for c in range(4) for r in range(4))
+
+
+def _invert(m: list) -> list:
+    """Inverse of an affine 4x4 (rows = [R|t] and [0 0 0 1])."""
+    a = [row[:3] for row in m[:3]]
+    det = (a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0])
+           + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]))
+    if abs(det) < 1e-12:
+        return [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]
+    inv = [[(a[1][1] * a[2][2] - a[1][2] * a[2][1]) / det, (a[0][2] * a[2][1] - a[0][1] * a[2][2]) / det, (a[0][1] * a[1][2] - a[0][2] * a[1][1]) / det],
+           [(a[1][2] * a[2][0] - a[1][0] * a[2][2]) / det, (a[0][0] * a[2][2] - a[0][2] * a[2][0]) / det, (a[0][2] * a[1][0] - a[0][0] * a[1][2]) / det],
+           [(a[1][0] * a[2][1] - a[1][1] * a[2][0]) / det, (a[0][1] * a[2][0] - a[0][0] * a[2][1]) / det, (a[0][0] * a[1][1] - a[0][1] * a[1][0]) / det]]
+    t = [m[r][3] for r in range(3)]
+    out = [inv[r] + [-sum(inv[r][k] * t[k] for k in range(3))] for r in range(3)]
+    out.append([0.0, 0.0, 0.0, 1.0])
+    return out
 
 
 def _unit(n):
@@ -369,6 +485,8 @@ class Bone:
     quat: tuple
     trans: tuple
     world: list | None = None
+    children: int = 0  # offset of the first child (DSBranch), 0 = none
+    next: int = 0      # offset of the next sibling, 0 = none
 
 
 def is_actor(data: bytes, base: int) -> bool:
@@ -385,7 +503,7 @@ def parse_actor(data: bytes, base: int) -> list[Bone] | None:
     bones = []
     for i in range(nb):
         off = 0x20 + i * 0x1C
-        ctrl, _prev, _next, parent, _child, geo, bid, inh, _prio = struct.unpack_from(">IIIIIHHBB", data, base + off)
+        ctrl, _prev, nxt, parent, child, geo, bid, inh, _prio = struct.unpack_from(">IIIIIHHBB", data, base + off)
         typ = data[base + ctrl]
         scale = struct.unpack_from(">3f", data, base + ctrl + 4)
         quat = struct.unpack_from(">4f", data, base + ctrl + 16)
@@ -396,7 +514,8 @@ def parse_actor(data: bytes, base: int) -> list[Bone] | None:
             quat = (0.0, 0.0, 0.0, 1.0)
         if not typ & 8:
             trans = (0.0, 0.0, 0.0)
-        bones.append(Bone(off, bid, parent, None if geo == 0xFFFF else geo, bool(inh), scale, quat, trans))
+        bones.append(Bone(off, bid, parent, None if geo == 0xFFFF else geo, bool(inh), scale, quat, trans,
+                          children=child, next=nxt))
     _compute_world(bones)
     return bones
 

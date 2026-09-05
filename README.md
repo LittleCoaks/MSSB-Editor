@@ -323,6 +323,24 @@ slots are 0. Each section starts with a 32-bit type word:
 | `0x00184300`, `0x00014300` | related C3 palettes (not decoded) |
 | `count, 0, ...` | texture table (first halfword is the texture count) |
 
+### Animation banks and skins
+
+`ANIMBank` files (the 1,193 standalone `anim` entries and the ANIM sections
+inside character packs) share the 0x007B7960 version word with actors.
+`zzzzdat/anim.py` documents the layout. The important findings: keyframe
+settings hold a quaternion (4 x s16, 14 fraction bits) when `animType & 8`
+and a translation (3 x s16, fraction bits from `quantizeInfo`) when
+`animType & 1`; tracks are keyed by bone id; the animation *replaces* the
+bone's rest rotation. The skin section (`sHdr`) maps ranges of the body's
+interleaved position array to bones by their pre-order index in the actor's
+tree, with source vertices equal to the rest pose, so it exports as ordinary
+glTF skinning. Hermite tangents are ignored (linear / slerp between keys).
+
+The model viewer plays them: pick a bank (sections of the file itself, then
+the character's standalone banks from the DOL sub-file table), then a
+sequence; `.glb` downloads carry the skeleton, skin and animations
+(`/api/entry/<id>/model/<sec>.glb?anim=<entry>:<section>`).
+
 ### Texture table
 
 0x20-byte records, data offsets relative to the table start:
@@ -375,7 +393,8 @@ zzzzdat/
   png.py          PNG reader (stdlib only) and resampling
   texedit.py      in-place texture replacement inside an entry
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
-  c3.py           C3 GeoPalette model parsing, OBJ and glTF export
+  c3.py           C3 GeoPalette model parsing, actors, OBJ and glTF export (rigged)
+  anim.py         ANIM banks and skin files
   app.py          desktop window (pywebview) around the server
 build.py          PyInstaller one-folder build
 pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
