@@ -18,7 +18,7 @@ export interface IndexDoc { meta: Record<string, any>; archive: string | null; a
 export interface GameInfo {
   setting: string | null; layout: string; iso: string | null; files_dir: string | null; sys_dir: string | null; dol: string | null;
   archive: string | null; archive_source: string | null; writable: boolean; ok: boolean; problem: string; entries: number;
-  error?: string | null; default_dump?: string | null;
+  error?: string | null; default_dump?: string | null; edit_ready?: boolean;
 }
 export interface CatalogGroup { id: string; name: string; items: number[]; thumb: string | null }
 export interface CatalogCategory { id: string; name: string; count: number; groups: CatalogGroup[] }
@@ -56,6 +56,9 @@ export const api = {
   musicRestore: (track: string) => j<{ ok: boolean }>('/api/music/restore?track=' + encodeURIComponent(track), { method: 'POST' }),
   musicRoot: (path: string) => j<{ root: string }>('/api/music/root?path=' + encodeURIComponent(path), { method: 'POST' }),
   musicInstall: (fd: FormData) => j<{ job: string }>('/api/music/install', { method: 'POST', body: fd }),
+  modified: () => j<{ ids: number[] }>('/api/modified'),
+  replace: (id: number, fd: FormData) => j<{ offset: number; disc_size: number; size: number; in_place: boolean; descriptors: number }>(`/api/entry/${id}/replace`, { method: 'POST', body: fd }),
+  restoreEntry: (id: number) => j<{ ok: boolean }>(`/api/entry/${id}/restore`, { method: 'POST' }),
 }
 
 export const urls = {

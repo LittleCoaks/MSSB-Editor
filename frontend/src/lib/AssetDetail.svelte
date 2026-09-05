@@ -33,6 +33,23 @@
     try { const r = await api.extract(d!.id, opts); msg = `saved ${r.written.length} file(s) to ${r.written[0].replace(/[\\/][^\\/]*$/, '')}` } catch (e: any) { msg = e.message }
   }
   const kindLabel = (k: string) => KIND_LABEL[k] ?? k
+  let replacing = $state(false)
+  let editMsg = $state('')
+  async function replaceWith(f: File | null) {
+    if (!f || !d) return
+    replacing = true; editMsg = 'writing…'
+    try {
+      const fd = new FormData(); fd.append('file', f)
+      const r = await api.replace(d.id, fd)
+      editMsg = `Replaced: ${kb(r.size)} (${kb(r.disc_size)} on disc, ${r.in_place ? 'written in place' : 'appended to ZZZZ.dat'}, ${r.descriptors} reference${r.descriptors === 1 ? '' : 's'} updated). The original is backed up.`
+      await app.refresh(); d = await api.entry(d.id)
+    } catch (e: any) { editMsg = e.message } finally { replacing = false }
+  }
+  async function restoreEntry() {
+    if (!d) return
+    try { await api.restoreEntry(d.id); editMsg = 'Original restored.'; await app.refresh(); d = await api.entry(d.id) } catch (e: any) { editMsg = e.message }
+  }
+  const modified = $derived(app.modified.includes(id))
 </script>
 
 <div class="wrap">
@@ -115,7 +132,18 @@
             {/each}
           </tbody></table>
         {/if}
-        <p class="dim">Need the raw entry table? Open the <a href="/legacy#{d.id}" target="_blank">advanced view</a>.</p>
+        <h3 style="margin-top:16px">Replace</h3>
+        {#if !app.game?.edit_ready}
+          <p class="dim">To replace files, the game needs to be extracted with ZZZZ.dat and aaaa.dat. Use <a href="#game" onclick={() => app.go('game')}>Prepare for editing</a> on the Game page.</p>
+        {:else}
+          <p class="dim">Swap this file's raw contents ({kb(d.size)}, the same format as "Raw file"). It is compressed and the game's references are repointed automatically; if it doesn't fit its old slot it is appended to the archive. Textures and models still have to be edited in the raw format for now.</p>
+          <div class="row">
+            <label class="btn">Choose replacement file… <input type="file" hidden onchange={e => replaceWith((e.target as HTMLInputElement).files?.[0] ?? null)} disabled={replacing}></label>
+            {#if modified}<button class="danger" onclick={restoreEntry}>Restore original</button>{/if}
+            {#if editMsg}<span class={editMsg.startsWith('Replaced') || editMsg.startsWith('Original') ? 'ok' : 'warn'}>{editMsg}</span>{/if}
+          </div>
+        {/if}
+        <p class="dim" style="margin-top:14px">Need the raw entry table? Open the <a href="/legacy#{d.id}" target="_blank">advanced view</a>.</p>
       {:else if tab === 'hex'}
         <div class="row" style="margin-bottom:8px">
           <button onclick={() => { hexOff = Math.max(0, hexOff - 4096); loadHex() }}>◀</button>

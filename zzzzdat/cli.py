@@ -208,6 +208,34 @@ def cmd_music(a):
         print(out)
 
 
+def cmd_replace(a):
+    from .edit import Editor
+    store = Store()
+    e = store.get(a.entry)
+    ed = Editor(store.game)
+    r = ed.replace(e, Path(a.file).read_bytes())
+    print(f"replaced entry {e.id}: {r['size']:,} bytes -> {r['disc_size']:,} on disc at {r['offset']:#x} "
+          f"({'in place' if r['in_place'] else 'appended to ZZZZ.dat'}), {r['descriptors']} descriptor(s) updated")
+
+
+def cmd_restore_entry(a):
+    from .edit import Editor
+    store = Store()
+    e = store.get(a.entry)
+    Editor(store.game).restore(e)
+    print(f"restored entry {e.id}")
+
+
+def cmd_modified(a):
+    from .edit import Editor
+    store = Store()
+    ids = store.modified_ids()
+    print(f"{len(ids)} modified entr{'y' if len(ids) == 1 else 'ies'}")
+    for i in ids:
+        e = store.by_id.get(i)
+        print(f"  {i}: {e.known or e.label or e.symbol if e else '?'}")
+
+
 def cmd_layout(a):
     store = Store()
     ents = sorted(store.zzzz_entries(), key=lambda e: e.offset)
@@ -324,6 +352,18 @@ def main(argv=None):
     m.add_argument("--track", required=True)
     m.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_music)
+
+    s = sub.add_parser("replace", help="replace an entry's contents with a file (compressed as needed, descriptors repointed)")
+    s.add_argument("entry")
+    s.add_argument("file")
+    s.set_defaults(fn=cmd_replace)
+
+    s = sub.add_parser("restore-entry", help="undo a replacement")
+    s.add_argument("entry")
+    s.set_defaults(fn=cmd_restore_entry)
+
+    s = sub.add_parser("modified", help="list replaced entries")
+    s.set_defaults(fn=cmd_modified)
 
     s = sub.add_parser("layout", help="print the archive layout and coverage")
     s.set_defaults(fn=cmd_layout)

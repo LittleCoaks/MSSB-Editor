@@ -14,6 +14,7 @@ class AppState {
   group = $state<string>('')
   selected = $state<number | null>(null)
   search = $state('')
+  modified = $state<number[]>([])
 
   async refresh() {
     this.loading = true
@@ -25,6 +26,7 @@ class AppState {
         this.entries = new Map(idx.entries.map(e => [e.id, e]))
         this.catalog = cat
         setCatalogNames(cat.names ?? {})
+        this.modified = (await api.modified()).ids
         if (!cat.categories.some(c => c.id === this.category)) this.category = cat.categories[0]?.id ?? ''
       } else {
         this.entries = new Map()

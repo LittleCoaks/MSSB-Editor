@@ -50,7 +50,7 @@
           <div class="thumb checker">
             {#if e.ntex}<img loading="lazy" src={urls.tex(e.id, e.thumb)} alt="">{:else}<span class="noimg">{kindLabel(e) === 'music' ? '🎵' : kindLabel(e) === 'movie' ? '🎬' : kindLabel(e) === 'animation' ? '🏃' : '▫'}</span>{/if}
           </div>
-          <div class="name">{app.nameOf(e)}</div>
+          <div class="name">{#if app.modified.includes(e.id)}<span title="replaced" class="ok">● </span>{/if}{app.nameOf(e)}</div>
           <div class="meta"><span class="badge {kindLabel(e).replace(' ', '-')}">{kindLabel(e)}</span>{#if e.ntex}<span class="dim">{e.ntex} tex</span>{/if}</div>
         </button>
       {/each}

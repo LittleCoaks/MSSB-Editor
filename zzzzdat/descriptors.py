@@ -42,6 +42,10 @@ FLAG_COMPRESSED = 4
 REL_SECTION_NAMES = {1: ".text", 2: ".ctors", 3: ".dtors", 4: ".rodata", 5: ".data", 6: ".bss"}
 REL_MODULES = {"game": "game.rel", "menus": "menus.rel", "debug": "debug.rel"}
 
+# Tables whose offsets are relative to a chunk of the archive rather than
+# absolute: the DOL address of the table, (entry count, base offset).
+RELATIVE_TABLES = {0x800EFD38: (516, 0x1A15E800)}  # master character descriptors -> ARAM chunk
+
 # aaaa.dat entries: (offset, disc_size) -> file name
 AAAA_ENTRIES = {(0x800, 0x5A818): "menus.rel", (0x5B800, 0xF4450): "game.rel", (0x150000, 0x271C0): "debug.rel"}
 
@@ -214,12 +218,12 @@ def load_binaries(game: Game | None = None) -> list[Binary]:
 
 # --------------------------------------------------------------------- scan --
 
-def looks_like_descriptor(p: int, fs: int, off: int, cs: int, archive_size: int) -> bool:
+def looks_like_descriptor(p: int, fs: int, off: int, cs: int, archive_size: int, align: int = 0x7FF) -> bool:
     if p >> 16:
         return False
     flag, size = fs >> 28, fs & 0x0FFFFFFF
     rb, lb = (p >> 8) & 0xFF, p & 0xFF
-    if off & 0x7FF or off >= archive_size or cs == 0 or size == 0:
+    if off & align or off >= archive_size or cs == 0 or size == 0:
         return False
     if off + cs > archive_size:
         return False
@@ -257,8 +261,23 @@ def scan_binary(b: Binary, archive_size: int, symtabs: dict) -> list[tuple[tuple
         i = fo
         while i <= end:
             p, fs, off, cs = struct.unpack_from(">4I", d, i)
+            addr = base + (i - fo)
+            rel = None
+            for tva, (count, tbase) in RELATIVE_TABLES.items():
+                if b.module == "dol" and tva <= addr < tva + count * 16 and (addr - tva) % 16 == 0:
+                    rel = tbase
+            if rel is not None:
+                # ARAM-relative: 32-byte aligned within the chunk
+                if looks_like_descriptor(p, fs, off, cs, archive_size - rel, align=0x1F):
+                    ref = f"{b.module}:{secname}:{addr:#x}"
+                    if syms:
+                        ns = nearest_symbol(syms, addr)
+                        if ns:
+                            ref += f" {ns[0]}+{ns[1]:#x}" if ns[1] else f" {ns[0]}"
+                    hits.append(((p, fs, off + rel, cs), ref))
+                i += 16
+                continue
             if looks_like_descriptor(p, fs, off, cs, archive_size):
-                addr = base + (i - fo)
                 ref = f"{b.module}:{secname}:{addr:#x}"
                 if syms:
                     ns = nearest_symbol(syms, addr)

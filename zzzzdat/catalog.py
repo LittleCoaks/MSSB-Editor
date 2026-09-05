@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 
+from . import chars
 from .descriptors import Entry
 
 # .gpc model stem -> character
@@ -40,8 +41,13 @@ def canonical(name: str) -> str:
 
 
 def display_name(e: Entry) -> str:
-    """A name a person would use: community name, else the character/part
-    behind the embedded model name, else the kind."""
+    """A name a person would use: the character table's slot and role, else the
+    community name, else the character/part behind the embedded model name."""
+    c = chars.classify_entry(e.refs)
+    if c and c["character"]:
+        return f"{c['character']} - {c['role']}"
+    if c:
+        return c["role"]
     if e.known:
         return e.known.replace("First Found ", "")
     lab = e.label or next((n for n in e.names if n.endswith(".gpc")), "")
@@ -116,6 +122,9 @@ def build_catalog(entries: list[Entry]) -> dict:
         else:
             ch = character_of(e)
             tbl = table_of(e)
+            cc = chars.classify_entry(e.refs)
+            if cc and cc["character"]:
+                ch = chars.base_name(cc["character"])
             if ch:
                 g = group("characters", "Characters", re.sub(r"\W+", "_", ch.lower()), ch)
             elif e.known and ("Stadium" in e.known or "Park" in e.known) or tbl in ("StadiumFiles", "marioStadiumCDR"):

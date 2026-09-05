@@ -62,6 +62,19 @@
       <div class="dim">{g.layout === 'iso' ? 'Disc image' : 'Extracted folder'} · {g.entries} assets found</div>
       {#if g.writable}
         <div class="ok">Editing enabled — changes go to {g.files_dir}</div>
+        {#if !g.edit_ready && g.iso}
+          <div class="row" style="margin-top:8px"><span class="dim">Music editing works now. Replacing textures/models/other files also needs ZZZZ.dat and aaaa.dat in the folder (~452 MB):</span>
+            <button onclick={() => extract('ZZZZ.dat,aaaa.dat')}>Prepare for editing</button></div>
+          {#if dump}
+            <div class="row" style="margin-top:8px">
+              {#if dump.state === 'running'}<span class="bar"><i style="width:{Math.round(dump.progress * 100)}%"></i></span> {Math.round(dump.progress * 100)}%
+              {:else if dump.state === 'error'}<span class="warn">{dump.error}</span>
+              {:else}<span class="ok">Done. File replacement is now enabled.</span>{/if}
+            </div>
+          {/if}
+        {:else if g.edit_ready}
+          <div class="ok">File replacement enabled (ZZZZ.dat, aaaa.dat and main.dol are in the folder).</div>
+        {/if}
       {:else}
         <div class="warn">View only. To change music or assets, extract the image to a folder:</div>
         <div class="row" style="margin-top:8px">

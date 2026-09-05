@@ -33,6 +33,7 @@ class Store:
         self.game = game or current_game()
         self.archive = archive or find_archive(self.game)
         self.entries: list[Entry] = load_index(index_path) if index_path.exists() else []
+        self.apply_overrides()
         self.entries += self.disc_entries()
         self.by_id = {e.id: e for e in self.entries}
         self._data: OrderedDict[int, bytes] = OrderedDict()
@@ -50,6 +51,31 @@ class Store:
             del self._info[k]
         for k in [k for k in self._wav if k[0] >= DISC_ID_BASE]:
             del self._wav[k]
+
+    def apply_overrides(self) -> None:
+        """Entries replaced by the editor live somewhere else in this game's
+        ZZZZ.dat than the shipped index says."""
+        from .edit import load_overrides
+        ov = load_overrides(self.game)
+        if not ov:
+            return
+        for e in self.entries:
+            cur = ov.get(str(e.id))
+            if cur:
+                e.offset, e.disc_size, e.size = cur["offset"], cur["disc_size"], cur["size"]
+
+    def modified_ids(self) -> list[int]:
+        from .edit import load_overrides
+        return [int(k) for k in load_overrides(self.game)]
+
+    def forget(self, e: Entry) -> None:
+        """Drop cached data/info for an entry after it changed on disk."""
+        self._data.pop(e.id, None)
+        self._info.pop(e.id, None)
+        for k in [k for k in self._wav if k[0] == e.id]:
+            del self._wav[k]
+        for k in [k for k in self._glb if k[0] == e.id]:
+            del self._glb[k]
 
     def disc_entries(self) -> list[Entry]:
         """The streamed .adp music files on the disc, as synthetic entries

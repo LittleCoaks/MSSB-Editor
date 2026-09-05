@@ -257,6 +257,8 @@ class Archive:
     source: str  # "file" or "iso"
 
     def read(self, offset: int, length: int) -> bytes:
+        if offset + length > self.size and self.source == "file":
+            self.size = self.path.stat().st_size  # the editor may have appended
         if offset < 0 or offset + length > self.size:
             raise ValueError(f"read outside archive: {offset:#x}+{length:#x}")
         with open(self.path, "rb") as f:
@@ -291,18 +293,19 @@ def dump_iso(dest: Path | str | None = None, only: str | None = None, log=lambda
              progress=None, game: Game | None = None) -> Path:
     """Extract the game's files out of the ISO into a Dolphin-style dump:
     <dest>/files/... and <dest>/sys/{main.dol,boot.bin,bi2.bin,apploader.img,fst.bin}.
-    Existing files of the right size are left alone. `only` limits to paths
-    starting with it (e.g. "snd/"); sys/ is always written. The dump is then
+    Existing files of the right size are left alone. `only` is a comma list of
+    path prefixes (e.g. "snd/" or "ZZZZ.dat,aaaa.dat"); sys/ is always written. The dump is then
     paired with the ISO in config.json so editing writes there."""
     game = game or current_game()
     if not game.iso:
         raise FileNotFoundError("no ISO to dump from")
+    prefixes = [x.strip() for x in only.split(",") if x.strip()] if only else []
     dest = Path(dest) if dest else default_dump_dir(game)
     files_dir = dest / "files"
     sys_dir = dest / "sys"
     with open(game.iso, "rb") as iso:
         files = read_fst(iso)
-        todo = [(p, o, s) for p, (o, s) in sorted(files.items()) if not only or p.startswith(only)]
+        todo = [(p, o, s) for p, (o, s) in sorted(files.items()) if not prefixes or any(p.startswith(x) for x in prefixes)]
         total = sum(s for _, _, s in todo)
         done = 0
         iso.seek(0x420)

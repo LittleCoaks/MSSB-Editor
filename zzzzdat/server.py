@@ -17,6 +17,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from . import c3, catalog, music
+from .edit import EditError, Editor
 from .disc import Game, current_game, default_dump_dir, dump_iso, list_dir, set_game
 from .store import EXTRACT_DIR, Store
 
@@ -169,7 +170,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.music_post(parts[2:], q, body)
             if parts[:2] == ["api", "game"]:
                 return self.game_post(parts[2:], q, body)
+            if parts[:2] == ["api", "entry"] and len(parts) == 4:
+                return self.entry_post(parts[2], parts[3], q, body)
             return self.fail("not found")
+        except EditError as ex:
+            return self.fail(str(ex), 400)
         except Exception as ex:
             return self.fail(f"{type(ex).__name__}: {ex}", 500)
 
@@ -204,6 +209,28 @@ class Handler(BaseHTTPRequestHandler):
                     job["error"] = f"{type(ex).__name__}: {ex}"
             threading.Thread(target=work, daemon=True).start()
             return self.send_json({"job": job["id"]})
+        return self.fail("not found")
+
+    def entry_post(self, id_, action, q, body):
+        st = self.store
+        if st is None:
+            return self.fail("no game selected", 400)
+        e = st.get(id_)
+        with self.lock:
+            ed = Editor(st.game)
+            if action == "replace":
+                form = parse_multipart(self.headers, body)
+                if "file" in form:
+                    _fname, payload = form["file"]
+                else:
+                    payload = Path(form["path"]).read_bytes()
+                r = ed.replace(e, payload)
+                st.forget(e)
+                return self.send_json(r)
+            if action == "restore":
+                ed.restore(e)
+                st.forget(e)
+                return self.send_json({"ok": True})
         return self.fail("not found")
 
     def music_post(self, rest, q, body):
@@ -288,7 +315,8 @@ class Handler(BaseHTTPRequestHandler):
                                    "entries": [entry_summary(e) for e in st.entries]})
         if parts[0] == "game":
             g = current_game()
-            return self.send_json({**g.describe(), "entries": len(st.entries) if st else 0,
+            edit_ready = bool(g.files_dir and (g.files_dir / "ZZZZ.dat").exists() and (g.files_dir / "aaaa.dat").exists() and g.dol_path())
+            return self.send_json({**g.describe(), "entries": len(st.entries) if st else 0, "edit_ready": edit_ready,
                                    "error": self.store_error or None, "default_dump": str(default_dump_dir(g)) if g.iso else None})
         if parts[0] == "fs":
             return self.send_json(list_dir(q.get("path") or None))
@@ -296,6 +324,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(JOBS.get(parts[1]) or {"error": "no such job"})
         if st is None:
             return self.fail(self.store_error or "no game selected", 400)
+        if parts == ["modified"]:
+            return self.send_json({"ids": st.modified_ids()})
         if parts == ["catalog"]:
             return self.send_json(catalog.build_catalog(st.entries))
         if parts[0] == "music":

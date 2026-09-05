@@ -105,6 +105,51 @@ viewer (three.js, orbit/zoom/pan, wireframe), an audio tab with an in-page
 player for each stream, a paged hex viewer, and buttons to download or extract
 (with PNGs / WAVs / models) into `extracted/`.
 
+## Editing: replacing files
+
+With ZZZZ.dat and aaaa.dat in the game folder (*Prepare for editing* on the
+Game page, or `python -m zzzzdat dump --only ZZZZ.dat,aaaa.dat`) any indexed
+entry can be replaced with new raw contents, from the Details tab of an asset
+or from the command line:
+
+```bash
+python -m zzzzdat replace 893 my_mario_pack.bin   # entry id + file with the raw (decompressed) contents
+python -m zzzzdat modified                        # what has been replaced
+python -m zzzzdat restore-entry 893               # undo
+```
+
+`zzzzdat/edit.py` compresses the data with the entry's original LZSS settings
+(`zzzzdat/lzss.py` now has an encoder; it packs ~3% tighter than the game's
+own files and round-trips exactly), writes it in place when it fits the old
+0x800-aligned slot and otherwise appends it to ZZZZ.dat, then repoints every
+descriptor that references the entry: in `main.dol` directly (including the
+ARAM-relative master character table), or inside a REL by decompressing it out
+of `aaaa.dat`, patching, recompressing and updating the REL's own descriptor.
+The first change to an entry backs up its bytes and descriptors (and the
+stock REL slot) under `<files>/_mssb_editor_backup/`; `restore` puts
+everything back byte-for-byte. `overrides.json` there tells the index where
+replaced entries now live.
+
+This is the raw layer that texture and model replacement will build on: for
+now the replacement file must already be in the game's own format (for
+example a "Raw file" download edited in a hex editor). The approach follows
+DrSeil's character-cloning work
+([mssb-dtk, feat/character-cloning-texture-decoupling](https://github.com/DrSeil/mssb-dtk/tree/feat/character-cloning-texture-decoupling)),
+which also proved in-game that repointed descriptors and appended data work
+with no code patches.
+
+### Character tables
+
+`zzzzdat/chars.py` names the two DOL tables that define the 54 playable
+character slots (from DrSeil's guide): the **sub-files table** at
+`0x800F1D78` (54 slots x 19 tracks: model, equipment, 17 animation banks) and
+the **master descriptors** at `0x800EFD38` (516 entries, offsets relative to
+the 0x1A15E800 ARAM chunk: body model, right/left hand, bat, alternate bat,
+three grip poses and the skeleton rig per slot). The index now includes the
+master table's entries, and the catalog uses both tables to name assets
+("Toad (red) - model", "Bowser - pitching grip") and to group them by
+character.
+
 ## Custom music
 
 The [MSSB-Custom-Music](https://github.com/LittleCoaks/MSSB-Custom-Music)
@@ -299,6 +344,8 @@ pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
   ui/index.html   the legacy technical UI (served at /legacy)
   ui/dist/        the built Svelte UI (served at /)
   catalog.py      groups entries into characters / stadiums / menus / ... for the UI
+  chars.py        the DOL character tables (54 slots x 19 sub-files, master descriptors)
+  edit.py         replace / restore entries: LZSS encode, write, repoint descriptors, backups
 index/GYQE01.json the generated index (checked in; rebuild with `index`)
 extracted/        output folder (ignored)
 ```

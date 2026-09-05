@@ -3,8 +3,8 @@
   "archive": "Mario Superstar Baseball.iso",
   "archive_size": 450041856,
   "source": "iso",
-  "covered_bytes": 447792860,
-  "built": "2026-09-05 13:17:54"
+  "covered_bytes": 447788140,
+  "built": "2026-09-05 13:44:00"
  },
  "entries": [
   {
@@ -51811,14 +51811,1403 @@
   {
    "id": 2168,
    "offset": 437643264,
-   "disc_size": 5072384,
-   "size": 5072384,
-   "flags": 0,
-   "lookback_bits": 0,
-   "repeat_bits": 0,
+   "disc_size": 77284,
+   "size": 123084,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
    "name": "1a15e800",
    "refs": [
-    "dol:.data:0x800f1d68 lbl_800F1D68"
+    "dol:.data:0x800efd38 lbl_800EFD38"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 9,
+   "nsec": 5,
+   "label": "mario00.gpc",
+   "names": [
+    "mario00.gpc",
+    "mario00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 1
+  },
+  {
+   "id": 2169,
+   "offset": 437720576,
+   "disc_size": 98364,
+   "size": 153396,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a171600",
+   "refs": [
+    "dol:.data:0x800efd48 lbl_800EFD38+0x10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 10,
+   "nsec": 5,
+   "label": "luigi00.gpc",
+   "names": [
+    "luigi00.gpc",
+    "luigi00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 8
+  },
+  {
+   "id": 2170,
+   "offset": 437818944,
+   "disc_size": 86068,
+   "size": 119736,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a189640",
+   "refs": [
+    "dol:.data:0x800efd58 lbl_800EFD38+0x20"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 10,
+   "nsec": 5,
+   "label": "donkey00.gpc",
+   "names": [
+    "donkey00.gpc",
+    "donkey00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 8
+  },
+  {
+   "id": 2171,
+   "offset": 437905024,
+   "disc_size": 89608,
+   "size": 137796,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a19e680",
+   "refs": [
+    "dol:.data:0x800efd68 lbl_800EFD38+0x30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 26,
+   "nsec": 5,
+   "label": "diddy00.gpc",
+   "names": [
+    "diddy00.gpc",
+    "diddy00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2172,
+   "offset": 437994656,
+   "disc_size": 83848,
+   "size": 121424,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a1b44a0",
+   "refs": [
+    "dol:.data:0x800efd78 lbl_800EFD38+0x40"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 12,
+   "nsec": 5,
+   "label": "peach00.gpc",
+   "names": [
+    "peach00.gpc",
+    "peach00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2173,
+   "offset": 438078528,
+   "disc_size": 100288,
+   "size": 139544,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a1c8c40",
+   "refs": [
+    "dol:.data:0x800efd88 lbl_800EFD38+0x50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 10,
+   "nsec": 5,
+   "label": "daisy00.gpc",
+   "names": [
+    "daisy00.gpc",
+    "daisy00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 1
+  },
+  {
+   "id": 2174,
+   "offset": 438178816,
+   "disc_size": 74500,
+   "size": 100896,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a1e1400",
+   "refs": [
+    "dol:.data:0x800efd98 lbl_800EFD38+0x60"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 8,
+   "nsec": 5,
+   "label": "yoshi00.gpc",
+   "names": [
+    "yoshi00.gpc",
+    "yoshi00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 5
+  },
+  {
+   "id": 2175,
+   "offset": 438253344,
+   "disc_size": 79452,
+   "size": 115496,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a1f3720",
+   "refs": [
+    "dol:.data:0x800efda8 lbl_800EFD38+0x70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 27,
+   "nsec": 5,
+   "label": "b_mario00.gpc",
+   "names": [
+    "b_mario00.gpc",
+    "cb_mario00.tpl",
+    "b_mario00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 21
+  },
+  {
+   "id": 2176,
+   "offset": 438332800,
+   "disc_size": 82180,
+   "size": 120700,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a206d80",
+   "refs": [
+    "dol:.data:0x800efdb8 lbl_800EFD38+0x80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 27,
+   "nsec": 5,
+   "label": "b_luigi00.gpc",
+   "names": [
+    "b_luigi00.gpc",
+    "b_luigi00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 17
+  },
+  {
+   "id": 2177,
+   "offset": 438415008,
+   "disc_size": 76400,
+   "size": 101204,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a21aea0",
+   "refs": [
+    "dol:.data:0x800efdc8 lbl_800EFD38+0x90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 9,
+   "nsec": 5,
+   "label": "koopa00.gpc",
+   "names": [
+    "koopa00.gpc",
+    "koopa00.tpl",
+    "Ykoopa00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 8
+  },
+  {
+   "id": 2178,
+   "offset": 438491424,
+   "disc_size": 83936,
+   "size": 134928,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a22d920",
+   "refs": [
+    "dol:.data:0x800efdd8 lbl_800EFD38+0xa0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 10,
+   "nsec": 5,
+   "label": "wario00.gpc",
+   "names": [
+    "wario00.gpc",
+    "wario00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 2
+  },
+  {
+   "id": 2179,
+   "offset": 438575360,
+   "disc_size": 94344,
+   "size": 128588,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a242100",
+   "refs": [
+    "dol:.data:0x800efde8 lbl_800EFD38+0xb0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 10,
+   "nsec": 5,
+   "label": "waluigi00.gpc",
+   "names": [
+    "waluigi00.gpc",
+    "waluigi00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 3
+  },
+  {
+   "id": 2180,
+   "offset": 438669728,
+   "disc_size": 96568,
+   "size": 135132,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a2591a0",
+   "refs": [
+    "dol:.data:0x800efdf8 lbl_800EFD38+0xc0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 20,
+   "nsec": 5,
+   "label": "nokonoko00.gpc",
+   "names": [
+    "nokonoko00.gpc",
+    "nokonoko00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2181,
+   "offset": 438766304,
+   "disc_size": 63624,
+   "size": 103856,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a270ae0",
+   "refs": [
+    "dol:.data:0x800efe08 lbl_800EFD38+0xd0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 20,
+   "nsec": 5,
+   "label": "kinopio00.gpc",
+   "names": [
+    "kinopio00.gpc",
+    "kinopio00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 14
+  },
+  {
+   "id": 2182,
+   "offset": 438829952,
+   "disc_size": 57552,
+   "size": 89312,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a280380",
+   "refs": [
+    "dol:.data:0x800efe18 lbl_800EFD38+0xe0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 12,
+   "nsec": 4,
+   "label": "teresa00.gpc",
+   "names": [
+    "teresa00.gpc",
+    "teresa00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2183,
+   "offset": 438887520,
+   "disc_size": 68572,
+   "size": 106224,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a28e460",
+   "refs": [
+    "dol:.data:0x800efe28 lbl_800EFD38+0xf0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 24,
+   "nsec": 5,
+   "label": "kinopico00.gpc",
+   "names": [
+    "kinopico00.gpc",
+    "kinopico00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 19
+  },
+  {
+   "id": 2184,
+   "offset": 438956096,
+   "disc_size": 57784,
+   "size": 90912,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a29f040",
+   "refs": [
+    "dol:.data:0x800efe38 lbl_800EFD38+0x100"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 8,
+   "nsec": 4,
+   "label": "heiho.gpc",
+   "names": [
+    "heiho.gpc",
+    "heiho.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2185,
+   "offset": 439013888,
+   "disc_size": 75032,
+   "size": 120612,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a2ad200",
+   "refs": [
+    "dol:.data:0x800efe48 lbl_800EFD38+0x110"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 24,
+   "nsec": 5,
+   "label": "catherine00.gpc",
+   "names": [
+    "catherine00.gpc",
+    "catherine00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 9
+  },
+  {
+   "id": 2186,
+   "offset": 439088928,
+   "disc_size": 66200,
+   "size": 97760,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a2bf720",
+   "refs": [
+    "dol:.data:0x800efe58 lbl_800EFD38+0x120"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 10,
+   "nsec": 5,
+   "label": "choropu00.gpc",
+   "names": [
+    "choropu00.gpc",
+    "choropu00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 2
+  },
+  {
+   "id": 2187,
+   "offset": 439155136,
+   "disc_size": 80140,
+   "size": 109496,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a2cf9c0",
+   "refs": [
+    "dol:.data:0x800efe68 lbl_800EFD38+0x130"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 9,
+   "nsec": 5,
+   "label": "koopa_jr00.gpc",
+   "names": [
+    "koopa_jr00.gpc",
+    "koopa_jr00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 3
+  },
+  {
+   "id": 2188,
+   "offset": 439235296,
+   "disc_size": 102788,
+   "size": 142652,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a2e32e0",
+   "refs": [
+    "dol:.data:0x800efe78 lbl_800EFD38+0x140"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 21,
+   "nsec": 5,
+   "label": "patapata00.gpc",
+   "names": [
+    "patapata00.gpc",
+    "patapata00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2189,
+   "offset": 439338112,
+   "disc_size": 68432,
+   "size": 100380,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a2fc480",
+   "refs": [
+    "dol:.data:0x800efe88 lbl_800EFD38+0x150"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 10,
+   "nsec": 5,
+   "label": "monte_B00.gpc",
+   "names": [
+    "monte_B00.gpc",
+    "monte_B00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 2
+  },
+  {
+   "id": 2190,
+   "offset": 439406560,
+   "disc_size": 47868,
+   "size": 71696,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a30cfe0",
+   "refs": [
+    "dol:.data:0x800efe98 lbl_800EFD38+0x160"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 8,
+   "nsec": 5,
+   "label": "mare00.gpc",
+   "names": [
+    "mare00.gpc",
+    "mare00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 6
+  },
+  {
+   "id": 2191,
+   "offset": 439454432,
+   "disc_size": 78556,
+   "size": 118360,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a318ae0",
+   "refs": [
+    "dol:.data:0x800efea8 lbl_800EFD38+0x170"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 26,
+   "nsec": 5,
+   "label": "kinoji00.gpc",
+   "names": [
+    "kinoji00.gpc",
+    "kinoji00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 10
+  },
+  {
+   "id": 2192,
+   "offset": 439532992,
+   "disc_size": 56732,
+   "size": 86252,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a32bdc0",
+   "refs": [
+    "dol:.data:0x800efeb8 lbl_800EFD38+0x180"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 17,
+   "nsec": 5,
+   "label": "kamekku00.gpc",
+   "names": [
+    "kamekku00.gpc",
+    "kamekku00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 3
+  },
+  {
+   "id": 2193,
+   "offset": 439589728,
+   "disc_size": 62048,
+   "size": 94976,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a339b60",
+   "refs": [
+    "dol:.data:0x800efec8 lbl_800EFD38+0x190"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 16,
+   "nsec": 4,
+   "label": "king_teresa00.gpc",
+   "names": [
+    "king_teresa00.gpc",
+    "king_teresa00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 12
+  },
+  {
+   "id": 2194,
+   "offset": 439651776,
+   "disc_size": 75456,
+   "size": 104128,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a348dc0",
+   "refs": [
+    "dol:.data:0x800efed8 lbl_800EFD38+0x1a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 9,
+   "nsec": 4,
+   "label": "boss_packun.gpc",
+   "names": [
+    "boss_packun.gpc",
+    "boss_packun.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 1
+  },
+  {
+   "id": 2195,
+   "offset": 439727232,
+   "disc_size": 87248,
+   "size": 127612,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a35b480",
+   "refs": [
+    "dol:.data:0x800efee8 lbl_800EFD38+0x1b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 30,
+   "nsec": 5,
+   "label": "dixie00.gpc",
+   "names": [
+    "dixie00.gpc",
+    "dixie00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 8
+  },
+  {
+   "id": 2196,
+   "offset": 439814496,
+   "disc_size": 55224,
+   "size": 71880,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a370960",
+   "refs": [
+    "dol:.data:0x800efef8 lbl_800EFD38+0x1c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 15,
+   "nsec": 5,
+   "label": "kuribo00.gpc",
+   "names": [
+    "kuribo00.gpc",
+    "kuribo00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 4
+  },
+  {
+   "id": 2197,
+   "offset": 439869728,
+   "disc_size": 77776,
+   "size": 98344,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a37e120",
+   "refs": [
+    "dol:.data:0x800eff08 lbl_800EFD38+0x1d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 15,
+   "nsec": 5,
+   "label": "patakuri00.gpc",
+   "names": [
+    "patakuri00.gpc",
+    "patakuri00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 4
+  },
+  {
+   "id": 2198,
+   "offset": 439947520,
+   "disc_size": 52996,
+   "size": 76048,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a391100",
+   "refs": [
+    "dol:.data:0x800eff18 lbl_800EFD38+0x1e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 8,
+   "nsec": 5,
+   "label": "Karon00.gpc",
+   "names": [
+    "Karon00.gpc",
+    "Karon00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 6
+  },
+  {
+   "id": 2199,
+   "offset": 440000544,
+   "disc_size": 56776,
+   "size": 80596,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a39e020",
+   "refs": [
+    "dol:.data:0x800eff28 lbl_800EFD38+0x1f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 9,
+   "nsec": 5,
+   "label": "bloodyKaron00.gpc",
+   "names": [
+    "bloodyKaron00.gpc",
+    "bloodyKaron00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 6
+  },
+  {
+   "id": 2200,
+   "offset": 440057344,
+   "disc_size": 71036,
+   "size": 110108,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3abe00",
+   "refs": [
+    "dol:.data:0x800eff38 lbl_800EFD38+0x200"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 35,
+   "nsec": 5,
+   "label": "HB00.gpc",
+   "names": [
+    "HB00.gpc",
+    "HB00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 14
+  },
+  {
+   "id": 2201,
+   "offset": 440128384,
+   "disc_size": 20612,
+   "size": 34624,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3bd380",
+   "refs": [
+    "dol:.data:0x800eff48 lbl_800EFD38+0x210"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 20,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2202,
+   "offset": 440149024,
+   "disc_size": 15892,
+   "size": 31072,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3c2420",
+   "refs": [
+    "dol:.data:0x800eff58 lbl_800EFD38+0x220"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 20,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 14
+  },
+  {
+   "id": 2203,
+   "offset": 440164928,
+   "disc_size": 15860,
+   "size": 31072,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3c6240",
+   "refs": [
+    "dol:.data:0x800eff68 lbl_800EFD38+0x230"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 20,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 14
+  },
+  {
+   "id": 2204,
+   "offset": 440180800,
+   "disc_size": 15596,
+   "size": 31072,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3ca040",
+   "refs": [
+    "dol:.data:0x800eff78 lbl_800EFD38+0x240"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 20,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 14
+  },
+  {
+   "id": 2205,
+   "offset": 440196416,
+   "disc_size": 15592,
+   "size": 31072,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3cdd40",
+   "refs": [
+    "dol:.data:0x800eff88 lbl_800EFD38+0x250"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 20,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 14
+  },
+  {
+   "id": 2206,
+   "offset": 440212032,
+   "disc_size": 12244,
+   "size": 26272,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3d1a40",
+   "refs": [
+    "dol:.data:0x800eff98 lbl_800EFD38+0x260"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 8,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2207,
+   "offset": 440224288,
+   "disc_size": 12208,
+   "size": 26272,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3d4a20",
+   "refs": [
+    "dol:.data:0x800effa8 lbl_800EFD38+0x270"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 8,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2208,
+   "offset": 440236512,
+   "disc_size": 12252,
+   "size": 26272,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3d79e0",
+   "refs": [
+    "dol:.data:0x800effb8 lbl_800EFD38+0x280"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 8,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2209,
+   "offset": 440248768,
+   "disc_size": 12052,
+   "size": 26272,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3da9c0",
+   "refs": [
+    "dol:.data:0x800effc8 lbl_800EFD38+0x290"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 8,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2210,
+   "offset": 440260832,
+   "disc_size": 21744,
+   "size": 36704,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3dd8e0",
+   "refs": [
+    "dol:.data:0x800effd8 lbl_800EFD38+0x2a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 21,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 7
+  },
+  {
+   "id": 2211,
+   "offset": 440282592,
+   "disc_size": 15084,
+   "size": 23520,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3e2de0",
+   "refs": [
+    "dol:.data:0x800effe8 lbl_800EFD38+0x2b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 10,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 2
+  },
+  {
+   "id": 2212,
+   "offset": 440297696,
+   "disc_size": 15084,
+   "size": 23520,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3e68e0",
+   "refs": [
+    "dol:.data:0x800efff8 lbl_800EFD38+0x2c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 10,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 2
+  },
+  {
+   "id": 2213,
+   "offset": 440312800,
+   "disc_size": 10488,
+   "size": 18336,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3ea3e0",
+   "refs": [
+    "dol:.data:0x800f0008 lbl_800EFD38+0x2d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 8,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 6
+  },
+  {
+   "id": 2214,
+   "offset": 440323296,
+   "disc_size": 10532,
+   "size": 18336,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3ecce0",
+   "refs": [
+    "dol:.data:0x800f0018 lbl_800EFD38+0x2e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 8,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 6
+  },
+  {
+   "id": 2215,
+   "offset": 440333856,
+   "disc_size": 15856,
+   "size": 27904,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3ef620",
+   "refs": [
+    "dol:.data:0x800f0028 lbl_800EFD38+0x2f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 35,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 14
+  },
+  {
+   "id": 2216,
+   "offset": 440349728,
+   "disc_size": 15916,
+   "size": 27904,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3f3420",
+   "refs": [
+    "dol:.data:0x800f0038 lbl_800EFD38+0x300"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 35,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 14
+  },
+  {
+   "id": 2217,
+   "offset": 440365664,
+   "disc_size": 11200,
+   "size": 16960,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3f7260",
+   "refs": [
+    "dol:.data:0x800f0048 lbl_800EFD38+0x310"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 17,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 3
+  },
+  {
+   "id": 2218,
+   "offset": 440376864,
+   "disc_size": 11168,
+   "size": 16960,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3f9e20",
+   "refs": [
+    "dol:.data:0x800f0058 lbl_800EFD38+0x320"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 17,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 3
+  },
+  {
+   "id": 2219,
+   "offset": 440388032,
+   "disc_size": 11476,
+   "size": 16960,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3fc9c0",
+   "refs": [
+    "dol:.data:0x800f0068 lbl_800EFD38+0x330"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 17,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 3
+  },
+  {
+   "id": 2220,
+   "offset": 440399520,
+   "disc_size": 14832,
+   "size": 24480,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a3ff6a0",
+   "refs": [
+    "dol:.data:0x800f0078 lbl_800EFD38+0x340"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 8,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 6
+  },
+  {
+   "id": 2221,
+   "offset": 440414368,
+   "disc_size": 14792,
+   "size": 24480,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4030a0",
+   "refs": [
+    "dol:.data:0x800f0088 lbl_800EFD38+0x350"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "textures",
+   "ntex": 8,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 6
+  },
+  {
+   "id": 2222,
+   "offset": 440429184,
+   "disc_size": 21880,
+   "size": 34312,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a406a80",
+   "refs": [
+    "dol:.data:0x800f0098 lbl_800EFD38+0x360"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2223,
+   "offset": 440451072,
+   "disc_size": 21892,
+   "size": 34184,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a40c000",
+   "refs": [
+    "dol:.data:0x800f00a8 lbl_800EFD38+0x370"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2224,
+   "offset": 440472992,
+   "disc_size": 4988,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4115a0",
+   "refs": [
+    "dol:.data:0x800f00b8 lbl_800EFD38+0x380"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2225,
+   "offset": 440477984,
+   "disc_size": 5036,
+   "size": 6596,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a412920",
+   "refs": [
+    "dol:.data:0x800f00c8 lbl_800EFD38+0x390"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2226,
+   "offset": 440483040,
+   "disc_size": 496,
+   "size": 736,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a413ce0",
+   "refs": [
+    "dol:.data:0x800f00d8 lbl_800EFD38+0x3a0"
    ],
    "archive": "ZZZZ.dat",
    "kind": "unknown",
@@ -51831,7 +53220,6847 @@
    "thumb": 0
   },
   {
-   "id": 2169,
+   "id": 2227,
+   "offset": 440483552,
+   "disc_size": 572,
+   "size": 836,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a413ee0",
+   "refs": [
+    "dol:.data:0x800f00e8 lbl_800EFD38+0x3b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2228,
+   "offset": 440484128,
+   "disc_size": 204,
+   "size": 340,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a414120",
+   "refs": [
+    "dol:.data:0x800f00f8 lbl_800EFD38+0x3c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2229,
+   "offset": 440484352,
+   "disc_size": 20884,
+   "size": 32680,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a414200",
+   "refs": [
+    "dol:.data:0x800f0108 lbl_800EFD38+0x3d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2230,
+   "offset": 440505248,
+   "disc_size": 20748,
+   "size": 32584,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4193a0",
+   "refs": [
+    "dol:.data:0x800f0118 lbl_800EFD38+0x3e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2231,
+   "offset": 440526016,
+   "disc_size": 4988,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a41e4c0",
+   "refs": [
+    "dol:.data:0x800f0128 lbl_800EFD38+0x3f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2232,
+   "offset": 440531008,
+   "disc_size": 5036,
+   "size": 6596,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a41f840",
+   "refs": [
+    "dol:.data:0x800f0138 lbl_800EFD38+0x400"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2233,
+   "offset": 440536064,
+   "disc_size": 1016,
+   "size": 1612,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a420c00",
+   "refs": [
+    "dol:.data:0x800f0148 lbl_800EFD38+0x410"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2234,
+   "offset": 440537088,
+   "disc_size": 1720,
+   "size": 3064,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a421000",
+   "refs": [
+    "dol:.data:0x800f0158 lbl_800EFD38+0x420"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2235,
+   "offset": 440538816,
+   "disc_size": 740,
+   "size": 1576,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4216c0",
+   "refs": [
+    "dol:.data:0x800f0168 lbl_800EFD38+0x430"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2236,
+   "offset": 440539584,
+   "disc_size": 24984,
+   "size": 38700,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4219c0",
+   "refs": [
+    "dol:.data:0x800f0178 lbl_800EFD38+0x440"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2237,
+   "offset": 440564576,
+   "disc_size": 25028,
+   "size": 38700,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a427b60",
+   "refs": [
+    "dol:.data:0x800f0188 lbl_800EFD38+0x450"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2238,
+   "offset": 440589632,
+   "disc_size": 5188,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a42dd40",
+   "refs": [
+    "dol:.data:0x800f0198 lbl_800EFD38+0x460"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2239,
+   "offset": 440594848,
+   "disc_size": 5232,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a42f1a0",
+   "refs": [
+    "dol:.data:0x800f01a8 lbl_800EFD38+0x470"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2240,
+   "offset": 440600096,
+   "disc_size": 736,
+   "size": 1300,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a430620",
+   "refs": [
+    "dol:.data:0x800f01b8 lbl_800EFD38+0x480"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2241,
+   "offset": 440600832,
+   "disc_size": 1688,
+   "size": 3184,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a430900",
+   "refs": [
+    "dol:.data:0x800f01c8 lbl_800EFD38+0x490"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2242,
+   "offset": 440602528,
+   "disc_size": 764,
+   "size": 1584,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a430fa0",
+   "refs": [
+    "dol:.data:0x800f01d8 lbl_800EFD38+0x4a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2243,
+   "offset": 440603296,
+   "disc_size": 22348,
+   "size": 34472,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4312a0",
+   "refs": [
+    "dol:.data:0x800f01e8 lbl_800EFD38+0x4b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2244,
+   "offset": 440625664,
+   "disc_size": 22512,
+   "size": 34536,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a436a00",
+   "refs": [
+    "dol:.data:0x800f01f8 lbl_800EFD38+0x4c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2245,
+   "offset": 440648192,
+   "disc_size": 5052,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a43c200",
+   "refs": [
+    "dol:.data:0x800f0208 lbl_800EFD38+0x4d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2246,
+   "offset": 440653248,
+   "disc_size": 5060,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a43d5c0",
+   "refs": [
+    "dol:.data:0x800f0218 lbl_800EFD38+0x4e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2247,
+   "offset": 440658336,
+   "disc_size": 988,
+   "size": 1516,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a43e9a0",
+   "refs": [
+    "dol:.data:0x800f0228 lbl_800EFD38+0x4f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2248,
+   "offset": 440659328,
+   "disc_size": 1740,
+   "size": 3032,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a43ed80",
+   "refs": [
+    "dol:.data:0x800f0238 lbl_800EFD38+0x500"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2249,
+   "offset": 440661088,
+   "disc_size": 792,
+   "size": 1628,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a43f460",
+   "refs": [
+    "dol:.data:0x800f0248 lbl_800EFD38+0x510"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2250,
+   "offset": 440661888,
+   "disc_size": 15860,
+   "size": 28788,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a43f780",
+   "refs": [
+    "dol:.data:0x800f0258 lbl_800EFD38+0x520"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2251,
+   "offset": 440677760,
+   "disc_size": 15936,
+   "size": 29012,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a443580",
+   "refs": [
+    "dol:.data:0x800f0268 lbl_800EFD38+0x530"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2252,
+   "offset": 440693696,
+   "disc_size": 4844,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4473c0",
+   "refs": [
+    "dol:.data:0x800f0278 lbl_800EFD38+0x540"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2253,
+   "offset": 440698560,
+   "disc_size": 4836,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4486c0",
+   "refs": [
+    "dol:.data:0x800f0288 lbl_800EFD38+0x550"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2254,
+   "offset": 440703424,
+   "disc_size": 544,
+   "size": 780,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4499c0",
+   "refs": [
+    "dol:.data:0x800f0298 lbl_800EFD38+0x560"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2255,
+   "offset": 440703968,
+   "disc_size": 416,
+   "size": 584,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a449be0",
+   "refs": [
+    "dol:.data:0x800f02a8 lbl_800EFD38+0x570"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2256,
+   "offset": 440704384,
+   "disc_size": 156,
+   "size": 300,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a449d80",
+   "refs": [
+    "dol:.data:0x800f02b8 lbl_800EFD38+0x580"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2257,
+   "offset": 440704544,
+   "disc_size": 15908,
+   "size": 28852,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a449e20",
+   "refs": [
+    "dol:.data:0x800f02c8 lbl_800EFD38+0x590"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2258,
+   "offset": 440720480,
+   "disc_size": 15960,
+   "size": 29044,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a44dc60",
+   "refs": [
+    "dol:.data:0x800f02d8 lbl_800EFD38+0x5a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2259,
+   "offset": 440736448,
+   "disc_size": 4844,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a451ac0",
+   "refs": [
+    "dol:.data:0x800f02e8 lbl_800EFD38+0x5b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2260,
+   "offset": 440741312,
+   "disc_size": 4856,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a452dc0",
+   "refs": [
+    "dol:.data:0x800f02f8 lbl_800EFD38+0x5c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2261,
+   "offset": 440746176,
+   "disc_size": 656,
+   "size": 952,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4540c0",
+   "refs": [
+    "dol:.data:0x800f0308 lbl_800EFD38+0x5d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2262,
+   "offset": 440746848,
+   "disc_size": 452,
+   "size": 648,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a454360",
+   "refs": [
+    "dol:.data:0x800f0318 lbl_800EFD38+0x5e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2263,
+   "offset": 440747328,
+   "disc_size": 92,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a454540",
+   "refs": [
+    "dol:.data:0x800f0328 lbl_800EFD38+0x5f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2264,
+   "offset": 440747424,
+   "disc_size": 19224,
+   "size": 30960,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4545a0",
+   "refs": [
+    "dol:.data:0x800f0338 lbl_800EFD38+0x600"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2265,
+   "offset": 440766656,
+   "disc_size": 19252,
+   "size": 30928,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4590c0",
+   "refs": [
+    "dol:.data:0x800f0348 lbl_800EFD38+0x610"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2266,
+   "offset": 440785920,
+   "disc_size": 5112,
+   "size": 6948,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a45dc00",
+   "refs": [
+    "dol:.data:0x800f0358 lbl_800EFD38+0x620"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2267,
+   "offset": 440791040,
+   "disc_size": 5176,
+   "size": 6948,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a45f000",
+   "refs": [
+    "dol:.data:0x800f0368 lbl_800EFD38+0x630"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2268,
+   "offset": 440796224,
+   "disc_size": 548,
+   "size": 824,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a460440",
+   "refs": [
+    "dol:.data:0x800f0378 lbl_800EFD38+0x640"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2269,
+   "offset": 440796800,
+   "disc_size": 644,
+   "size": 964,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a460680",
+   "refs": [
+    "dol:.data:0x800f0388 lbl_800EFD38+0x650"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2270,
+   "offset": 440797472,
+   "disc_size": 192,
+   "size": 332,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a460920",
+   "refs": [
+    "dol:.data:0x800f0398 lbl_800EFD38+0x660"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2271,
+   "offset": 440797664,
+   "disc_size": 19196,
+   "size": 33592,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4609e0",
+   "refs": [
+    "dol:.data:0x800f03a8 lbl_800EFD38+0x670"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2272,
+   "offset": 440816864,
+   "disc_size": 19308,
+   "size": 33560,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4654e0",
+   "refs": [
+    "dol:.data:0x800f03b8 lbl_800EFD38+0x680"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2273,
+   "offset": 440836192,
+   "disc_size": 4812,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a46a060",
+   "refs": [
+    "dol:.data:0x800f03c8 lbl_800EFD38+0x690"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2274,
+   "offset": 440841024,
+   "disc_size": 4808,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a46b340",
+   "refs": [
+    "dol:.data:0x800f03d8 lbl_800EFD38+0x6a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2275,
+   "offset": 440845856,
+   "disc_size": 224,
+   "size": 348,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a46c620",
+   "refs": [
+    "dol:.data:0x800f03e8 lbl_800EFD38+0x6b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2276,
+   "offset": 440846080,
+   "disc_size": 180,
+   "size": 312,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a46c700",
+   "refs": [
+    "dol:.data:0x800f03f8 lbl_800EFD38+0x6c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2277,
+   "offset": 440846272,
+   "disc_size": 88,
+   "size": 204,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a46c7c0",
+   "refs": [
+    "dol:.data:0x800f0408 lbl_800EFD38+0x6d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2278,
+   "offset": 440846368,
+   "disc_size": 19204,
+   "size": 33592,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a46c820",
+   "refs": [
+    "dol:.data:0x800f0418 lbl_800EFD38+0x6e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2279,
+   "offset": 440865600,
+   "disc_size": 19264,
+   "size": 33560,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a471340",
+   "refs": [
+    "dol:.data:0x800f0428 lbl_800EFD38+0x6f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2280,
+   "offset": 440884864,
+   "disc_size": 4776,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a475e80",
+   "refs": [
+    "dol:.data:0x800f0438 lbl_800EFD38+0x700"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2281,
+   "offset": 440889664,
+   "disc_size": 4800,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a477140",
+   "refs": [
+    "dol:.data:0x800f0448 lbl_800EFD38+0x710"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2282,
+   "offset": 440894464,
+   "disc_size": 272,
+   "size": 404,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a478400",
+   "refs": [
+    "dol:.data:0x800f0458 lbl_800EFD38+0x720"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2283,
+   "offset": 440894752,
+   "disc_size": 176,
+   "size": 312,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a478520",
+   "refs": [
+    "dol:.data:0x800f0468 lbl_800EFD38+0x730"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2284,
+   "offset": 440894944,
+   "disc_size": 88,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4785e0",
+   "refs": [
+    "dol:.data:0x800f0478 lbl_800EFD38+0x740"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2285,
+   "offset": 440895040,
+   "disc_size": 23224,
+   "size": 39264,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a478640",
+   "refs": [
+    "dol:.data:0x800f0488 lbl_800EFD38+0x750"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2286,
+   "offset": 440918272,
+   "disc_size": 23052,
+   "size": 39136,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a47e100",
+   "refs": [
+    "dol:.data:0x800f0498 lbl_800EFD38+0x760"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2287,
+   "offset": 440941344,
+   "disc_size": 5664,
+   "size": 6788,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a483b20",
+   "refs": [
+    "dol:.data:0x800f04a8 lbl_800EFD38+0x770"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2288,
+   "offset": 440947008,
+   "disc_size": 5700,
+   "size": 6788,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a485140",
+   "refs": [
+    "dol:.data:0x800f04b8 lbl_800EFD38+0x780"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2289,
+   "offset": 440952736,
+   "disc_size": 668,
+   "size": 1044,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4867a0",
+   "refs": [
+    "dol:.data:0x800f04c8 lbl_800EFD38+0x790"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2290,
+   "offset": 440953408,
+   "disc_size": 484,
+   "size": 792,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a486a40",
+   "refs": [
+    "dol:.data:0x800f04d8 lbl_800EFD38+0x7a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2291,
+   "offset": 440953920,
+   "disc_size": 80,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a486c40",
+   "refs": [
+    "dol:.data:0x800f04e8 lbl_800EFD38+0x7b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2292,
+   "offset": 440954016,
+   "disc_size": 19144,
+   "size": 30832,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a486ca0",
+   "refs": [
+    "dol:.data:0x800f04f8 lbl_800EFD38+0x7c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2293,
+   "offset": 440973184,
+   "disc_size": 19176,
+   "size": 30608,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a48b780",
+   "refs": [
+    "dol:.data:0x800f0508 lbl_800EFD38+0x7d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2294,
+   "offset": 440992384,
+   "disc_size": 5000,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a490280",
+   "refs": [
+    "dol:.data:0x800f0518 lbl_800EFD38+0x7e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2295,
+   "offset": 440997408,
+   "disc_size": 5048,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a491620",
+   "refs": [
+    "dol:.data:0x800f0528 lbl_800EFD38+0x7f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2296,
+   "offset": 441002464,
+   "disc_size": 1188,
+   "size": 1756,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4929e0",
+   "refs": [
+    "dol:.data:0x800f0538 lbl_800EFD38+0x800"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2297,
+   "offset": 441003680,
+   "disc_size": 976,
+   "size": 1452,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a492ea0",
+   "refs": [
+    "dol:.data:0x800f0548 lbl_800EFD38+0x810"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2298,
+   "offset": 441004672,
+   "disc_size": 216,
+   "size": 372,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a493280",
+   "refs": [
+    "dol:.data:0x800f0558 lbl_800EFD38+0x820"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2299,
+   "offset": 441004896,
+   "disc_size": 19628,
+   "size": 31760,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a493360",
+   "refs": [
+    "dol:.data:0x800f0568 lbl_800EFD38+0x830"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2300,
+   "offset": 441024544,
+   "disc_size": 19484,
+   "size": 31408,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a498020",
+   "refs": [
+    "dol:.data:0x800f0578 lbl_800EFD38+0x840"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2301,
+   "offset": 441044032,
+   "disc_size": 5052,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a49cc40",
+   "refs": [
+    "dol:.data:0x800f0588 lbl_800EFD38+0x850"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2302,
+   "offset": 441049088,
+   "disc_size": 5124,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a49e000",
+   "refs": [
+    "dol:.data:0x800f0598 lbl_800EFD38+0x860"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2303,
+   "offset": 441054240,
+   "disc_size": 388,
+   "size": 576,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a49f420",
+   "refs": [
+    "dol:.data:0x800f05a8 lbl_800EFD38+0x870"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2304,
+   "offset": 441054656,
+   "disc_size": 236,
+   "size": 392,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a49f5c0",
+   "refs": [
+    "dol:.data:0x800f05b8 lbl_800EFD38+0x880"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2305,
+   "offset": 441054912,
+   "disc_size": 80,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a49f6c0",
+   "refs": [
+    "dol:.data:0x800f05c8 lbl_800EFD38+0x890"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2306,
+   "offset": 441055008,
+   "disc_size": 16124,
+   "size": 25984,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a49f720",
+   "refs": [
+    "dol:.data:0x800f05d8 lbl_800EFD38+0x8a0",
+    "dol:.data:0x800f12f8 lbl_800EFD38+0x15c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2307,
+   "offset": 441071136,
+   "disc_size": 16148,
+   "size": 26080,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4a3620",
+   "refs": [
+    "dol:.data:0x800f05e8 lbl_800EFD38+0x8b0",
+    "dol:.data:0x800f1308 lbl_800EFD38+0x15d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2308,
+   "offset": 441087296,
+   "disc_size": 5244,
+   "size": 6884,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4a7540",
+   "refs": [
+    "dol:.data:0x800f05f8 lbl_800EFD38+0x8c0",
+    "dol:.data:0x800f1318 lbl_800EFD38+0x15e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2309,
+   "offset": 441092544,
+   "disc_size": 5280,
+   "size": 6884,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4a89c0",
+   "refs": [
+    "dol:.data:0x800f0608 lbl_800EFD38+0x8d0",
+    "dol:.data:0x800f1328 lbl_800EFD38+0x15f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2310,
+   "offset": 441097824,
+   "disc_size": 156,
+   "size": 292,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4a9e60",
+   "refs": [
+    "dol:.data:0x800f0618 lbl_800EFD38+0x8e0",
+    "dol:.data:0x800f1338 lbl_800EFD38+0x1600"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2311,
+   "offset": 441097984,
+   "disc_size": 200,
+   "size": 340,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4a9f00",
+   "refs": [
+    "dol:.data:0x800f0628 lbl_800EFD38+0x8f0",
+    "dol:.data:0x800f1348 lbl_800EFD38+0x1610"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2312,
+   "offset": 441098208,
+   "disc_size": 100,
+   "size": 220,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4a9fe0",
+   "refs": [
+    "dol:.data:0x800f0638 lbl_800EFD38+0x900",
+    "dol:.data:0x800f1358 lbl_800EFD38+0x1620"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2313,
+   "offset": 441098336,
+   "disc_size": 18364,
+   "size": 32880,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4aa060",
+   "refs": [
+    "dol:.data:0x800f0648 lbl_800EFD38+0x910",
+    "dol:.data:0x800f0d48 lbl_800EFD38+0x1010",
+    "dol:.data:0x800f0db8 lbl_800EFD38+0x1080",
+    "dol:.data:0x800f0e28 lbl_800EFD38+0x10f0",
+    "dol:.data:0x800f0e98 lbl_800EFD38+0x1160"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2314,
+   "offset": 441116704,
+   "disc_size": 18544,
+   "size": 32816,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4ae820",
+   "refs": [
+    "dol:.data:0x800f0658 lbl_800EFD38+0x920",
+    "dol:.data:0x800f0d58 lbl_800EFD38+0x1020",
+    "dol:.data:0x800f0dc8 lbl_800EFD38+0x1090",
+    "dol:.data:0x800f0e38 lbl_800EFD38+0x1100",
+    "dol:.data:0x800f0ea8 lbl_800EFD38+0x1170"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2315,
+   "offset": 441135264,
+   "disc_size": 4912,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4b30a0",
+   "refs": [
+    "dol:.data:0x800f0668 lbl_800EFD38+0x930",
+    "dol:.data:0x800f0d68 lbl_800EFD38+0x1030",
+    "dol:.data:0x800f0dd8 lbl_800EFD38+0x10a0",
+    "dol:.data:0x800f0e48 lbl_800EFD38+0x1110",
+    "dol:.data:0x800f0eb8 lbl_800EFD38+0x1180"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2316,
+   "offset": 441140192,
+   "disc_size": 4900,
+   "size": 6596,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4b43e0",
+   "refs": [
+    "dol:.data:0x800f0678 lbl_800EFD38+0x940",
+    "dol:.data:0x800f0d78 lbl_800EFD38+0x1040",
+    "dol:.data:0x800f0de8 lbl_800EFD38+0x10b0",
+    "dol:.data:0x800f0e58 lbl_800EFD38+0x1120",
+    "dol:.data:0x800f0ec8 lbl_800EFD38+0x1190"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2317,
+   "offset": 441145120,
+   "disc_size": 236,
+   "size": 368,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4b5720",
+   "refs": [
+    "dol:.data:0x800f0688 lbl_800EFD38+0x950",
+    "dol:.data:0x800f0d88 lbl_800EFD38+0x1050",
+    "dol:.data:0x800f0df8 lbl_800EFD38+0x10c0",
+    "dol:.data:0x800f0e68 lbl_800EFD38+0x1130",
+    "dol:.data:0x800f0ed8 lbl_800EFD38+0x11a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2318,
+   "offset": 441145376,
+   "disc_size": 172,
+   "size": 300,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4b5820",
+   "refs": [
+    "dol:.data:0x800f0698 lbl_800EFD38+0x960",
+    "dol:.data:0x800f0d98 lbl_800EFD38+0x1060",
+    "dol:.data:0x800f0e08 lbl_800EFD38+0x10d0",
+    "dol:.data:0x800f0e78 lbl_800EFD38+0x1140",
+    "dol:.data:0x800f0ee8 lbl_800EFD38+0x11b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2319,
+   "offset": 441145568,
+   "disc_size": 80,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4b58e0",
+   "refs": [
+    "dol:.data:0x800f06a8 lbl_800EFD38+0x970",
+    "dol:.data:0x800f0da8 lbl_800EFD38+0x1070",
+    "dol:.data:0x800f0e18 lbl_800EFD38+0x10e0",
+    "dol:.data:0x800f0e88 lbl_800EFD38+0x1150",
+    "dol:.data:0x800f0ef8 lbl_800EFD38+0x11c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2320,
+   "offset": 441145664,
+   "disc_size": 7468,
+   "size": 9540,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4b5940",
+   "refs": [
+    "dol:.data:0x800f06b8 lbl_800EFD38+0x980"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand00.gpc",
+   "names": [
+    "L_hand00.gpc",
+    "L_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2321,
+   "offset": 441153152,
+   "disc_size": 7460,
+   "size": 9540,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4b7680",
+   "refs": [
+    "dol:.data:0x800f06c8 lbl_800EFD38+0x990"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand00.gpc",
+   "names": [
+    "R_hand00.gpc",
+    "R_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2322,
+   "offset": 441160640,
+   "disc_size": 5304,
+   "size": 6660,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4b93c0",
+   "refs": [
+    "dol:.data:0x800f06d8 lbl_800EFD38+0x9a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2323,
+   "offset": 441165952,
+   "disc_size": 5340,
+   "size": 6660,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4ba880",
+   "refs": [
+    "dol:.data:0x800f06e8 lbl_800EFD38+0x9b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2324,
+   "offset": 441171296,
+   "disc_size": 100,
+   "size": 248,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4bbd60",
+   "refs": [
+    "dol:.data:0x800f06f8 lbl_800EFD38+0x9c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2325,
+   "offset": 441171424,
+   "disc_size": 92,
+   "size": 232,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4bbde0",
+   "refs": [
+    "dol:.data:0x800f0708 lbl_800EFD38+0x9d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2326,
+   "offset": 441171520,
+   "disc_size": 96,
+   "size": 204,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4bbe40",
+   "refs": [
+    "dol:.data:0x800f0718 lbl_800EFD38+0x9e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2327,
+   "offset": 441171616,
+   "disc_size": 18892,
+   "size": 32880,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4bbea0",
+   "refs": [
+    "dol:.data:0x800f0728 lbl_800EFD38+0x9f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2328,
+   "offset": 441190528,
+   "disc_size": 19140,
+   "size": 32816,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4c0880",
+   "refs": [
+    "dol:.data:0x800f0738 lbl_800EFD38+0xa00"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2329,
+   "offset": 441209696,
+   "disc_size": 5012,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4c5360",
+   "refs": [
+    "dol:.data:0x800f0748 lbl_800EFD38+0xa10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2330,
+   "offset": 441214720,
+   "disc_size": 5024,
+   "size": 6596,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4c6700",
+   "refs": [
+    "dol:.data:0x800f0758 lbl_800EFD38+0xa20"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2331,
+   "offset": 441219744,
+   "disc_size": 100,
+   "size": 220,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4c7aa0",
+   "refs": [
+    "dol:.data:0x800f0768 lbl_800EFD38+0xa30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2332,
+   "offset": 441219872,
+   "disc_size": 176,
+   "size": 324,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4c7b20",
+   "refs": [
+    "dol:.data:0x800f0778 lbl_800EFD38+0xa40"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2333,
+   "offset": 441220064,
+   "disc_size": 120,
+   "size": 236,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4c7be0",
+   "refs": [
+    "dol:.data:0x800f0788 lbl_800EFD38+0xa50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2334,
+   "offset": 441220192,
+   "disc_size": 4596,
+   "size": 7064,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4c7c60",
+   "refs": [
+    "dol:.data:0x800f0798 lbl_800EFD38+0xa60",
+    "dol:.data:0x800f13d8 lbl_800EFD38+0x16a0",
+    "dol:.data:0x800f1448 lbl_800EFD38+0x1710",
+    "dol:.data:0x800f14b8 lbl_800EFD38+0x1780",
+    "dol:.data:0x800f1528 lbl_800EFD38+0x17f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand00.gpc",
+   "names": [
+    "L_hand00.gpc",
+    "L_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2335,
+   "offset": 441224800,
+   "disc_size": 4608,
+   "size": 7064,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4c8e60",
+   "refs": [
+    "dol:.data:0x800f07a8 lbl_800EFD38+0xa70",
+    "dol:.data:0x800f13e8 lbl_800EFD38+0x16b0",
+    "dol:.data:0x800f1458 lbl_800EFD38+0x1720",
+    "dol:.data:0x800f14c8 lbl_800EFD38+0x1790",
+    "dol:.data:0x800f1538 lbl_800EFD38+0x1800"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand00.gpc",
+   "names": [
+    "R_hand00.gpc",
+    "R_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2336,
+   "offset": 441229408,
+   "disc_size": 5016,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4ca060",
+   "refs": [
+    "dol:.data:0x800f07b8 lbl_800EFD38+0xa80",
+    "dol:.data:0x800f13f8 lbl_800EFD38+0x16c0",
+    "dol:.data:0x800f1468 lbl_800EFD38+0x1730",
+    "dol:.data:0x800f14d8 lbl_800EFD38+0x17a0",
+    "dol:.data:0x800f1548 lbl_800EFD38+0x1810"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2337,
+   "offset": 441234432,
+   "disc_size": 5024,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4cb400",
+   "refs": [
+    "dol:.data:0x800f07c8 lbl_800EFD38+0xa90",
+    "dol:.data:0x800f1408 lbl_800EFD38+0x16d0",
+    "dol:.data:0x800f1478 lbl_800EFD38+0x1740",
+    "dol:.data:0x800f14e8 lbl_800EFD38+0x17b0",
+    "dol:.data:0x800f1558 lbl_800EFD38+0x1820"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2338,
+   "offset": 441239456,
+   "disc_size": 100,
+   "size": 232,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4cc7a0",
+   "refs": [
+    "dol:.data:0x800f07d8 lbl_800EFD38+0xaa0",
+    "dol:.data:0x800f1418 lbl_800EFD38+0x16e0",
+    "dol:.data:0x800f1488 lbl_800EFD38+0x1750",
+    "dol:.data:0x800f14f8 lbl_800EFD38+0x17c0",
+    "dol:.data:0x800f1568 lbl_800EFD38+0x1830"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2339,
+   "offset": 441239584,
+   "disc_size": 208,
+   "size": 372,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4cc820",
+   "refs": [
+    "dol:.data:0x800f07e8 lbl_800EFD38+0xab0",
+    "dol:.data:0x800f1428 lbl_800EFD38+0x16f0",
+    "dol:.data:0x800f1498 lbl_800EFD38+0x1760",
+    "dol:.data:0x800f1508 lbl_800EFD38+0x17d0",
+    "dol:.data:0x800f1578 lbl_800EFD38+0x1840"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2340,
+   "offset": 441239808,
+   "disc_size": 160,
+   "size": 280,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4cc900",
+   "refs": [
+    "dol:.data:0x800f07f8 lbl_800EFD38+0xac0",
+    "dol:.data:0x800f1438 lbl_800EFD38+0x1700",
+    "dol:.data:0x800f14a8 lbl_800EFD38+0x1770",
+    "dol:.data:0x800f1518 lbl_800EFD38+0x17e0",
+    "dol:.data:0x800f1588 lbl_800EFD38+0x1850"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2341,
+   "offset": 441239968,
+   "disc_size": 24264,
+   "size": 37092,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4cc9a0",
+   "refs": [
+    "dol:.data:0x800f0808 lbl_800EFD38+0xad0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2342,
+   "offset": 441264256,
+   "disc_size": 19348,
+   "size": 31132,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4d2880",
+   "refs": [
+    "dol:.data:0x800f0818 lbl_800EFD38+0xae0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2343,
+   "offset": 441283616,
+   "disc_size": 5080,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4d7420",
+   "refs": [
+    "dol:.data:0x800f0828 lbl_800EFD38+0xaf0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2344,
+   "offset": 441288704,
+   "disc_size": 5192,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4d8800",
+   "refs": [
+    "dol:.data:0x800f0838 lbl_800EFD38+0xb00"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2345,
+   "offset": 441293920,
+   "disc_size": 336,
+   "size": 516,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4d9c60",
+   "refs": [
+    "dol:.data:0x800f0848 lbl_800EFD38+0xb10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2346,
+   "offset": 441294272,
+   "disc_size": 420,
+   "size": 652,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4d9dc0",
+   "refs": [
+    "dol:.data:0x800f0858 lbl_800EFD38+0xb20"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2347,
+   "offset": 441294720,
+   "disc_size": 156,
+   "size": 272,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4d9f80",
+   "refs": [
+    "dol:.data:0x800f0868 lbl_800EFD38+0xb30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2348,
+   "offset": 441294880,
+   "disc_size": 5940,
+   "size": 7908,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4da020",
+   "refs": [
+    "dol:.data:0x800f0878 lbl_800EFD38+0xb40",
+    "dol:.data:0x800f0898 lbl_800EFD38+0xb60"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand00.gpc",
+   "names": [
+    "L_hand00.gpc",
+    "L_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2349,
+   "offset": 441300832,
+   "disc_size": 5944,
+   "size": 7940,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4db760",
+   "refs": [
+    "dol:.data:0x800f0888 lbl_800EFD38+0xb50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand00.gpc",
+   "names": [
+    "R_hand00.gpc",
+    "R_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2350,
+   "offset": 441306784,
+   "disc_size": 128,
+   "size": 272,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4dcea0",
+   "refs": [
+    "dol:.data:0x800f08a8 lbl_800EFD38+0xb70",
+    "dol:.data:0x800f08c8 lbl_800EFD38+0xb90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2351,
+   "offset": 441306912,
+   "disc_size": 112,
+   "size": 236,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4dcf20",
+   "refs": [
+    "dol:.data:0x800f08b8 lbl_800EFD38+0xb80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2352,
+   "offset": 441307040,
+   "disc_size": 100,
+   "size": 220,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4dcfa0",
+   "refs": [
+    "dol:.data:0x800f08d8 lbl_800EFD38+0xba0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2353,
+   "offset": 441307168,
+   "disc_size": 17088,
+   "size": 32552,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4dd020",
+   "refs": [
+    "dol:.data:0x800f08e8 lbl_800EFD38+0xbb0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2354,
+   "offset": 441324256,
+   "disc_size": 17120,
+   "size": 32488,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4e12e0",
+   "refs": [
+    "dol:.data:0x800f08f8 lbl_800EFD38+0xbc0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2355,
+   "offset": 441341376,
+   "disc_size": 4864,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4e55c0",
+   "refs": [
+    "dol:.data:0x800f0908 lbl_800EFD38+0xbd0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2356,
+   "offset": 441346240,
+   "disc_size": 4908,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4e68c0",
+   "refs": [
+    "dol:.data:0x800f0918 lbl_800EFD38+0xbe0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2357,
+   "offset": 441351168,
+   "disc_size": 396,
+   "size": 600,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4e7c00",
+   "refs": [
+    "dol:.data:0x800f0928 lbl_800EFD38+0xbf0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2358,
+   "offset": 441351584,
+   "disc_size": 472,
+   "size": 680,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4e7da0",
+   "refs": [
+    "dol:.data:0x800f0938 lbl_800EFD38+0xc00"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2359,
+   "offset": 441352064,
+   "disc_size": 192,
+   "size": 312,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4e7f80",
+   "refs": [
+    "dol:.data:0x800f0948 lbl_800EFD38+0xc10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2360,
+   "offset": 441352256,
+   "disc_size": 16108,
+   "size": 25984,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4e8040",
+   "refs": [
+    "dol:.data:0x800f0958 lbl_800EFD38+0xc20",
+    "dol:.data:0x800f1368 lbl_800EFD38+0x1630"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2361,
+   "offset": 441368384,
+   "disc_size": 16128,
+   "size": 26048,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4ebf40",
+   "refs": [
+    "dol:.data:0x800f0968 lbl_800EFD38+0xc30",
+    "dol:.data:0x800f1378 lbl_800EFD38+0x1640"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2362,
+   "offset": 441384512,
+   "disc_size": 5244,
+   "size": 6884,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4efe40",
+   "refs": [
+    "dol:.data:0x800f0978 lbl_800EFD38+0xc40",
+    "dol:.data:0x800f1388 lbl_800EFD38+0x1650"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2363,
+   "offset": 441389760,
+   "disc_size": 5280,
+   "size": 6884,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4f12c0",
+   "refs": [
+    "dol:.data:0x800f0988 lbl_800EFD38+0xc50",
+    "dol:.data:0x800f1398 lbl_800EFD38+0x1660"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2364,
+   "offset": 441395040,
+   "disc_size": 140,
+   "size": 264,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4f2760",
+   "refs": [
+    "dol:.data:0x800f0998 lbl_800EFD38+0xc60",
+    "dol:.data:0x800f13a8 lbl_800EFD38+0x1670"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2365,
+   "offset": 441395200,
+   "disc_size": 168,
+   "size": 300,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4f2800",
+   "refs": [
+    "dol:.data:0x800f09a8 lbl_800EFD38+0xc70",
+    "dol:.data:0x800f13b8 lbl_800EFD38+0x1680"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2366,
+   "offset": 441395392,
+   "disc_size": 88,
+   "size": 204,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4f28c0",
+   "refs": [
+    "dol:.data:0x800f09b8 lbl_800EFD38+0xc80",
+    "dol:.data:0x800f13c8 lbl_800EFD38+0x1690"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2367,
+   "offset": 441395488,
+   "disc_size": 15876,
+   "size": 27380,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4f2920",
+   "refs": [
+    "dol:.data:0x800f09c8 lbl_800EFD38+0xc90",
+    "dol:.data:0x800f0a38 lbl_800EFD38+0xd00",
+    "dol:.data:0x800f0aa8 lbl_800EFD38+0xd70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2368,
+   "offset": 441411392,
+   "disc_size": 15904,
+   "size": 27348,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4f6740",
+   "refs": [
+    "dol:.data:0x800f09d8 lbl_800EFD38+0xca0",
+    "dol:.data:0x800f0a48 lbl_800EFD38+0xd10",
+    "dol:.data:0x800f0ab8 lbl_800EFD38+0xd80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2369,
+   "offset": 441427296,
+   "disc_size": 4872,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4fa560",
+   "refs": [
+    "dol:.data:0x800f09e8 lbl_800EFD38+0xcb0",
+    "dol:.data:0x800f0a58 lbl_800EFD38+0xd20",
+    "dol:.data:0x800f0ac8 lbl_800EFD38+0xd90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2370,
+   "offset": 441432192,
+   "disc_size": 4900,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4fb880",
+   "refs": [
+    "dol:.data:0x800f09f8 lbl_800EFD38+0xcc0",
+    "dol:.data:0x800f0a68 lbl_800EFD38+0xd30",
+    "dol:.data:0x800f0ad8 lbl_800EFD38+0xda0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2371,
+   "offset": 441437120,
+   "disc_size": 184,
+   "size": 320,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4fcbc0",
+   "refs": [
+    "dol:.data:0x800f0a08 lbl_800EFD38+0xcd0",
+    "dol:.data:0x800f0a78 lbl_800EFD38+0xd40",
+    "dol:.data:0x800f0ae8 lbl_800EFD38+0xdb0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2372,
+   "offset": 441437312,
+   "disc_size": 356,
+   "size": 580,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4fcc80",
+   "refs": [
+    "dol:.data:0x800f0a18 lbl_800EFD38+0xce0",
+    "dol:.data:0x800f0a88 lbl_800EFD38+0xd50",
+    "dol:.data:0x800f0af8 lbl_800EFD38+0xdc0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2373,
+   "offset": 441437696,
+   "disc_size": 172,
+   "size": 292,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4fce00",
+   "refs": [
+    "dol:.data:0x800f0a28 lbl_800EFD38+0xcf0",
+    "dol:.data:0x800f0a98 lbl_800EFD38+0xd60",
+    "dol:.data:0x800f0b08 lbl_800EFD38+0xdd0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2374,
+   "offset": 441437888,
+   "disc_size": 13364,
+   "size": 23388,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a4fcec0",
+   "refs": [
+    "dol:.data:0x800f0b18 lbl_800EFD38+0xde0",
+    "dol:.data:0x800f0b88 lbl_800EFD38+0xe50",
+    "dol:.data:0x800f0bf8 lbl_800EFD38+0xec0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2375,
+   "offset": 441451264,
+   "disc_size": 13376,
+   "size": 23324,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a500300",
+   "refs": [
+    "dol:.data:0x800f0b28 lbl_800EFD38+0xdf0",
+    "dol:.data:0x800f0b98 lbl_800EFD38+0xe60",
+    "dol:.data:0x800f0c08 lbl_800EFD38+0xed0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2376,
+   "offset": 441464640,
+   "disc_size": 4836,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a503740",
+   "refs": [
+    "dol:.data:0x800f0b38 lbl_800EFD38+0xe00",
+    "dol:.data:0x800f0ba8 lbl_800EFD38+0xe70",
+    "dol:.data:0x800f0c18 lbl_800EFD38+0xee0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2377,
+   "offset": 441469504,
+   "disc_size": 4860,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a504a40",
+   "refs": [
+    "dol:.data:0x800f0b48 lbl_800EFD38+0xe10",
+    "dol:.data:0x800f0bb8 lbl_800EFD38+0xe80",
+    "dol:.data:0x800f0c28 lbl_800EFD38+0xef0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2378,
+   "offset": 441474368,
+   "disc_size": 172,
+   "size": 292,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a505d40",
+   "refs": [
+    "dol:.data:0x800f0b58 lbl_800EFD38+0xe20",
+    "dol:.data:0x800f0bc8 lbl_800EFD38+0xe90",
+    "dol:.data:0x800f0c38 lbl_800EFD38+0xf00"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2379,
+   "offset": 441474560,
+   "disc_size": 304,
+   "size": 472,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a505e00",
+   "refs": [
+    "dol:.data:0x800f0b68 lbl_800EFD38+0xe30",
+    "dol:.data:0x800f0bd8 lbl_800EFD38+0xea0",
+    "dol:.data:0x800f0c48 lbl_800EFD38+0xf10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2380,
+   "offset": 441474880,
+   "disc_size": 196,
+   "size": 344,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a505f40",
+   "refs": [
+    "dol:.data:0x800f0b78 lbl_800EFD38+0xe40",
+    "dol:.data:0x800f0be8 lbl_800EFD38+0xeb0",
+    "dol:.data:0x800f0c58 lbl_800EFD38+0xf20"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2381,
+   "offset": 441475104,
+   "disc_size": 19740,
+   "size": 34476,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a506020",
+   "refs": [
+    "dol:.data:0x800f0c68 lbl_800EFD38+0xf30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2382,
+   "offset": 441494848,
+   "disc_size": 19740,
+   "size": 34476,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a50ad40",
+   "refs": [
+    "dol:.data:0x800f0c78 lbl_800EFD38+0xf40"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2383,
+   "offset": 441514592,
+   "disc_size": 4976,
+   "size": 6244,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a50fa60",
+   "refs": [
+    "dol:.data:0x800f0c88 lbl_800EFD38+0xf50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2384,
+   "offset": 441519584,
+   "disc_size": 5020,
+   "size": 6212,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a510de0",
+   "refs": [
+    "dol:.data:0x800f0c98 lbl_800EFD38+0xf60"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2385,
+   "offset": 441524608,
+   "disc_size": 164,
+   "size": 292,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a512180",
+   "refs": [
+    "dol:.data:0x800f0ca8 lbl_800EFD38+0xf70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2386,
+   "offset": 441524800,
+   "disc_size": 128,
+   "size": 252,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a512240",
+   "refs": [
+    "dol:.data:0x800f0cb8 lbl_800EFD38+0xf80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2387,
+   "offset": 441524928,
+   "disc_size": 88,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5122c0",
+   "refs": [
+    "dol:.data:0x800f0cc8 lbl_800EFD38+0xf90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2388,
+   "offset": 441525024,
+   "disc_size": 23252,
+   "size": 36408,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a512320",
+   "refs": [
+    "dol:.data:0x800f0cd8 lbl_800EFD38+0xfa0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2389,
+   "offset": 441548288,
+   "disc_size": 23156,
+   "size": 35832,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a517e00",
+   "refs": [
+    "dol:.data:0x800f0ce8 lbl_800EFD38+0xfb0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2390,
+   "offset": 441571456,
+   "disc_size": 5132,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a51d880",
+   "refs": [
+    "dol:.data:0x800f0cf8 lbl_800EFD38+0xfc0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2391,
+   "offset": 441576608,
+   "disc_size": 5172,
+   "size": 6596,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a51eca0",
+   "refs": [
+    "dol:.data:0x800f0d08 lbl_800EFD38+0xfd0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2392,
+   "offset": 441581792,
+   "disc_size": 148,
+   "size": 264,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5200e0",
+   "refs": [
+    "dol:.data:0x800f0d18 lbl_800EFD38+0xfe0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2393,
+   "offset": 441581952,
+   "disc_size": 156,
+   "size": 288,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a520180",
+   "refs": [
+    "dol:.data:0x800f0d28 lbl_800EFD38+0xff0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2394,
+   "offset": 441582112,
+   "disc_size": 104,
+   "size": 224,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a520220",
+   "refs": [
+    "dol:.data:0x800f0d38 lbl_800EFD38+0x1000"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2395,
+   "offset": 441582240,
+   "disc_size": 20656,
+   "size": 34136,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5202a0",
+   "refs": [
+    "dol:.data:0x800f0f08 lbl_800EFD38+0x11d0",
+    "dol:.data:0x800f0f28 lbl_800EFD38+0x11f0",
+    "dol:.data:0x800f0f78 lbl_800EFD38+0x1240",
+    "dol:.data:0x800f0f98 lbl_800EFD38+0x1260",
+    "dol:.data:0x800f0fe8 lbl_800EFD38+0x12b0",
+    "dol:.data:0x800f1008 lbl_800EFD38+0x12d0",
+    "dol:.data:0x800f1058 lbl_800EFD38+0x1320",
+    "dol:.data:0x800f1078 lbl_800EFD38+0x1340"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2396,
+   "offset": 441602912,
+   "disc_size": 20840,
+   "size": 34392,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a525360",
+   "refs": [
+    "dol:.data:0x800f0f18 lbl_800EFD38+0x11e0",
+    "dol:.data:0x800f0f38 lbl_800EFD38+0x1200",
+    "dol:.data:0x800f0f88 lbl_800EFD38+0x1250",
+    "dol:.data:0x800f0fa8 lbl_800EFD38+0x1270",
+    "dol:.data:0x800f0ff8 lbl_800EFD38+0x12c0",
+    "dol:.data:0x800f1018 lbl_800EFD38+0x12e0",
+    "dol:.data:0x800f1068 lbl_800EFD38+0x1330",
+    "dol:.data:0x800f1088 lbl_800EFD38+0x1350"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2397,
+   "offset": 441623776,
+   "disc_size": 420,
+   "size": 620,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a52a4e0",
+   "refs": [
+    "dol:.data:0x800f0f48 lbl_800EFD38+0x1210",
+    "dol:.data:0x800f0f68 lbl_800EFD38+0x1230",
+    "dol:.data:0x800f0fb8 lbl_800EFD38+0x1280",
+    "dol:.data:0x800f0fd8 lbl_800EFD38+0x12a0",
+    "dol:.data:0x800f1028 lbl_800EFD38+0x12f0",
+    "dol:.data:0x800f1048 lbl_800EFD38+0x1310",
+    "dol:.data:0x800f1098 lbl_800EFD38+0x1360",
+    "dol:.data:0x800f10b8 lbl_800EFD38+0x1380"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2398,
+   "offset": 441624224,
+   "disc_size": 188,
+   "size": 328,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a52a6a0",
+   "refs": [
+    "dol:.data:0x800f0f58 lbl_800EFD38+0x1220",
+    "dol:.data:0x800f0fc8 lbl_800EFD38+0x1290",
+    "dol:.data:0x800f1038 lbl_800EFD38+0x1300",
+    "dol:.data:0x800f10a8 lbl_800EFD38+0x1370"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2399,
+   "offset": 441624416,
+   "disc_size": 9044,
+   "size": 16416,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a52a760",
+   "refs": [
+    "dol:.data:0x800f10c8 lbl_800EFD38+0x1390"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand00.gpc",
+   "names": [
+    "L_hand00.gpc",
+    "L_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2400,
+   "offset": 441633472,
+   "disc_size": 8984,
+   "size": 16512,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a52cac0",
+   "refs": [
+    "dol:.data:0x800f10d8 lbl_800EFD38+0x13a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand00.gpc",
+   "names": [
+    "R_hand00.gpc",
+    "R_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2401,
+   "offset": 441642464,
+   "disc_size": 4996,
+   "size": 6500,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a52ede0",
+   "refs": [
+    "dol:.data:0x800f10e8 lbl_800EFD38+0x13b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2402,
+   "offset": 441647488,
+   "disc_size": 5020,
+   "size": 6500,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a530180",
+   "refs": [
+    "dol:.data:0x800f10f8 lbl_800EFD38+0x13c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2403,
+   "offset": 441652512,
+   "disc_size": 92,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a531520",
+   "refs": [
+    "dol:.data:0x800f1108 lbl_800EFD38+0x13d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2404,
+   "offset": 441652608,
+   "disc_size": 92,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a531580",
+   "refs": [
+    "dol:.data:0x800f1118 lbl_800EFD38+0x13e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2405,
+   "offset": 441652704,
+   "disc_size": 104,
+   "size": 220,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5315e0",
+   "refs": [
+    "dol:.data:0x800f1128 lbl_800EFD38+0x13f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2406,
+   "offset": 441652832,
+   "disc_size": 1052,
+   "size": 1300,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a531660",
+   "refs": [
+    "dol:.data:0x800f1138 lbl_800EFD38+0x1400",
+    "dol:.data:0x800f1158 lbl_800EFD38+0x1420"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand00.gpc",
+   "names": [
+    "L_hand00.gpc",
+    "L_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2407,
+   "offset": 441653888,
+   "disc_size": 1088,
+   "size": 1364,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a531a80",
+   "refs": [
+    "dol:.data:0x800f1148 lbl_800EFD38+0x1410",
+    "dol:.data:0x800f1168 lbl_800EFD38+0x1430"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand00.gpc",
+   "names": [
+    "R_hand00.gpc",
+    "R_hand00.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2408,
+   "offset": 441654976,
+   "disc_size": 96,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a531ec0",
+   "refs": [
+    "dol:.data:0x800f1178 lbl_800EFD38+0x1440",
+    "dol:.data:0x800f1198 lbl_800EFD38+0x1460"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2409,
+   "offset": 441655072,
+   "disc_size": 96,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a531f20",
+   "refs": [
+    "dol:.data:0x800f1188 lbl_800EFD38+0x1450"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2410,
+   "offset": 441655168,
+   "disc_size": 22348,
+   "size": 34472,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a531f80",
+   "refs": [
+    "dol:.data:0x800f11a8 lbl_800EFD38+0x1470"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2411,
+   "offset": 441677536,
+   "disc_size": 22512,
+   "size": 34536,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5376e0",
+   "refs": [
+    "dol:.data:0x800f11b8 lbl_800EFD38+0x1480"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2412,
+   "offset": 441700064,
+   "disc_size": 5052,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a53cee0",
+   "refs": [
+    "dol:.data:0x800f11c8 lbl_800EFD38+0x1490"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2413,
+   "offset": 441705120,
+   "disc_size": 5060,
+   "size": 6564,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a53e2a0",
+   "refs": [
+    "dol:.data:0x800f11d8 lbl_800EFD38+0x14a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2414,
+   "offset": 441710208,
+   "disc_size": 416,
+   "size": 608,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a53f680",
+   "refs": [
+    "dol:.data:0x800f11e8 lbl_800EFD38+0x14b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2415,
+   "offset": 441710624,
+   "disc_size": 356,
+   "size": 532,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a53f820",
+   "refs": [
+    "dol:.data:0x800f11f8 lbl_800EFD38+0x14c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2416,
+   "offset": 441711008,
+   "disc_size": 104,
+   "size": 220,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a53f9a0",
+   "refs": [
+    "dol:.data:0x800f1208 lbl_800EFD38+0x14d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2417,
+   "offset": 441711136,
+   "disc_size": 2084,
+   "size": 2452,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a53fa20",
+   "refs": [
+    "dol:.data:0x800f1218 lbl_800EFD38+0x14e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand00.gpc",
+   "names": [
+    "L_hand00.gpc",
+    "L_hand.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2418,
+   "offset": 441713248,
+   "disc_size": 2096,
+   "size": 2484,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a540260",
+   "refs": [
+    "dol:.data:0x800f1228 lbl_800EFD38+0x14f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand00.gpc",
+   "names": [
+    "R_hand00.gpc",
+    "R_hand.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2419,
+   "offset": 441715360,
+   "disc_size": 4868,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a540aa0",
+   "refs": [
+    "dol:.data:0x800f1238 lbl_800EFD38+0x1500"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2420,
+   "offset": 441720256,
+   "disc_size": 4912,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a541dc0",
+   "refs": [
+    "dol:.data:0x800f1248 lbl_800EFD38+0x1510"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2421,
+   "offset": 441725184,
+   "disc_size": 96,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a543100",
+   "refs": [
+    "dol:.data:0x800f1258 lbl_800EFD38+0x1520"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2422,
+   "offset": 441725280,
+   "disc_size": 92,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a543160",
+   "refs": [
+    "dol:.data:0x800f1268 lbl_800EFD38+0x1530"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2423,
+   "offset": 441725376,
+   "disc_size": 140,
+   "size": 252,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5431c0",
+   "refs": [
+    "dol:.data:0x800f1278 lbl_800EFD38+0x1540"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2424,
+   "offset": 441725536,
+   "disc_size": 2084,
+   "size": 2452,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a543260",
+   "refs": [
+    "dol:.data:0x800f1288 lbl_800EFD38+0x1550"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand00.gpc",
+   "names": [
+    "L_hand00.gpc",
+    "L_hand.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2425,
+   "offset": 441727648,
+   "disc_size": 2096,
+   "size": 2484,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a543aa0",
+   "refs": [
+    "dol:.data:0x800f1298 lbl_800EFD38+0x1560"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand00.gpc",
+   "names": [
+    "R_hand00.gpc",
+    "R_hand.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2426,
+   "offset": 441729760,
+   "disc_size": 4868,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5442e0",
+   "refs": [
+    "dol:.data:0x800f12a8 lbl_800EFD38+0x1570"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2427,
+   "offset": 441734656,
+   "disc_size": 4912,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a545600",
+   "refs": [
+    "dol:.data:0x800f12b8 lbl_800EFD38+0x1580"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2428,
+   "offset": 441739584,
+   "disc_size": 92,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a546940",
+   "refs": [
+    "dol:.data:0x800f12c8 lbl_800EFD38+0x1590"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2429,
+   "offset": 441739680,
+   "disc_size": 88,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5469a0",
+   "refs": [
+    "dol:.data:0x800f12d8 lbl_800EFD38+0x15a0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2430,
+   "offset": 441739776,
+   "disc_size": 140,
+   "size": 252,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a546a00",
+   "refs": [
+    "dol:.data:0x800f12e8 lbl_800EFD38+0x15b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2431,
+   "offset": 441739936,
+   "disc_size": 17280,
+   "size": 28268,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a546aa0",
+   "refs": [
+    "dol:.data:0x800f1598 lbl_800EFD38+0x1860",
+    "dol:.data:0x800f1608 lbl_800EFD38+0x18d0",
+    "dol:.data:0x800f1678 lbl_800EFD38+0x1940",
+    "dol:.data:0x800f16e8 lbl_800EFD38+0x19b0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2432,
+   "offset": 441757216,
+   "disc_size": 17160,
+   "size": 28236,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a54ae20",
+   "refs": [
+    "dol:.data:0x800f15a8 lbl_800EFD38+0x1870",
+    "dol:.data:0x800f1618 lbl_800EFD38+0x18e0",
+    "dol:.data:0x800f1688 lbl_800EFD38+0x1950",
+    "dol:.data:0x800f16f8 lbl_800EFD38+0x19c0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2433,
+   "offset": 441774400,
+   "disc_size": 4792,
+   "size": 6180,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a54f140",
+   "refs": [
+    "dol:.data:0x800f15b8 lbl_800EFD38+0x1880",
+    "dol:.data:0x800f1628 lbl_800EFD38+0x18f0",
+    "dol:.data:0x800f1698 lbl_800EFD38+0x1960",
+    "dol:.data:0x800f1708 lbl_800EFD38+0x19d0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2434,
+   "offset": 441779200,
+   "disc_size": 4840,
+   "size": 6148,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a550400",
+   "refs": [
+    "dol:.data:0x800f15c8 lbl_800EFD38+0x1890",
+    "dol:.data:0x800f1638 lbl_800EFD38+0x1900",
+    "dol:.data:0x800f16a8 lbl_800EFD38+0x1970",
+    "dol:.data:0x800f1718 lbl_800EFD38+0x19e0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2435,
+   "offset": 441784064,
+   "disc_size": 200,
+   "size": 328,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a551700",
+   "refs": [
+    "dol:.data:0x800f15d8 lbl_800EFD38+0x18a0",
+    "dol:.data:0x800f1648 lbl_800EFD38+0x1910",
+    "dol:.data:0x800f16b8 lbl_800EFD38+0x1980",
+    "dol:.data:0x800f1728 lbl_800EFD38+0x19f0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2436,
+   "offset": 441784288,
+   "disc_size": 252,
+   "size": 424,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5517e0",
+   "refs": [
+    "dol:.data:0x800f15e8 lbl_800EFD38+0x18b0",
+    "dol:.data:0x800f1658 lbl_800EFD38+0x1920",
+    "dol:.data:0x800f16c8 lbl_800EFD38+0x1990",
+    "dol:.data:0x800f1738 lbl_800EFD38+0x1a00"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2437,
+   "offset": 441784544,
+   "disc_size": 156,
+   "size": 272,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5518e0",
+   "refs": [
+    "dol:.data:0x800f15f8 lbl_800EFD38+0x18c0",
+    "dol:.data:0x800f1668 lbl_800EFD38+0x1930",
+    "dol:.data:0x800f16d8 lbl_800EFD38+0x19a0",
+    "dol:.data:0x800f1748 lbl_800EFD38+0x1a10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2438,
+   "offset": 441784704,
+   "disc_size": 16304,
+   "size": 26976,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a551980",
+   "refs": [
+    "dol:.data:0x800f1758 lbl_800EFD38+0x1a20"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2439,
+   "offset": 441801024,
+   "disc_size": 16300,
+   "size": 27008,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a555940",
+   "refs": [
+    "dol:.data:0x800f1768 lbl_800EFD38+0x1a30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2440,
+   "offset": 441817344,
+   "disc_size": 4976,
+   "size": 6244,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a559900",
+   "refs": [
+    "dol:.data:0x800f1778 lbl_800EFD38+0x1a40"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2441,
+   "offset": 441822336,
+   "disc_size": 5020,
+   "size": 6212,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a55ac80",
+   "refs": [
+    "dol:.data:0x800f1788 lbl_800EFD38+0x1a50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2442,
+   "offset": 441827360,
+   "disc_size": 164,
+   "size": 292,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a55c020",
+   "refs": [
+    "dol:.data:0x800f1798 lbl_800EFD38+0x1a60"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2443,
+   "offset": 441827552,
+   "disc_size": 128,
+   "size": 252,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a55c0e0",
+   "refs": [
+    "dol:.data:0x800f17a8 lbl_800EFD38+0x1a70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2444,
+   "offset": 441827680,
+   "disc_size": 88,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a55c160",
+   "refs": [
+    "dol:.data:0x800f17b8 lbl_800EFD38+0x1a80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2445,
+   "offset": 441827776,
+   "disc_size": 14716,
+   "size": 23520,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a55c1c0",
+   "refs": [
+    "dol:.data:0x800f17c8 lbl_800EFD38+0x1a90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_hand07.gpc",
+   "names": [
+    "L_hand07.gpc",
+    "L_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2446,
+   "offset": 441842496,
+   "disc_size": 14732,
+   "size": 23456,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a55fb40",
+   "refs": [
+    "dol:.data:0x800f17d8 lbl_800EFD38+0x1aa0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_hand07.gpc",
+   "names": [
+    "R_hand07.gpc",
+    "R_hand07.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2447,
+   "offset": 441857248,
+   "disc_size": 4976,
+   "size": 6244,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5634e0",
+   "refs": [
+    "dol:.data:0x800f17e8 lbl_800EFD38+0x1ab0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "L_glove01.gpc",
+   "names": [
+    "L_glove01.gpc",
+    "L_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2448,
+   "offset": 441862240,
+   "disc_size": 5020,
+   "size": 6212,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a564860",
+   "refs": [
+    "dol:.data:0x800f17f8 lbl_800EFD38+0x1ac0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "container",
+   "ntex": 0,
+   "nsec": 3,
+   "label": "R_glove01.gpc",
+   "names": [
+    "R_glove01.gpc",
+    "R_glove01.tpl"
+   ],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2449,
+   "offset": 441867264,
+   "disc_size": 164,
+   "size": 292,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a565c00",
+   "refs": [
+    "dol:.data:0x800f1808 lbl_800EFD38+0x1ad0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2450,
+   "offset": 441867456,
+   "disc_size": 128,
+   "size": 252,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a565cc0",
+   "refs": [
+    "dol:.data:0x800f1818 lbl_800EFD38+0x1ae0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2451,
+   "offset": 441867584,
+   "disc_size": 88,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a565d40",
+   "refs": [
+    "dol:.data:0x800f1828 lbl_800EFD38+0x1af0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2452,
+   "offset": 441867680,
+   "disc_size": 36060,
+   "size": 61390,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a565da0",
+   "refs": [
+    "dol:.data:0x800f1838 lbl_800EFD38+0x1b00"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2453,
+   "offset": 441903744,
+   "disc_size": 35548,
+   "size": 59542,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a56ea80",
+   "refs": [
+    "dol:.data:0x800f1848 lbl_800EFD38+0x1b10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2454,
+   "offset": 441939296,
+   "disc_size": 22832,
+   "size": 41392,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a577560",
+   "refs": [
+    "dol:.data:0x800f1858 lbl_800EFD38+0x1b20"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2455,
+   "offset": 441962144,
+   "disc_size": 31432,
+   "size": 54244,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a57cea0",
+   "refs": [
+    "dol:.data:0x800f1868 lbl_800EFD38+0x1b30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2456,
+   "offset": 441993600,
+   "disc_size": 27432,
+   "size": 50610,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a584980",
+   "refs": [
+    "dol:.data:0x800f1878 lbl_800EFD38+0x1b40"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2457,
+   "offset": 442021056,
+   "disc_size": 25108,
+   "size": 44774,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a58b4c0",
+   "refs": [
+    "dol:.data:0x800f1888 lbl_800EFD38+0x1b50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2458,
+   "offset": 442046176,
+   "disc_size": 26144,
+   "size": 48546,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5916e0",
+   "refs": [
+    "dol:.data:0x800f1898 lbl_800EFD38+0x1b60"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2459,
+   "offset": 442072320,
+   "disc_size": 25720,
+   "size": 47352,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a597d00",
+   "refs": [
+    "dol:.data:0x800f18a8 lbl_800EFD38+0x1b70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2460,
+   "offset": 442098048,
+   "disc_size": 13376,
+   "size": 29434,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a59e180",
+   "refs": [
+    "dol:.data:0x800f18b8 lbl_800EFD38+0x1b80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2461,
+   "offset": 442111424,
+   "disc_size": 23132,
+   "size": 44134,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5a15c0",
+   "refs": [
+    "dol:.data:0x800f18c8 lbl_800EFD38+0x1b90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2462,
+   "offset": 442134560,
+   "disc_size": 47360,
+   "size": 77732,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5a7020",
+   "refs": [
+    "dol:.data:0x800f18d8 lbl_800EFD38+0x1ba0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2463,
+   "offset": 442181920,
+   "disc_size": 52332,
+   "size": 83074,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5b2920",
+   "refs": [
+    "dol:.data:0x800f18e8 lbl_800EFD38+0x1bb0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2464,
+   "offset": 442234272,
+   "disc_size": 18584,
+   "size": 38140,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5bf5a0",
+   "refs": [
+    "dol:.data:0x800f18f8 lbl_800EFD38+0x1bc0",
+    "dol:.data:0x800f1ad8 lbl_800EFD38+0x1da0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2465,
+   "offset": 442252864,
+   "disc_size": 22780,
+   "size": 43350,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5c3e40",
+   "refs": [
+    "dol:.data:0x800f1908 lbl_800EFD38+0x1bd0",
+    "dol:.data:0x800f1a08 lbl_800EFD38+0x1cd0",
+    "dol:.data:0x800f1a18 lbl_800EFD38+0x1ce0",
+    "dol:.data:0x800f1a28 lbl_800EFD38+0x1cf0",
+    "dol:.data:0x800f1a38 lbl_800EFD38+0x1d00"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2466,
+   "offset": 442275648,
+   "disc_size": 15828,
+   "size": 32716,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5c9740",
+   "refs": [
+    "dol:.data:0x800f1918 lbl_800EFD38+0x1be0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2467,
+   "offset": 442291488,
+   "disc_size": 29540,
+   "size": 52976,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5cd520",
+   "refs": [
+    "dol:.data:0x800f1928 lbl_800EFD38+0x1bf0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2468,
+   "offset": 442321056,
+   "disc_size": 20792,
+   "size": 42204,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5d48a0",
+   "refs": [
+    "dol:.data:0x800f1938 lbl_800EFD38+0x1c00",
+    "dol:.data:0x800f1af8 lbl_800EFD38+0x1dc0",
+    "dol:.data:0x800f1b08 lbl_800EFD38+0x1dd0",
+    "dol:.data:0x800f1b18 lbl_800EFD38+0x1de0",
+    "dol:.data:0x800f1b28 lbl_800EFD38+0x1df0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2469,
+   "offset": 442341856,
+   "disc_size": 27464,
+   "size": 49330,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5d99e0",
+   "refs": [
+    "dol:.data:0x800f1948 lbl_800EFD38+0x1c10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2470,
+   "offset": 442369344,
+   "disc_size": 25992,
+   "size": 48314,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5e0540",
+   "refs": [
+    "dol:.data:0x800f1958 lbl_800EFD38+0x1c20"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2471,
+   "offset": 442395360,
+   "disc_size": 21600,
+   "size": 41000,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5e6ae0",
+   "refs": [
+    "dol:.data:0x800f1968 lbl_800EFD38+0x1c30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2472,
+   "offset": 442416960,
+   "disc_size": 14760,
+   "size": 31622,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5ebf40",
+   "refs": [
+    "dol:.data:0x800f1978 lbl_800EFD38+0x1c40",
+    "dol:.data:0x800f1ae8 lbl_800EFD38+0x1db0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2473,
+   "offset": 442431744,
+   "disc_size": 29968,
+   "size": 54230,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5ef900",
+   "refs": [
+    "dol:.data:0x800f1988 lbl_800EFD38+0x1c50",
+    "dol:.data:0x800f1998 lbl_800EFD38+0x1c60",
+    "dol:.data:0x800f19a8 lbl_800EFD38+0x1c70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2474,
+   "offset": 442461728,
+   "disc_size": 19904,
+   "size": 38106,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5f6e20",
+   "refs": [
+    "dol:.data:0x800f19b8 lbl_800EFD38+0x1c80",
+    "dol:.data:0x800f19c8 lbl_800EFD38+0x1c90",
+    "dol:.data:0x800f19d8 lbl_800EFD38+0x1ca0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2475,
+   "offset": 442481632,
+   "disc_size": 18576,
+   "size": 36494,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a5fbbe0",
+   "refs": [
+    "dol:.data:0x800f19e8 lbl_800EFD38+0x1cb0",
+    "dol:.data:0x800f1b78 lbl_800EFD38+0x1e40",
+    "dol:.data:0x800f1b88 lbl_800EFD38+0x1e50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2476,
+   "offset": 442500224,
+   "disc_size": 21988,
+   "size": 41976,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a600480",
+   "refs": [
+    "dol:.data:0x800f19f8 lbl_800EFD38+0x1cc0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2477,
+   "offset": 442522240,
+   "disc_size": 25796,
+   "size": 46244,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a605a80",
+   "refs": [
+    "dol:.data:0x800f1a48 lbl_800EFD38+0x1d10",
+    "dol:.data:0x800f1a58 lbl_800EFD38+0x1d20",
+    "dol:.data:0x800f1a68 lbl_800EFD38+0x1d30",
+    "dol:.data:0x800f1a78 lbl_800EFD38+0x1d40"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2478,
+   "offset": 442548064,
+   "disc_size": 15828,
+   "size": 32716,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a60bf60",
+   "refs": [
+    "dol:.data:0x800f1a88 lbl_800EFD38+0x1d50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2479,
+   "offset": 442563904,
+   "disc_size": 29556,
+   "size": 56722,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a60fd40",
+   "refs": [
+    "dol:.data:0x800f1a98 lbl_800EFD38+0x1d60"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2480,
+   "offset": 442593472,
+   "disc_size": 31256,
+   "size": 54704,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6170c0",
+   "refs": [
+    "dol:.data:0x800f1aa8 lbl_800EFD38+0x1d70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2481,
+   "offset": 442624736,
+   "disc_size": 23264,
+   "size": 43676,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a61eae0",
+   "refs": [
+    "dol:.data:0x800f1ab8 lbl_800EFD38+0x1d80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2482,
+   "offset": 442648000,
+   "disc_size": 28928,
+   "size": 57652,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6245c0",
+   "refs": [
+    "dol:.data:0x800f1ac8 lbl_800EFD38+0x1d90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2483,
+   "offset": 442676928,
+   "disc_size": 23516,
+   "size": 45102,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a62b6c0",
+   "refs": [
+    "dol:.data:0x800f1b38 lbl_800EFD38+0x1e00",
+    "dol:.data:0x800f1b48 lbl_800EFD38+0x1e10",
+    "dol:.data:0x800f1b58 lbl_800EFD38+0x1e20",
+    "dol:.data:0x800f1b68 lbl_800EFD38+0x1e30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "anim",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2484,
+   "offset": 442700448,
+   "disc_size": 832,
+   "size": 1240,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6312a0",
+   "refs": [
+    "dol:.data:0x800f1b98 lbl_800EFD38+0x1e60"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2485,
+   "offset": 442701280,
+   "disc_size": 516,
+   "size": 788,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6315e0",
+   "refs": [
+    "dol:.data:0x800f1ba8 lbl_800EFD38+0x1e70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2486,
+   "offset": 442701824,
+   "disc_size": 452,
+   "size": 640,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a631800",
+   "refs": [
+    "dol:.data:0x800f1bb8 lbl_800EFD38+0x1e80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2487,
+   "offset": 442702304,
+   "disc_size": 416,
+   "size": 620,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6319e0",
+   "refs": [
+    "dol:.data:0x800f1bc8 lbl_800EFD38+0x1e90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2488,
+   "offset": 442702720,
+   "disc_size": 752,
+   "size": 1124,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a631b80",
+   "refs": [
+    "dol:.data:0x800f1bd8 lbl_800EFD38+0x1ea0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2489,
+   "offset": 442703488,
+   "disc_size": 868,
+   "size": 1348,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a631e80",
+   "refs": [
+    "dol:.data:0x800f1be8 lbl_800EFD38+0x1eb0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2490,
+   "offset": 442704384,
+   "disc_size": 468,
+   "size": 740,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a632200",
+   "refs": [
+    "dol:.data:0x800f1bf8 lbl_800EFD38+0x1ec0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2491,
+   "offset": 442704864,
+   "disc_size": 712,
+   "size": 1048,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6323e0",
+   "refs": [
+    "dol:.data:0x800f1c08 lbl_800EFD38+0x1ed0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2492,
+   "offset": 442705600,
+   "disc_size": 716,
+   "size": 1092,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6326c0",
+   "refs": [
+    "dol:.data:0x800f1c18 lbl_800EFD38+0x1ee0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2493,
+   "offset": 442706336,
+   "disc_size": 632,
+   "size": 984,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6329a0",
+   "refs": [
+    "dol:.data:0x800f1c28 lbl_800EFD38+0x1ef0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2494,
+   "offset": 442706976,
+   "disc_size": 1036,
+   "size": 1584,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a632c20",
+   "refs": [
+    "dol:.data:0x800f1c38 lbl_800EFD38+0x1f00"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2495,
+   "offset": 442708032,
+   "disc_size": 304,
+   "size": 460,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a633040",
+   "refs": [
+    "dol:.data:0x800f1c48 lbl_800EFD38+0x1f10"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2496,
+   "offset": 442708352,
+   "disc_size": 684,
+   "size": 1096,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a633180",
+   "refs": [
+    "dol:.data:0x800f1c58 lbl_800EFD38+0x1f20"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2497,
+   "offset": 442709056,
+   "disc_size": 600,
+   "size": 912,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a633440",
+   "refs": [
+    "dol:.data:0x800f1c68 lbl_800EFD38+0x1f30"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2498,
+   "offset": 442709664,
+   "disc_size": 584,
+   "size": 916,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6336a0",
+   "refs": [
+    "dol:.data:0x800f1c78 lbl_800EFD38+0x1f40"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2499,
+   "offset": 442710272,
+   "disc_size": 772,
+   "size": 1272,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a633900",
+   "refs": [
+    "dol:.data:0x800f1c88 lbl_800EFD38+0x1f50"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2500,
+   "offset": 442711072,
+   "disc_size": 544,
+   "size": 984,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a633c20",
+   "refs": [
+    "dol:.data:0x800f1c98 lbl_800EFD38+0x1f60"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2501,
+   "offset": 442711616,
+   "disc_size": 568,
+   "size": 828,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a633e40",
+   "refs": [
+    "dol:.data:0x800f1ca8 lbl_800EFD38+0x1f70"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2502,
+   "offset": 442712192,
+   "disc_size": 684,
+   "size": 1092,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634080",
+   "refs": [
+    "dol:.data:0x800f1cb8 lbl_800EFD38+0x1f80"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2503,
+   "offset": 442712896,
+   "disc_size": 272,
+   "size": 432,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634340",
+   "refs": [
+    "dol:.data:0x800f1cc8 lbl_800EFD38+0x1f90"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2504,
+   "offset": 442713184,
+   "disc_size": 468,
+   "size": 704,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634460",
+   "refs": [
+    "dol:.data:0x800f1cd8 lbl_800EFD38+0x1fa0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2505,
+   "offset": 442713664,
+   "disc_size": 228,
+   "size": 360,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634640",
+   "refs": [
+    "dol:.data:0x800f1ce8 lbl_800EFD38+0x1fb0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2506,
+   "offset": 442713920,
+   "disc_size": 88,
+   "size": 216,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634740",
+   "refs": [
+    "dol:.data:0x800f1cf8 lbl_800EFD38+0x1fc0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2507,
+   "offset": 442714016,
+   "disc_size": 376,
+   "size": 644,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a6347a0",
+   "refs": [
+    "dol:.data:0x800f1d08 lbl_800EFD38+0x1fd0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2508,
+   "offset": 442714400,
+   "disc_size": 80,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634920",
+   "refs": [
+    "dol:.data:0x800f1d18 lbl_800EFD38+0x1fe0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2509,
+   "offset": 442714496,
+   "disc_size": 256,
+   "size": 412,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634980",
+   "refs": [
+    "dol:.data:0x800f1d28 lbl_800EFD38+0x1ff0"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2510,
+   "offset": 442714752,
+   "disc_size": 412,
+   "size": 632,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634a80",
+   "refs": [
+    "dol:.data:0x800f1d38 lbl_800EFD38+0x2000"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2511,
+   "offset": 442715168,
+   "disc_size": 356,
+   "size": 540,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634c20",
+   "refs": [
+    "dol:.data:0x800f1d48 lbl_800EFD38+0x2010"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2512,
+   "offset": 442715552,
+   "disc_size": 76,
+   "size": 200,
+   "flags": 4,
+   "lookback_bits": 11,
+   "repeat_bits": 4,
+   "name": "1a634da0",
+   "refs": [
+    "dol:.data:0x800f1d58 lbl_800EFD38+0x2020"
+   ],
+   "archive": "ZZZZ.dat",
+   "kind": "unknown",
+   "ntex": 0,
+   "nsec": 0,
+   "label": "",
+   "names": [],
+   "known": "",
+   "naud": 0,
+   "thumb": 0
+  },
+  {
+   "id": 2513,
    "offset": 442716160,
    "disc_size": 514888,
    "size": 1275468,
@@ -51860,7 +60089,7 @@
    "thumb": 333
   },
   {
-   "id": 2170,
+   "id": 2514,
    "offset": 443232256,
    "disc_size": 136224,
    "size": 254940,
@@ -51889,7 +60118,7 @@
    "thumb": 29
   },
   {
-   "id": 2171,
+   "id": 2515,
    "offset": 443369472,
    "disc_size": 78088,
    "size": 191504,
@@ -51918,7 +60147,7 @@
    "thumb": 10
   },
   {
-   "id": 2172,
+   "id": 2516,
    "offset": 443449344,
    "disc_size": 395112,
    "size": 946880,
@@ -51947,7 +60176,7 @@
    "thumb": 324
   },
   {
-   "id": 2173,
+   "id": 2517,
    "offset": 443844608,
    "disc_size": 134708,
    "size": 300036,
@@ -51976,7 +60205,7 @@
    "thumb": 31
   },
   {
-   "id": 2174,
+   "id": 2518,
    "offset": 443979776,
    "disc_size": 385668,
    "size": 1113456,
@@ -52005,7 +60234,7 @@
    "thumb": 0
   },
   {
-   "id": 2175,
+   "id": 2519,
    "offset": 444366848,
    "disc_size": 301748,
    "size": 898872,
@@ -52034,7 +60263,7 @@
    "thumb": 1
   },
   {
-   "id": 2176,
+   "id": 2520,
    "offset": 444669952,
    "disc_size": 368064,
    "size": 956516,
@@ -52063,7 +60292,7 @@
    "thumb": 13
   },
   {
-   "id": 2177,
+   "id": 2521,
    "offset": 445038592,
    "disc_size": 328328,
    "size": 751384,
@@ -52092,7 +60321,7 @@
    "thumb": 17
   },
   {
-   "id": 2178,
+   "id": 2522,
    "offset": 445368320,
    "disc_size": 293828,
    "size": 886780,
@@ -52121,7 +60350,7 @@
    "thumb": 13
   },
   {
-   "id": 2179,
+   "id": 2523,
    "offset": 445663232,
    "disc_size": 320428,
    "size": 877628,
@@ -52150,7 +60379,7 @@
    "thumb": 13
   },
   {
-   "id": 2180,
+   "id": 2524,
    "offset": 445984768,
    "disc_size": 298396,
    "size": 875644,
@@ -52179,7 +60408,7 @@
    "thumb": 13
   },
   {
-   "id": 2181,
+   "id": 2525,
    "offset": 446283776,
    "disc_size": 292120,
    "size": 751228,
@@ -52208,7 +60437,7 @@
    "thumb": 11
   },
   {
-   "id": 2182,
+   "id": 2526,
    "offset": 446576640,
    "disc_size": 109188,
    "size": 279032,
@@ -52237,7 +60466,7 @@
    "thumb": 13
   },
   {
-   "id": 2183,
+   "id": 2527,
    "offset": 446687232,
    "disc_size": 429072,
    "size": 1074536,
@@ -52266,7 +60495,7 @@
    "thumb": 246
   },
   {
-   "id": 2184,
+   "id": 2528,
    "offset": 447117312,
    "disc_size": 53232,
    "size": 126304,
@@ -52295,7 +60524,7 @@
    "thumb": 4
   },
   {
-   "id": 2185,
+   "id": 2529,
    "offset": 447170560,
    "disc_size": 9952,
    "size": 48944,
@@ -52324,7 +60553,7 @@
    "thumb": 0
   },
   {
-   "id": 2186,
+   "id": 2530,
    "offset": 447180800,
    "disc_size": 3624,
    "size": 13464,
@@ -52353,7 +60582,7 @@
    "thumb": 0
   },
   {
-   "id": 2187,
+   "id": 2531,
    "offset": 447184896,
    "disc_size": 9460,
    "size": 48608,
@@ -52382,7 +60611,7 @@
    "thumb": 0
   },
   {
-   "id": 2188,
+   "id": 2532,
    "offset": 447195136,
    "disc_size": 4752,
    "size": 24712,
@@ -52411,7 +60640,7 @@
    "thumb": 0
   },
   {
-   "id": 2189,
+   "id": 2533,
    "offset": 447201280,
    "disc_size": 6388,
    "size": 18928,
@@ -52440,7 +60669,7 @@
    "thumb": 0
   },
   {
-   "id": 2190,
+   "id": 2534,
    "offset": 447209472,
    "disc_size": 7480,
    "size": 24268,
@@ -52469,7 +60698,7 @@
    "thumb": 0
   },
   {
-   "id": 2191,
+   "id": 2535,
    "offset": 447217664,
    "disc_size": 3048,
    "size": 9840,
@@ -52498,7 +60727,7 @@
    "thumb": 0
   },
   {
-   "id": 2192,
+   "id": 2536,
    "offset": 447221760,
    "disc_size": 164416,
    "size": 164416,
@@ -52527,7 +60756,7 @@
    "thumb": 0
   },
   {
-   "id": 2193,
+   "id": 2537,
    "offset": 447387648,
    "disc_size": 164416,
    "size": 164416,
@@ -52556,7 +60785,7 @@
    "thumb": 0
   },
   {
-   "id": 2194,
+   "id": 2538,
    "offset": 447553536,
    "disc_size": 164416,
    "size": 164416,
@@ -52585,7 +60814,7 @@
    "thumb": 0
   },
   {
-   "id": 2195,
+   "id": 2539,
    "offset": 447719424,
    "disc_size": 164416,
    "size": 164416,
@@ -52614,7 +60843,7 @@
    "thumb": 0
   },
   {
-   "id": 2196,
+   "id": 2540,
    "offset": 447885312,
    "disc_size": 164416,
    "size": 164416,
@@ -52643,7 +60872,7 @@
    "thumb": 0
   },
   {
-   "id": 2197,
+   "id": 2541,
    "offset": 448051200,
    "disc_size": 164416,
    "size": 164416,
@@ -52672,7 +60901,7 @@
    "thumb": 0
   },
   {
-   "id": 2198,
+   "id": 2542,
    "offset": 448217088,
    "disc_size": 164416,
    "size": 164416,
@@ -52701,7 +60930,7 @@
    "thumb": 0
   },
   {
-   "id": 2199,
+   "id": 2543,
    "offset": 448382976,
    "disc_size": 164416,
    "size": 164416,
@@ -52730,7 +60959,7 @@
    "thumb": 0
   },
   {
-   "id": 2200,
+   "id": 2544,
    "offset": 448548864,
    "disc_size": 164416,
    "size": 164416,
@@ -52759,7 +60988,7 @@
    "thumb": 0
   },
   {
-   "id": 2201,
+   "id": 2545,
    "offset": 448714752,
    "disc_size": 164416,
    "size": 164416,
@@ -52788,7 +61017,7 @@
    "thumb": 0
   },
   {
-   "id": 2202,
+   "id": 2546,
    "offset": 448880640,
    "disc_size": 164416,
    "size": 164416,
@@ -52817,7 +61046,7 @@
    "thumb": 0
   },
   {
-   "id": 2203,
+   "id": 2547,
    "offset": 449046528,
    "disc_size": 164416,
    "size": 164416,
@@ -52846,7 +61075,7 @@
    "thumb": 0
   },
   {
-   "id": 2204,
+   "id": 2548,
    "offset": 449212416,
    "disc_size": 164416,
    "size": 164416,
@@ -52875,7 +61104,7 @@
    "thumb": 0
   },
   {
-   "id": 2205,
+   "id": 2549,
    "offset": 449378304,
    "disc_size": 164416,
    "size": 164416,
@@ -52904,7 +61133,7 @@
    "thumb": 0
   },
   {
-   "id": 2206,
+   "id": 2550,
    "offset": 449544192,
    "disc_size": 164416,
    "size": 164416,
@@ -52933,7 +61162,7 @@
    "thumb": 0
   },
   {
-   "id": 2207,
+   "id": 2551,
    "offset": 449710080,
    "disc_size": 164416,
    "size": 164416,
@@ -52962,7 +61191,7 @@
    "thumb": 0
   },
   {
-   "id": 2208,
+   "id": 2552,
    "offset": 449875968,
    "disc_size": 164416,
    "size": 164416,
@@ -52991,7 +61220,7 @@
    "thumb": 0
   },
   {
-   "id": 2209,
+   "id": 2553,
    "offset": 2048,
    "disc_size": 370712,
    "size": 1058788,
@@ -53013,7 +61242,7 @@
    "thumb": 0
   },
   {
-   "id": 2210,
+   "id": 2554,
    "offset": 374784,
    "disc_size": 1000528,
    "size": 2236664,
@@ -53035,7 +61264,7 @@
    "thumb": 0
   },
   {
-   "id": 2211,
+   "id": 2555,
    "offset": 1376256,
    "disc_size": 160192,
    "size": 364844,
