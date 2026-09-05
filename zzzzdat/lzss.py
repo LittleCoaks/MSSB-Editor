@@ -50,33 +50,49 @@ class BitReader:
 
 
 def decompress(data: bytes, lookback_bits: int, repeat_bits: int, out_size: int | None) -> bytearray:
+    return decompress_ex(data, lookback_bits, repeat_bits, out_size)[0]
+
+
+def decompress_ex(data: bytes, lookback_bits: int, repeat_bits: int, out_size: int | None,
+                  max_out: int = 1 << 28, tolerant: bool = False) -> tuple[bytearray, int]:
+    """Decompress and also return how many input bytes were consumed.
+
+    With out_size None the stream is read until the input is exhausted (or,
+    when tolerant, until it becomes invalid), which is how sizes of files no
+    descriptor references are recovered.
+    """
     if lookback_bits == 0 and repeat_bits == 0:
-        return bytearray(data if out_size is None else data[:out_size])
+        o = bytearray(data if out_size is None else data[:out_size])
+        return o, len(o)
 
     out = bytearray()
     append = out.append
     rd = BitReader(data)
     read = rd.read
-    limit = out_size if out_size is not None else 1 << 62
+    limit = out_size if out_size is not None else max_out
 
-    while len(out) < limit:
-        if out_size is None and rd.exhausted():
-            break
-        if read(1):
-            append(read(8))
-        else:
-            dist = read(lookback_bits)
-            length = read(repeat_bits) + 2
-            n = len(out)
-            if dist >= n:
-                raise ValueError(f"bad back-reference: distance {dist} at output {n}")
-            src = n - 1 - dist
-            if dist + 1 >= length:
-                out += out[src:src + length]
-            else:  # overlapping run: byte-wise copy
-                for _ in range(length):
-                    append(out[src])
-                    src += 1
+    try:
+        while len(out) < limit:
+            if out_size is None and rd.exhausted():
+                break
+            if read(1):
+                append(read(8))
+            else:
+                dist = read(lookback_bits)
+                length = read(repeat_bits) + 2
+                n = len(out)
+                if dist >= n:
+                    raise ValueError(f"bad back-reference: distance {dist} at output {n}")
+                src = n - 1 - dist
+                if dist + 1 >= length:
+                    out += out[src:src + length]
+                else:  # overlapping run: byte-wise copy
+                    for _ in range(length):
+                        append(out[src])
+                        src += 1
+    except ValueError:
+        if not tolerant:
+            raise
     if out_size is not None:
         del out[out_size:]
-    return out
+    return out, rd.pos

@@ -4,10 +4,16 @@ Browse, view and extract the assets packed inside `ZZZZ.dat`, the 450 MB
 archive that holds nearly all of Mario Superstar Baseball's (GYQE01) data.
 Pure Python 3.10+, no third-party packages.
 
-The archive has **no table of contents**. Every asset is described by a
-16-byte descriptor baked into `main.dol` or one of the RELs, and this tool
-finds those descriptors, verifies them against the archive, and builds the
-index the game never shipped. See [Format notes](#format-notes) below.
+The archive has **no table of contents**. Most assets are described by a
+16-byte descriptor baked into `main.dol` or one of the RELs; this tool finds
+those descriptors, verifies them against the archive, then fills the remaining
+gaps with two scans borrowed from roeming's
+[MssbAssetDecompressor](https://github.com/roeming/MssbAssetDecompressor)
+(`AdGCForm` sound banks and a brute-force LZSS probe) and builds the index the
+game never shipped. Community file names come from that repo and from
+[MSSB-Export-Models](https://github.com/roeming/MSSB-Export-Models), which
+also documents the C3 model format and can export character models to OBJ.
+See [Format notes](#format-notes) below.
 
 ## Setup
 
@@ -40,7 +46,7 @@ python -m zzzzdat extract 8 --png  # -> extracted/0008_06cfd000_dol_StadiumFiles
 python -m zzzzdat extract-all --png
 python -m zzzzdat textures 8       # only the PNGs
 python -m zzzzdat layout           # coverage map of the archive
-python -m zzzzdat index            # rebuild index/GYQE01.json (~40 s)
+python -m zzzzdat index            # rebuild index/GYQE01.json (~3 min; --no-scan for ~40 s)
 ```
 
 Extracted files land in `extracted/` (git-ignored). Names are
@@ -56,29 +62,32 @@ to download or extract (with PNGs) into `extracted/`.
 
 ## What is indexed
 
-`index/GYQE01.json` currently holds 1226 entries covering 255 MB of the
-450 MB archive. What the rest is:
+`index/GYQE01.json` holds 2212 entries covering 447.8 MB of the 450 MB
+archive (the rest is 0x800 padding). Where they come from:
 
-| Region | Size | Contents |
+| source (`refs`) | count | how |
 | --- | --- | --- |
-| 0xF12C01C-0x186A1800 | 157 MB | High-entropy data with 32-bit structure; not referenced by any static descriptor. Probably loaded through descriptors computed at run time (not yet traced). |
-| 0xCE16124-0xE581000 | 25 MB | Same as above. |
-| 0x19A6F5BC-0x1A15E800 | 7 MB | Same as above. |
-| 0x8F2E570-0x9438800 | 5 MB | Raw DSP-ADPCM audio (every 8th byte is a frame header). |
+| `dol`, `menus`, `game`, `debug` | 1226 | 16-byte descriptors in the executables, each test-decoded |
+| `scan:AdGCForm` | 345 | `AdGCForm` sound-bank files (one 5 MB stored bank at 0x8F2E800, 344 compressed ones packed back to back at 0x19C86800-0x1A15E800) |
+| `scan:lzss-probe` | 641 | every 0x800 boundary in the remaining gaps that decodes as LZSS; a stream is assumed to run to the next hit. Their decompressed sizes are approximate (a little trailing junk decoded from padding is possible). |
 
 Index entries are classified by content:
 
 | kind | count | notes |
 | --- | --- | --- |
-| `container` | 571 | Table of u32 section offsets; sections hold textures, animation banks, models, etc. |
-| `anim` | 544 | Files starting with `00 7B 79 60`: large record tables pointed at by the per-character tables, probably animation sets (unverified) |
+| `anim` | 1129 | Files starting with `00 7B 79 60`: large record tables pointed at by the per-character tables, probably animation sets (unverified) |
+| `container` | 616 | Table of u32 section offsets; sections hold textures, C3 geometry palettes, etc. |
+| `adgc` | 345 | `AdGCForm` sound banks (DSP-ADPCM inside) |
 | `textures` | 19 | A bare texture table |
-| `hvqm4` | 3 | Nintendo HVQM4 1.3 movies (intro 82 MB, 23 MB, 3 MB) |
 | `dsp-adpcm` | 14 | Raw DSP-ADPCM sample data |
+| `hvqm4` | 3 | Nintendo HVQM4 1.3 movies (intro 82 MB, 23 MB, 3 MB) |
 | `rel` | 3 | `menus.rel`, `game.rel`, `debug.rel` in `aaaa.dat` (listed for completeness) |
-| `unknown` | 72 | |
+| `unknown` | 83 | |
 
-About 9,300 textures are decodable across all entries.
+About 9,300 textures are decodable across all entries. Sixty entries carry a
+community name (`index/known_names.json`: the three movies, the stadiums, and
+the "First Found <character>" model files); the web UI and `list` show it in
+bold in the name column, and `list --grep` searches it.
 
 ## Format notes
 
@@ -107,14 +116,24 @@ same scheme as `decompress.py` in the decomp repo; `zzzzdat/lzss.py` is a
 faster, behaviour-identical rewrite. Two parameter sets occur: `0x040B`
 (R=4, L=11) and `0x050E` (R=5, L=14).
 
+### AdGCForm sound banks
+
+`u32 flags|size, u32 params` (both **little**-endian, same meaning as the
+descriptor fields) immediately followed by the ASCII magic `AdGCForm`; for
+compressed banks the LZSS stream starts right after the magic. Found by
+scanning the archive for the magic.
+
 ### Section container
 
 Header of u32 offsets; the first is the header size (0x20/0x40/0x60/...), unused
-slots are 0. Each section starts with a 32-bit type word; observed values include
-`0x007B7960` (record table; as a small section it ends with the object's `name.gpc`), `0x005BBC61` and
-`0x00184300` (geometry chunks, end with the `name.tpl` they texture from plus
-`GroupNN` strings), and texture tables whose first halfword is the texture
-count.
+slots are 0. Each section starts with a 32-bit type word:
+
+| word | section |
+| --- | --- |
+| `0x005BBC61` | Nintendo CharPipeline (C3) **GeoPalette**: `version, userDataSize, pUserData, numGeoDescriptors, pGeoDescriptorArray`, descriptors `{pDisplayObject, pName}`; ends with the `name.tpl` it textures from and `GroupNN` strings. roeming's MSSB-Export-Models parses these all the way to OBJ. |
+| `0x007B7960` | record table; as a small section it holds transform floats and ends with the object's `name.gpc` |
+| `0x00184300`, `0x00014300` | related C3 palettes (not decoded) |
+| `count, 0, ...` | texture table (first halfword is the texture count) |
 
 ### Texture table
 

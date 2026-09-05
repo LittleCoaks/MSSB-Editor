@@ -175,9 +175,22 @@ def looks_like_dsp_adpcm(data: bytes) -> bool:
     return all(data[i * 8] < 0x80 for i in range(n)) and sum(data[i * 8 + 1] for i in range(n)) > 0
 
 
+# Section/file type words. 0x005BBC61 is the version word of a Nintendo
+# CharPipeline (C3) GeoPalette (see roeming/MSSB-Export-Models, helper_c3.py);
+# the others sit in the same containers and are presumably the matching
+# actor/animation/texture palettes.
+SECTION_KINDS = {0x005BBC61: "geopalette", 0x007B7960: "c3-7b7960", 0x00184300: "c3-184300",
+                 0x00014300: "c3-014300"}
+
+
 def classify_blob(data: bytes) -> str:
     if is_hvqm4(data):
         return "hvqm4"
+    if data[:8] == b"AdGCForm":
+        return "adgc"
+    magic = struct.unpack_from(">I", data, 0)[0] if len(data) >= 4 else 0
+    if magic in SECTION_KINDS and magic != 0x007B7960:
+        return SECTION_KINDS[magic]
     if data[:4] == b"\x00\x7b\x79\x60":
         return "anim"
     if parse_texture_table(data):

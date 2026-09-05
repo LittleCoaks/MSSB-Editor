@@ -19,7 +19,7 @@ def fmt_size(n: int) -> str:
 
 def cmd_index(a):
     store = Store()
-    store.rebuild_index(verify=not a.no_verify, classify=not a.no_classify)
+    store.rebuild_index(verify=not a.no_verify, classify=not a.no_classify, scan=not a.no_scan)
 
 
 def cmd_list(a):
@@ -31,11 +31,12 @@ def cmd_list(a):
         ents = [e for e in ents if e.module == a.module]
     if a.grep:
         g = a.grep.lower()
-        ents = [e for e in ents if g in e.symbol.lower() or g in e.name or any(g in n.lower() for n in e.names)]
+        ents = [e for e in ents if g in e.symbol.lower() or g in e.name or g in e.known.lower()
+                or any(g in n.lower() for n in e.names)]
     print(f"{'id':>5} {'offset':>10} {'size':>8} {'disc':>8} {'c':1} {'kind':10} {'tex':>4} {'label':22} symbol")
     for e in ents:
         print(f"{e.id:5d} {e.offset:#10x} {fmt_size(e.size):>8} {fmt_size(e.disc_size):>8} "
-              f"{'z' if e.compressed else '-'} {e.kind:10} {e.ntex:4d} {e.label:22} {e.symbol}")
+              f"{'z' if e.compressed else '-'} {e.kind:10} {e.ntex:4d} {(e.known or e.label):22} {e.symbol}")
     print(f"{len(ents)} entries")
 
 
@@ -45,6 +46,8 @@ def cmd_info(a):
     print(f"entry {e.id}  {e.archive} @ {e.offset:#x}  disc {e.disc_size:#x}  size {e.size:#x}  "
           f"{'LZSS L=%d R=%d' % (e.lookback_bits, e.repeat_bits) if e.compressed else 'stored'}")
     print("kind:", e.kind)
+    if e.known:
+        print("known as:", e.known)
     if e.names:
         print("names:", ", ".join(e.names))
     for r in e.refs:
@@ -140,6 +143,7 @@ def main(argv=None):
     s = sub.add_parser("index", help="(re)build index/GYQE01.json by scanning the game executables")
     s.add_argument("--no-verify", action="store_true", help="skip decode verification (faster, noisier)")
     s.add_argument("--no-classify", action="store_true", help="skip content classification")
+    s.add_argument("--no-scan", action="store_true", help="skip the AdGCForm and brute-force gap scans")
     s.set_defaults(fn=cmd_index)
 
     s = sub.add_parser("list", help="list entries")

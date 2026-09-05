@@ -20,7 +20,7 @@ def entry_summary(e) -> dict:
     return {"id": e.id, "offset": e.offset, "disc_size": e.disc_size, "size": e.size,
             "compressed": e.compressed, "lookback_bits": e.lookback_bits, "repeat_bits": e.repeat_bits,
             "kind": e.kind, "ntex": e.ntex, "nsec": e.nsec, "module": e.module, "symbol": e.symbol,
-            "archive": e.archive, "name": e.name, "refs": e.refs, "label": e.label, "names": e.names}
+            "archive": e.archive, "name": e.name, "refs": e.refs, "label": e.label, "names": e.names, "known": e.known}
 
 
 def entry_detail(store: Store, e) -> dict:

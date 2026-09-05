@@ -59,12 +59,15 @@ class Entry:
     nsec: int = 0         # container sections
     label: str = ""       # embedded asset name (e.g. stadium0.gpc)
     names: list[str] = field(default_factory=list)  # all embedded .gpc/.tpl names
+    known: str = ""       # community name from index/known_names.json
 
     @property
     def symbol(self) -> str:
         """Best symbol hint: 'module symbol+off' of the first reference."""
         if not self.refs:
             return ""
+        if self.refs[0].startswith("scan:"):
+            return self.refs[0]
         mod = self.refs[0].split(":")[0]
         parts = self.refs[0].split(" ", 1)
         return f"{mod} {parts[1]}" if len(parts) > 1 else mod
@@ -343,6 +346,100 @@ def build_index(archive_size: int, orig_dir: Path = ORIG_DIR) -> list[Entry]:
         if not e.name:
             e.name = f"{e.offset:08x}"
     return entries
+
+
+# --------------------------------------------------------- archive scans --
+# Two techniques borrowed from roeming/MssbAssetDecompressor for the parts of
+# the archive that no executable descriptor points at.
+
+ADGC_MAGIC = b"AdGCForm"
+
+
+def scan_adgc(archive, log=lambda *a: None) -> list[Entry]:
+    """Sound-bank files: each starts with 'AdGCForm', preceded by an 8-byte
+    little-endian fingerprint {flags|size, compression params}. They are packed
+    back to back and are not 0x800-aligned, so they never match the descriptor
+    scan; the compressed size is recovered by decoding the stream."""
+    from .lzss import decompress_ex
+    hits = []
+    chunk = 16 << 20
+    off = 0
+    while off < archive.size:
+        b = archive.read(off, min(chunk + 16, archive.size - off))
+        i = b.find(ADGC_MAGIC)
+        while i != -1:
+            hits.append(off + i)
+            i = b.find(ADGC_MAGIC, i + 1)
+        off += chunk
+    out = []
+    for h in sorted(set(hits)):
+        if h < 8:
+            continue
+        fs, ci = struct.unpack("<II", archive.read(h - 8, 8))
+        flag, size = fs >> 28, fs & 0x0FFFFFFF
+        lb, rb = ci & 0xFF, (ci >> 8) & 0xFF
+        start = h + len(ADGC_MAGIC)  # the LZSS stream begins right after the magic
+        if flag == 0 or size == 0:
+            start = h
+            e = Entry(0, start, size, size, 0, 0, 0, refs=["scan:AdGCForm"])
+        else:
+            raw = archive.read(start, min(size * 2 + 64, archive.size - start))
+            try:
+                _, used = decompress_ex(raw, lb, rb, size)
+            except ValueError:
+                log(f"  AdGCForm at {h:#x}: undecodable, skipped")
+                continue
+            e = Entry(0, start, used, size, FLAG_COMPRESSED, lb, rb, refs=["scan:AdGCForm"])
+        out.append(e)
+    return out
+
+
+def scan_unreferenced(archive, known: list[Entry], log=lambda *a: None, probe: int = 0x200) -> list[Entry]:
+    """Brute force: at every 0x800 boundary not covered by a known entry, try to
+    decode `probe` bytes with each LZSS parameter set. A hit is assumed to run
+    to the next hit or the next known entry; its decompressed size is whatever
+    the stream yields before the input ends, so sizes here are approximate and
+    may include some trailing junk decoded from padding."""
+    from .lzss import decompress_ex
+    spans = sorted((e.offset, e.end) for e in known if e.archive == "ZZZZ.dat")
+    gaps = []
+    cur = 0
+    for s, e in spans:
+        if s > cur + 0x800:
+            gaps.append((cur, s))
+        cur = max(cur, e)
+    if cur < archive.size:
+        gaps.append((cur, archive.size))
+    hits = []
+    for g0, g1 in gaps:
+        g0 = (g0 + 0x7FF) & ~0x7FF
+        for off in range(g0, g1, 0x800):
+            b = archive.read(off, min(0x1000, archive.size - off))
+            for lb, rb in ((0xB, 4), (0xE, 5)):
+                try:
+                    o, _ = decompress_ex(b, lb, rb, probe)
+                except ValueError:
+                    continue
+                if len(o) == probe:
+                    hits.append((off, lb, rb, g1))
+                    break
+    log(f"  probe: {len(hits)} unreferenced streams in {len(gaps)} gaps")
+    out = []
+    for i, (off, lb, rb, g1) in enumerate(hits):
+        end = hits[i + 1][0] if i + 1 < len(hits) and hits[i + 1][0] < g1 else g1
+        raw = archive.read(off, end - off)
+        o, used = decompress_ex(raw, lb, rb, None, tolerant=True)
+        if len(o) < probe:
+            continue
+        out.append(Entry(0, off, used, len(o), FLAG_COMPRESSED, lb, rb, refs=["scan:lzss-probe"]))
+    return out
+
+
+def load_known_names(path: Path) -> dict[int, str]:
+    if not path.exists():
+        return {}
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    return {int(k, 16): v for k, v in doc.get("names", {}).items()}
 
 
 # ----------------------------------------------------------------- persist --

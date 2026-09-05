@@ -7,14 +7,16 @@ from collections import OrderedDict
 from pathlib import Path
 
 from . import formats
-from .descriptors import INDEX_PATH, Entry, build_index, coverage, load_index, save_index, verify_entries
+from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
+                          scan_adgc, scan_unreferenced, verify_entries)
 from .disc import VIEWER_ROOT, Archive, find_archive
 from .lzss import decompress
 
 EXTRACT_DIR = VIEWER_ROOT / "extracted"
+KNOWN_NAMES_PATH = VIEWER_ROOT / "index" / "known_names.json"
 
 EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin",
-               "anim": "anm", "unknown": "bin", "": "bin"}
+               "anim": "anm", "adgc": "adgc", "geopalette": "geo", "unknown": "bin", "": "bin"}
 
 
 def safe_name(s: str) -> str:
@@ -77,7 +79,7 @@ class Store:
     def file_name(self, e: Entry, ext: str | None = None) -> str:
         ext = ext or EXT_BY_KIND.get(e.kind, "bin")
         sym = safe_name(e.symbol.replace(" ", "_"))
-        lab = safe_name(e.label.rsplit(".", 1)[0]) if e.label else ""
+        lab = safe_name((e.known or e.label).rsplit(".", 1)[0]) if (e.known or e.label) else ""
         return f"{e.id:04d}_{e.offset:08x}" + (f"_{lab}" if lab else "") + (f"_{sym}" if sym else "") + f".{ext}"
 
     # ---------------------------------------------------------- extraction --
@@ -111,13 +113,26 @@ class Store:
         return out
 
     # ---------------------------------------------------------- indexing --
-    def rebuild_index(self, verify: bool = True, classify: bool = True, log=print) -> None:
+    def rebuild_index(self, verify: bool = True, classify: bool = True, scan: bool = True, log=print) -> None:
         t0 = time.time()
         ents = build_index(self.archive.size)
         log(f"scanned executables: {len(ents)} candidate descriptors")
         if verify:
             ents = verify_entries(ents, self.archive)
             log(f"verified: {len(ents)} entries ({time.time() - t0:.0f}s)")
+        if scan:
+            adgc = scan_adgc(self.archive, log)
+            log(f"AdGCForm scan: {len(adgc)} sound files ({time.time() - t0:.0f}s)")
+            ents += adgc
+            extra = scan_unreferenced(self.archive, ents, log)
+            log(f"unreferenced scan: {len(extra)} streams ({time.time() - t0:.0f}s)")
+            ents += extra
+            ents.sort(key=lambda e: (e.archive != "ZZZZ.dat", e.offset, e.disc_size))
+            for i, e in enumerate(ents):
+                e.id = i
+        known = load_known_names(KNOWN_NAMES_PATH)
+        for e in ents:
+            e.known = known.get(e.offset, "") if e.archive == "ZZZZ.dat" else ""
         if classify:
             for i, e in enumerate(ents):
                 if e.archive != "ZZZZ.dat":
@@ -131,7 +146,7 @@ class Store:
                     log(f"  entry {e.id}: {ex}")
                     e.kind = "error"
                     continue
-                e.kind = fi.kind
+                e.kind = "adgc" if e.refs and e.refs[0] == "scan:AdGCForm" else fi.kind
                 e.ntex = len(fi.all_textures())
                 e.nsec = len(fi.sections)
                 e.label = fi.label
