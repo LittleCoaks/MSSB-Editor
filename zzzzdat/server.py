@@ -5,14 +5,49 @@ Serves zzzzdat/ui/index.html plus a small JSON API over the Store.
 from __future__ import annotations
 
 import json
+import tempfile
 import threading
+import uuid
 import webbrowser
+from email.parser import BytesParser
+from email.policy import default as email_default
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from . import c3
+from . import c3, music
 from .store import EXTRACT_DIR, Store
+
+JOBS: dict[str, dict] = {}
+
+
+def run_install_job(job: dict, audio: Path, root, track: str, pad: bool) -> None:
+    def prog(done, total):
+        job["progress"] = done / max(total, 1)
+    try:
+        job["result"] = music.install(str(audio), root, track, progress=prog, pad_to_stock=pad)
+        job["state"] = "done"
+    except Exception as ex:  # surfaced to the page
+        job["state"] = "error"
+        job["error"] = f"{type(ex).__name__}: {ex}"
+    finally:
+        try:
+            audio.unlink()
+        except OSError:
+            pass
+
+
+def parse_multipart(headers, body: bytes) -> dict:
+    msg = BytesParser(policy=email_default).parsebytes(
+        b"Content-Type: " + headers["Content-Type"].encode() + b"\r\n\r\n" + body)
+    out = {}
+    for part in msg.iter_parts():
+        name = part.get_param("name", header="content-disposition")
+        fname = part.get_filename()
+        payload = part.get_payload(decode=True)
+        out[name] = (fname, payload) if fname else payload.decode("utf-8", "replace")
+    return out
 
 UI_DIR = Path(__file__).resolve().parent / "ui"
 
@@ -71,6 +106,42 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json({"error": msg}, status)
 
     # ------------------------------------------------------------ routes --
+    def do_POST(self):
+        u = urlparse(self.path)
+        q = {k: v[0] for k, v in parse_qs(u.query).items()}
+        parts = [p for p in u.path.split("/") if p]
+        length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(length) if length else b""
+        try:
+            if parts[:2] == ["api", "music"]:
+                return self.music_post(parts[2:], q, body)
+            return self.fail("not found")
+        except Exception as ex:
+            return self.fail(f"{type(ex).__name__}: {ex}", 500)
+
+    def music_post(self, rest, q, body):
+        if rest == ["root"]:
+            root = music.set_game_root(q.get("path") or body.decode("utf-8", "replace").strip())
+            return self.send_json({"root": str(root)})
+        root = music.game_root()
+        if root is None:
+            return self.fail("no game dump found; run `python -m zzzzdat dump` or set the game root", 400)
+        if rest == ["restore"]:
+            music.restore(root, q["track"])
+            return self.send_json({"ok": True})
+        if rest == ["install"]:
+            form = parse_multipart(self.headers, body)
+            fname, payload = form["file"]
+            track = form.get("track") or q.get("track")
+            pad = (form.get("pad") or q.get("pad", "1")) not in ("0", "false", "")
+            tmp = Path(tempfile.gettempdir()) / f"zzzzdat_{uuid.uuid4().hex}_{Path(fname).name}"
+            tmp.write_bytes(payload)
+            job = {"id": uuid.uuid4().hex, "state": "running", "progress": 0.0, "track": track}
+            JOBS[job["id"]] = job
+            threading.Thread(target=run_install_job, args=(job, tmp, root, track, pad), daemon=True).start()
+            return self.send_json({"job": job["id"]})
+        return self.fail("not found")
+
     def do_GET(self):
         u = urlparse(self.path)
         q = {k: v[0] for k, v in parse_qs(u.query).items()}
@@ -92,6 +163,18 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as ex:  # surface errors to the page instead of dying
             return self.fail(f"{type(ex).__name__}: {ex}", 500)
 
+    def music_get(self, rest, q):
+        if rest and rest[0] == "job":
+            job = JOBS.get(rest[1]) if len(rest) > 1 else None
+            return self.send_json(job or {"error": "no such job"})
+        root = music.game_root()
+        disc_ids = {e.name.rsplit("/", 1)[-1]: e.id for e in self.store.entries if e.archive == "disc"}
+        tracks = music.status(root) if root else []
+        for t in tracks:
+            t["entry"] = disc_ids.get(t["file"])
+        return self.send_json({"root": str(root) if root else None, "tracks": tracks, **music.backends(),
+                               "dump_hint": "python -m zzzzdat dump" if root is None else None})
+
     def api(self, parts, q):
         st = self.store
         if parts == ["index"]:
@@ -99,6 +182,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"meta": doc.get("meta", {}), "archive": str(st.archive.path),
                                    "archive_size": st.archive.size, "extract_dir": str(EXTRACT_DIR),
                                    "entries": [entry_summary(e) for e in st.entries]})
+        if parts[0] == "music":
+            return self.music_get(parts[1:], q)
         if parts[0] != "entry" or len(parts) < 2:
             return self.fail("not found")
         e = st.get(parts[1])

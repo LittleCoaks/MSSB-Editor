@@ -110,6 +110,61 @@ def find_archive(orig_dir: Path | str = ORIG_DIR) -> Archive:
     )
 
 
+def dump_iso(dest: Path | str | None = None, only: str | None = None, log=lambda *a: None) -> Path:
+    """Extract the game's files out of the ISO into a Dolphin-style dump:
+    <dest>/files/... and <dest>/sys/{main.dol,boot.bin,bi2.bin,apploader.img,fst.bin}.
+    Existing files are left alone. `only` limits to paths starting with it
+    (e.g. "snd/"). Default destination is orig/GYQE01 in the decomp folder,
+    which is also where the viewer looks for a writable game root."""
+    arc = find_archive()
+    if arc.source != "iso":
+        raise FileNotFoundError("no ISO found to dump from")
+    dest = Path(dest) if dest else ORIG_DIR
+    files_dir = dest / "files"
+    sys_dir = dest / "sys"
+    with open(arc.path, "rb") as iso:
+        files = read_fst(iso)
+        iso.seek(0x420)
+        dol_off, fst_off, fst_size = struct.unpack(">III", iso.read(12))
+        iso.seek(0x400)
+        apl_size = struct.unpack(">I", iso.read(4))[0]
+
+        def copy(off: int, size: int, out: Path) -> None:
+            if out.exists() and out.stat().st_size == size:
+                return
+            out.parent.mkdir(parents=True, exist_ok=True)
+            iso.seek(off)
+            with open(out, "wb") as f:
+                left = size
+                while left:
+                    chunk = iso.read(min(left, 8 << 20))
+                    f.write(chunk)
+                    left -= len(chunk)
+            log(f"  {out.relative_to(dest)} ({size:,} bytes)")
+
+        if not only or only.startswith("sys") or only.startswith("snd"):  # sys/ is tiny and needed for editing
+            copy(0, 0x440, sys_dir / "boot.bin")
+            copy(0x440, 0x2000, sys_dir / "bi2.bin")
+            copy(fst_off, fst_size, sys_dir / "fst.bin")
+            iso.seek(0x2440 + 0x14)
+            apl_len = struct.unpack(">I", iso.read(4))[0]
+            iso.seek(0x2440 + 0x18)
+            apl_trailer = struct.unpack(">I", iso.read(4))[0]
+            copy(0x2440, 0x20 + apl_len + apl_trailer, sys_dir / "apploader.img")
+            # main.dol: header gives section offsets/sizes -> total length
+            iso.seek(dol_off)
+            hdr = iso.read(0x100)
+            offs = struct.unpack(">18I", hdr[0:0x48])
+            sizes = struct.unpack(">18I", hdr[0x90:0xD8])
+            dol_size = max((o + s for o, s in zip(offs, sizes) if s), default=0x100)
+            copy(dol_off, dol_size, sys_dir / "main.dol")
+        for path, (off, size) in sorted(files.items()):
+            if only and not path.startswith(only):
+                continue
+            copy(off, size, files_dir / path)
+    return dest
+
+
 def extract_archive(dest: Path | None = None) -> Path:
     """Copy ZZZZ.dat out of the ISO into orig/GYQE01/files (skips if present)."""
     arc = find_archive()

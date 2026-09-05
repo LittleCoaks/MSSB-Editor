@@ -11,6 +11,19 @@
   header h1 { font-size:15px; margin:0 12px 0 0; }
   header input, header select { background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:4px 6px; border-radius:4px; }
   header .stat { color:var(--dim); margin-left:auto; white-space:nowrap; }
+  nav.pages button { background:none; border:1px solid var(--line); color:var(--dim); padding:4px 10px; cursor:pointer; font:inherit; border-radius:4px; margin-right:4px; }
+  nav.pages button.on { color:var(--fg); border-color:var(--acc); }
+  #music { display:none; flex:1; overflow:auto; padding:16px 20px; }
+  #music table { width:auto; }
+  #music td, #music th { padding:5px 10px; }
+  .status-stock { color:var(--dim); } .status-custom { color:#7ec8a0; } .status-modified { color:#e6b450; } .status-missing { color:#666; }
+  .warn { color:#f08080; }
+  .drop { border:1px dashed var(--line); border-radius:6px; padding:14px; margin:12px 0; color:var(--dim); }
+  .drop.over { border-color:var(--acc); color:var(--fg); }
+  #music input[type=text] { width:520px; background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:4px 6px; border-radius:4px; }
+  #music select { background:var(--bg); color:var(--fg); border:1px solid var(--line); padding:4px 6px; border-radius:4px; }
+  .bar { height:6px; background:#2a2e36; border-radius:3px; overflow:hidden; width:300px; display:inline-block; vertical-align:middle; }
+  .bar i { display:block; height:100%; background:var(--acc); width:0; }
   main { flex:1; display:flex; min-height:0; }
   #list { width:560px; min-width:360px; overflow:auto; border-right:1px solid var(--line); resize:horizontal; }
   table { border-collapse:collapse; width:100%; }
@@ -53,6 +66,7 @@
 <body>
 <header>
   <h1>MSSB Editor</h1>
+  <nav class="pages"><button class="on" data-page="assets">Assets</button><button data-page="music">Music</button></nav>
   <input id="q" placeholder="filter: symbol, module, id, offset…" size="34">
   <select id="kind"><option value="">all kinds</option></select>
   <select id="module"><option value="">all modules</option></select>
@@ -60,6 +74,17 @@
   <label><input type="checkbox" id="audonly"> has audio</label>
   <span class="stat" id="stat"></span>
 </header>
+<div id="music">
+  <h2 style="margin:0 0 6px;font-size:16px">Custom music</h2>
+  <div class="row">Encodes any audio file to the game's DTK <code>.adp</code> streams and installs it into a dumped game folder (from <a href="https://github.com/LittleCoaks/MSSB-Custom-Music" target="_blank">MSSB-Custom-Music</a>). The original is backed up the first time a track is replaced.</div>
+  <div class="row" style="margin:10px 0">game root: <input type="text" id="mroot" placeholder="folder that contains snd/my_snd_h (a Dolphin 'Extract Files' dump)"> <button class="btn" onclick="setRoot()">use</button> <span id="mrootmsg"></span></div>
+  <div class="drop" id="drop">Drop an audio file here (wav, mp3, flac, ogg…) or <label style="color:var(--acc);cursor:pointer"><input type="file" id="mfile" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a,.aac,.opus,.wma" style="display:none">browse</label>
+    · install as <select id="mtrack"></select> · <label><input type="checkbox" id="mpad" checked> pad short tracks to the stock length</label>
+    <button class="btn" onclick="installMusic()">Install</button> <span id="mfilename"></span></div>
+  <div id="mjob"></div>
+  <table><thead><tr><th>track</th><th>file</th><th>status</th><th>length</th><th>size</th><th>stock size</th><th></th></tr></thead><tbody id="mrows"></tbody></table>
+  <div class="row" id="mback" style="margin-top:10px"></div>
+</div>
 <main>
   <div id="list"><table>
     <thead><tr>
@@ -234,6 +259,62 @@ function resetView() {
   three.grid.position.y = box.min.y; three.grid.scale.setScalar(r / 500);
   three.camera.position.set(c.x + r * 0.9, c.y + r * 0.6, c.z + r * 1.2); three.camera.near = r / 1000; three.camera.far = r * 50; three.camera.updateProjectionMatrix();
   three.controls.target.copy(c); three.controls.update();
+}
+
+// ---- pages ------------------------------------------------------------
+document.querySelectorAll('nav.pages button').forEach(b => b.onclick = () => showPage(b.dataset.page));
+function showPage(p) {
+  document.querySelectorAll('nav.pages button').forEach(b => b.classList.toggle('on', b.dataset.page === p));
+  document.querySelector('main').style.display = p === 'assets' ? 'flex' : 'none';
+  $('#music').style.display = p === 'music' ? 'block' : 'none';
+  if (p === 'music') loadMusic();
+}
+// ---- music ------------------------------------------------------------
+let mfile = null;
+async function loadMusic() {
+  const r = await (await fetch('/api/music')).json();
+  $('#mroot').value = r.root || '';
+  $('#mrootmsg').innerHTML = r.root ? '' : `<span class="warn">no game dump found. Run <code>python -m zzzzdat dump</code> to extract the ISO, or point this at a Dolphin "Extract Files" folder.</span>`;
+  $('#mback').textContent = `decoders: ${r.backends.length ? r.backends.join(', ') : 'wav only (pip install miniaudio for mp3/flac/ogg)'} · numpy: ${r.numpy ? 'on (fast encoding)' : 'off (slow encoding; pip install numpy)'}`;
+  const sel = $('#mtrack'); sel.innerHTML = '';
+  for (const t of r.tracks) sel.append(new Option(`${t.label} (${t.file})`, t.file));
+  $('#mrows').innerHTML = r.tracks.map(t => {
+    const st = !t.exists ? 'missing' : t.modified ? 'modified' : t.custom ? 'custom' : 'stock';
+    return `<tr><td>${t.label}</td><td>${t.file}</td><td class="status-${st}">${st}${t.mismatch ? ' <span class="warn">size ≠ DOL table</span>' : ''}</td>
+      <td class="num">${t.exists ? t.seconds + ' s' : ''}</td><td class="num">${t.exists ? kb(t.size) : ''}</td><td class="num">${t.stock_size ? kb(t.stock_size) : (t.custom ? '' : 'not in table')}</td>
+      <td>${t.exists && t.entry !== undefined && t.entry !== null ? `<audio controls preload="none" src="/api/entry/${t.entry}/audio/0.wav" style="height:28px;vertical-align:middle"></audio>` : ''}
+          ${t.modified ? `<button class="btn" onclick="restoreMusic('${t.file}')">restore original</button>` : ''}</td></tr>`;
+  }).join('');
+}
+$('#mfile').onchange = e => { mfile = e.target.files[0]; $('#mfilename').textContent = mfile ? `→ ${mfile.name} (${kb(mfile.size)})` : ''; };
+const drop = $('#drop');
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); mfile = e.dataTransfer.files[0]; $('#mfilename').textContent = `→ ${mfile.name} (${kb(mfile.size)})`; };
+async function setRoot() {
+  const r = await (await fetch('/api/music/root?path=' + encodeURIComponent($('#mroot').value), { method: 'POST' })).json();
+  $('#mrootmsg').textContent = r.error ? r.error : 'ok'; loadMusic();
+}
+async function installMusic() {
+  if (!mfile) { $('#mjob').textContent = 'pick an audio file first'; return; }
+  const fd = new FormData(); fd.append('file', mfile); fd.append('track', $('#mtrack').value); fd.append('pad', $('#mpad').checked ? '1' : '0');
+  $('#mjob').innerHTML = 'uploading…';
+  const r = await (await fetch('/api/music/install', { method: 'POST', body: fd })).json();
+  if (r.error) { $('#mjob').innerHTML = `<span class="warn">${r.error}</span>`; return; }
+  const poll = async () => {
+    const j = await (await fetch('/api/music/job/' + r.job)).json();
+    if (j.state === 'running') { $('#mjob').innerHTML = `encoding ${j.track}… <span class="bar"><i style="width:${Math.round(j.progress * 100)}%"></i></span> ${Math.round(j.progress * 100)}%`; setTimeout(poll, 400); return; }
+    if (j.state === 'error') { $('#mjob').innerHTML = `<span class="warn">${j.error}</span>`; return; }
+    const res = j.result;
+    $('#mjob').innerHTML = `installed <b>${j.track}</b>: ${kb(res.bytes)}, ${res.seconds.toFixed(1)} s${res.resampled ? ', resampled from ' + res.source_rate + ' Hz' : ''}${res.padded ? ', padded to the stock length' : ''}${res.truncated ? ' · <span class="warn">longer than the stock track: the game loops at the stock length unless you apply the Gecko lines</span>' : ''}` +
+      (res.gecko.length ? `<br>Gecko lines for the full length / tight loop:<pre>${res.gecko.join('\n')}</pre>` : '') + (res.is_custom_slot ? '<br>Custom slots are only audible with a code that points a stage at them.' : '');
+    loadMusic();
+  };
+  poll();
+}
+async function restoreMusic(track) {
+  const r = await (await fetch('/api/music/restore?track=' + encodeURIComponent(track), { method: 'POST' })).json();
+  $('#mjob').innerHTML = r.error ? `<span class="warn">${r.error}</span>` : `restored ${track}`; loadMusic();
 }
 load();
 </script>

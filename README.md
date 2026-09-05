@@ -69,6 +69,35 @@ viewer (three.js, orbit/zoom/pan, wireframe), an audio tab with an in-page
 player for each stream, a paged hex viewer, and buttons to download or extract
 (with PNGs / WAVs / models) into `extracted/`.
 
+## Custom music
+
+The [MSSB-Custom-Music](https://github.com/LittleCoaks/MSSB-Custom-Music)
+tool is merged in as `zzzzdat/music/` (its encoder, resampler, DOL
+stream-table reader and installer, unchanged apart from imports; its self-test
+runs with `python -m zzzzdat.music.selftest`). It needs a **writable game
+dump** with `snd/my_snd_h` and `sys/main.dol`:
+
+```bash
+python -m zzzzdat dump --only snd/      # pulls snd/ and sys/ out of the ISO into orig/GYQE01 (~180 MB)
+python -m zzzzdat dump                  # or the whole disc (1.4 GB), the folder Dolphin can boot
+python -m zzzzdat music list
+python -m zzzzdat music install song.mp3 --track mario_01_h.adp
+python -m zzzzdat music restore --track mario_01_h.adp
+python -m zzzzdat music --root "D:\dumps\GYQE01iles" list   # another dump (remembered in game_root.txt)
+```
+
+Any audio the decoders can open (wav always; mp3/flac/ogg with
+`pip install miniaudio`, more with ffmpeg on PATH) is conformed to 48 kHz
+16-bit stereo, encoded to DTK ADPCM (bit-exact decoder, encoder within 0.03 dB
+of Nintendo's `trkmake`), padded with silence to the stock length so the
+console never streams past the end, and written over the track after backing
+up the original once. When the length differs from the DOL's stream table it
+prints the two Gecko writes that repoint it. `pip install numpy` makes
+encoding about 30x faster.
+
+The **Music** page in the UI does the same with a file drop zone, progress
+bar, a player for every track, and restore buttons.
+
 ## Models
 
 `zzzzdat/c3.py` parses Nintendo CharPipeline (C3) **GeoPalette** sections

@@ -146,6 +146,57 @@ def cmd_model(a):
         print("no GeoPalette sections in this entry")
 
 
+def cmd_dump(a):
+    from .disc import dump_iso
+    dest = dump_iso(a.out, a.only, log=print)
+    print(f"dumped to {dest}")
+
+
+def cmd_music(a):
+    from . import music
+    root = music.game_root() if not a.root else music.set_game_root(a.root)
+    if a.music_cmd == "root":
+        print(root or "no game root found: run `zzzzdat dump` or `zzzzdat music root <folder>`")
+        return
+    if root is None:
+        print("no game dump found. Run `python -m zzzzdat dump --only snd/` (plus sys/) or "
+              "`python -m zzzzdat music --root <dump> ...`", file=sys.stderr)
+        sys.exit(1)
+    if a.music_cmd == "list":
+        print(f"game root: {root}")
+        print(f"{'file':20} {'track':24} {'status':9} {'size':>10} {'stock':>10} note")
+        for t in music.status(root):
+            status = "missing" if not t["exists"] else ("modified" if t["modified"] else ("custom" if t["custom"] else "stock"))
+            note = "SIZE != DOL table" if t["mismatch"] else ("" if t["in_table"] or t["custom"] else "not in DOL table")
+            print(f"{t['file']:20} {t['label']:24} {status:9} {t['size']:>10} {t['stock_size'] or '-':>10} {note}")
+    elif a.music_cmd == "install":
+        def prog(done, total):
+            print(f"\r  encoding {100 * done // max(total, 1):3d}%", end="", flush=True)
+        r = music.install(a.audio, root, a.track, progress=prog, pad_to_stock=not a.no_pad)
+        print()
+        print(f"wrote {r['destination']} ({r['bytes']:,} bytes, {r['seconds']:.1f} s"
+              f"{', resampled from %d Hz' % r['source_rate'] if r['resampled'] else ''})")
+        if r["backup"]:
+            print(f"original backed up to {r['backup']}")
+        if r["padded"]:
+            print("padded with silence to the stock length")
+        if r["truncated"]:
+            print("WARNING: longer than the stock track; the game will loop at the stock length")
+        if r["gecko"]:
+            print("Gecko lines for a tight loop / full length:")
+            for g in r["gecko"]:
+                print("  " + g)
+    elif a.music_cmd == "restore":
+        music.restore(root, a.track)
+        print(f"restored {a.track}")
+    elif a.music_cmd == "export":
+        from .music import installer
+        out = a.out or (str(EXTRACT_DIR / (a.track.rsplit(".", 1)[0] + ".wav")))
+        Path(out).parent.mkdir(parents=True, exist_ok=True)
+        installer.extract(str(root), a.track, out)
+        print(out)
+
+
 def cmd_layout(a):
     store = Store()
     ents = sorted(store.zzzz_entries(), key=lambda e: e.offset)
@@ -237,6 +288,27 @@ def main(argv=None):
     s.add_argument("entry")
     s.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_textures)
+
+    s = sub.add_parser("dump", help="extract the game's files from the ISO into a Dolphin-style folder (needed for editing)")
+    s.add_argument("-o", "--out", help="destination (default: the decomp's orig/GYQE01)")
+    s.add_argument("--only", help="only paths starting with this, e.g. snd/")
+    s.set_defaults(fn=cmd_dump)
+
+    s = sub.add_parser("music", help="custom music: list, install, restore, export tracks (from MSSB-Custom-Music)")
+    s.add_argument("--root", help="game dump folder (remembered in game_root.txt)")
+    ms = s.add_subparsers(dest="music_cmd", required=True)
+    ms.add_parser("list", help="every stock track and custom slot with its status")
+    ms.add_parser("root", help="show the game root in use")
+    m = ms.add_parser("install", help="encode an audio file and install it as a track")
+    m.add_argument("audio")
+    m.add_argument("--track", required=True, help="e.g. mario_01_h.adp or custom_01_h.adp")
+    m.add_argument("--no-pad", action="store_true", help="do not pad a short track to the stock length")
+    m = ms.add_parser("restore", help="put the original track back")
+    m.add_argument("--track", required=True)
+    m = ms.add_parser("export", help="decode a track from the dump to WAV")
+    m.add_argument("--track", required=True)
+    m.add_argument("-o", "--out")
+    s.set_defaults(fn=cmd_music)
 
     s = sub.add_parser("layout", help="print the archive layout and coverage")
     s.set_defaults(fn=cmd_layout)
