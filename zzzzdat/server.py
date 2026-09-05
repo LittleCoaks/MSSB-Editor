@@ -168,6 +168,7 @@ class Handler(BaseHTTPRequestHandler):
             job = JOBS.get(rest[1]) if len(rest) > 1 else None
             return self.send_json(job or {"error": "no such job"})
         root = music.game_root()
+        self.store.refresh_disc_entries()
         disc_ids = {e.name.rsplit("/", 1)[-1]: e.id for e in self.store.entries if e.archive == "disc"}
         tracks = music.status(root) if root else []
         for t in tracks:

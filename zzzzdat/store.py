@@ -39,18 +39,32 @@ class Store:
         self._wav: OrderedDict[tuple, bytes] = OrderedDict()
         self._glb: OrderedDict[tuple, bytes] = OrderedDict()
 
+    def refresh_disc_entries(self) -> None:
+        """Re-read the dump's .adp files (after a music install/restore)."""
+        self.entries = [e for e in self.entries if e.archive != "disc"] + self.disc_entries()
+        self.by_id = {e.id: e for e in self.entries}
+        for k in [k for k in self._data if k >= DISC_ID_BASE]:
+            del self._data[k]
+        for k in [k for k in self._info if k >= DISC_ID_BASE]:
+            del self._info[k]
+        for k in [k for k in self._wav if k[0] >= DISC_ID_BASE]:
+            del self._wav[k]
+
     def disc_entries(self) -> list[Entry]:
         """The streamed .adp music files on the disc, as synthetic entries
         (archive 'disc'). Read from the ISO or from orig/GYQE01/files/."""
         out = []
         files: dict[str, tuple[int, int]] = {}
-        if self.archive.source == "iso":
-            with open(self.archive.path, "rb") as f:
-                files = read_fst(f)
-        else:
+        # Prefer the writable dump (it holds installed custom music); fall back
+        # to the ISO's file table.
+        self._disc_from_dump = (ORIG_DIR / "files" / "snd" / "my_snd_h").is_dir()
+        if self._disc_from_dump:
             root = ORIG_DIR / "files"
             for p in sorted(root.rglob("*.adp")):
                 files[p.relative_to(root).as_posix()] = (0, p.stat().st_size)
+        elif self.archive.source == "iso":
+            with open(self.archive.path, "rb") as f:
+                files = read_fst(f)
         for i, (path, (off, size)) in enumerate(sorted(files.items())):
             if not path.endswith(".adp"):
                 continue
@@ -76,13 +90,12 @@ class Store:
     # -------------------------------------------------------------- bytes --
     def raw(self, e: Entry) -> bytes:
         if e.archive == "disc":
-            if self.archive.source == "iso":
+            if not getattr(self, "_disc_from_dump", False) and self.archive.source == "iso":
                 with open(self.archive.path, "rb") as f:
                     f.seek(e.offset)
                     return f.read(e.disc_size)
             return (ORIG_DIR / "files" / e.name).read_bytes()
         if e.archive != "ZZZZ.dat":
-            from .disc import ORIG_DIR
             with open(ORIG_DIR / "files" / e.archive, "rb") as f:
                 f.seek(e.offset)
                 return f.read(e.disc_size)
