@@ -16,7 +16,7 @@ cmd = [
     "--name", "MSSB Editor",
     "--windowed" if "--console" not in sys.argv else "--console",
     "--add-data", f"{ROOT / 'zzzzdat' / 'ui'}{sep}zzzzdat/ui",
-    "--add-data", f"{ROOT / 'index'}{sep}index",
+    "--add-data", f"{ROOT / 'index'}{sep}index",  # includes index/thumbs
     "--collect-all", "webview",
     "--collect-all", "miniaudio",
     "--hidden-import", "numpy",

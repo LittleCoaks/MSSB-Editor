@@ -281,10 +281,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.fail("not found")
             if parts[0] != "api":
                 return self.fail("not found")
-            if len(parts) >= 4 and parts[1] == "entry" and parts[3] == "audio":
-                return self.api(parts[1:], q)  # streamed; must not block other requests
-            with self.lock:
-                return self.api(parts[1:], q)
+            # reads run concurrently; the Store serialises per entry, and only
+            # mutations (POST) take the global lock
+            return self.api(parts[1:], q)
         except KeyError as ex:
             return self.fail(str(ex))
         except Exception as ex:  # surface errors to the page instead of dying
@@ -324,6 +323,18 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(JOBS.get(parts[1]) or {"error": "no such job"})
         if st is None:
             return self.fail(self.store_error or "no game selected", 400)
+        if parts[0] == "thumb" and len(parts) == 2:
+            e = st.get(parts[1].split(".")[0])
+            png = st.thumb_png(e)
+            if png is None:
+                return self.fail("no textures")
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(png)))
+            self.send_header("Cache-Control", "max-age=3600")
+            self.end_headers()
+            self.wfile.write(png)
+            return
         if parts == ["modified"]:
             return self.send_json({"ids": st.modified_ids()})
         if parts == ["catalog"]:
@@ -352,8 +363,7 @@ class Handler(BaseHTTPRequestHandler):
                                    f"{st.file_name(e).rsplit('.', 1)[0]}_sec{s.index}.bin")
         if rest[0] == "tex" and len(rest) == 2:
             n = int(rest[1].split(".")[0])
-            sec, t = st.info(e).all_textures()[n]
-            return self.send_bytes(t.decode_png(st.data(e)), "image/png")
+            return self.send_bytes(st.texture_png(e, n), "image/png")
         if rest[0] == "model" and len(rest) == 2:
             sec, ext = rest[1].rsplit(".", 1)
             stem = f"{st.file_name(e).rsplit('.', 1)[0]}_s{sec}"

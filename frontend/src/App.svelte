@@ -1,13 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { app, type Page } from './lib/state.svelte'
-  import Home from './lib/Home.svelte'
   import GameSetup from './lib/GameSetup.svelte'
   import Browse from './lib/Browse.svelte'
   import Music from './lib/Music.svelte'
 
   const pages: { id: Page; label: string }[] = [
-    { id: 'home', label: 'Home' }, { id: 'browse', label: 'Browse assets' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
+    { id: 'browse', label: 'Browse assets' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
   ]
 
   onMount(() => {
@@ -42,8 +41,6 @@
 <main>
   {#if app.error}
     <div class="card warn" style="margin:16px">Could not reach the editor: {app.error}</div>
-  {:else if app.page === 'home'}
-    <Home />
   {:else if app.page === 'game'}
     <GameSetup />
   {:else if app.page === 'browse'}

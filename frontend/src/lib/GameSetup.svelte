@@ -18,7 +18,7 @@
       await api.setGame(p)
       msg = ''
       await app.refresh()
-      if (app.game?.ok) app.go('home')
+      if (app.game?.ok) app.go('browse')
     } catch (e: any) { msg = e.message } finally { busy = false }
   }
   async function browse(p: string) {

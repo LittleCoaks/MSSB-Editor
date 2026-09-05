@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import threading
 import time
 from collections import OrderedDict
 from pathlib import Path
@@ -40,6 +41,18 @@ class Store:
         self._info: dict[int, formats.FileInfo] = {}
         self._wav: OrderedDict[tuple, bytes] = OrderedDict()
         self._glb: OrderedDict[tuple, bytes] = OrderedDict()
+        # one lock per entry so concurrent requests never decode the same
+        # entry twice, without serialising unrelated work behind one lock
+        self._locks: dict[int, threading.Lock] = {}
+        self._locks_guard = threading.Lock()
+        self._cache_lock = threading.Lock()
+
+    def lock_for(self, e: Entry) -> threading.Lock:
+        with self._locks_guard:
+            lk = self._locks.get(e.id)
+            if lk is None:
+                lk = self._locks[e.id] = threading.Lock()
+            return lk
 
     def refresh_disc_entries(self) -> None:
         """Re-read the dump's .adp files (after a music install/restore)."""
@@ -72,6 +85,9 @@ class Store:
         """Drop cached data/info for an entry after it changed on disk."""
         self._data.pop(e.id, None)
         self._info.pop(e.id, None)
+        from .thumbs import cache_dir
+        for p in cache_dir(self.game).glob(f"{e.id}_*.png"):
+            p.unlink(missing_ok=True)
         for k in [k for k in self._wav if k[0] == e.id]:
             del self._wav[k]
         for k in [k for k in self._glb if k[0] == e.id]:
@@ -124,16 +140,22 @@ class Store:
 
     def data(self, e: Entry) -> bytes:
         """Decompressed contents (cached for the last few files)."""
-        if e.id in self._data:
-            self._data.move_to_end(e.id)
-            return self._data[e.id]
-        raw = self.raw(e)
-        out = bytes(decompress(raw, e.lookback_bits, e.repeat_bits, e.size)) if e.compressed else raw[:e.size]
-        if len(out) <= 32 << 20:
-            self._data[e.id] = out
-            while len(self._data) > 24:
-                self._data.popitem(last=False)
-        return out
+        with self._cache_lock:
+            if e.id in self._data:
+                self._data.move_to_end(e.id)
+                return self._data[e.id]
+        with self.lock_for(e):
+            with self._cache_lock:
+                if e.id in self._data:
+                    return self._data[e.id]
+            raw = self.raw(e)
+            out = bytes(decompress(raw, e.lookback_bits, e.repeat_bits, e.size)) if e.compressed else raw[:e.size]
+            if len(out) <= 32 << 20:
+                with self._cache_lock:
+                    self._data[e.id] = out
+                    while len(self._data) > 24:
+                        self._data.popitem(last=False)
+            return out
 
     def info(self, e: Entry) -> formats.FileInfo:
         fi = self._info.get(e.id)
@@ -141,6 +163,41 @@ class Store:
             fi = formats.dtk_info(e.size) if e.archive == "disc" else formats.identify(self.data(e))
             self._info[e.id] = fi
         return fi
+
+    # ------------------------------------------------------------ images --
+    def texture_png(self, e: Entry, n: int) -> bytes:
+        """A texture as PNG, cached on disk per game."""
+        from .thumbs import cache_dir
+        p = cache_dir(self.game) / f"{e.id}_{n}.png"
+        if p.exists() and e.id not in self.modified_ids():
+            return p.read_bytes()
+        sec, t = self.info(e).all_textures()[n]
+        png = t.decode_png(self.data(e))
+        try:
+            p.write_bytes(png)
+        except OSError:
+            pass
+        return png
+
+    def thumb_png(self, e: Entry) -> bytes | None:
+        """Small representative image: shipped thumbnail, else made on demand."""
+        from .thumbs import SHIPPED_THUMBS, cache_dir, make_thumb_png
+        if not e.ntex:
+            return None
+        if e.id not in self.modified_ids():
+            p = SHIPPED_THUMBS / f"{e.id}.png"
+            if p.exists():
+                return p.read_bytes()
+        p = cache_dir(self.game) / f"{e.id}_thumb.png"
+        if p.exists():
+            return p.read_bytes()
+        texs = self.info(e).all_textures()
+        png = make_thumb_png(self.data(e), texs[min(e.thumb, len(texs) - 1)][1])
+        try:
+            p.write_bytes(png)
+        except OSError:
+            pass
+        return png
 
     # -------------------------------------------------------------- audio --
     def wav(self, e: Entry, n: int = 0, max_seconds: float | None = None) -> bytes:
@@ -315,7 +372,7 @@ class Store:
         return out
 
     # ---------------------------------------------------------- indexing --
-    def rebuild_index(self, verify: bool = True, classify: bool = True, scan: bool = True, log=print) -> None:
+    def rebuild_index(self, verify: bool = True, classify: bool = True, scan: bool = True, thumbnails: bool = True, log=print) -> None:
         t0 = time.time()
         ents = build_index(self.archive.size, self.game)
         log(f"scanned executables: {len(ents)} candidate descriptors")
@@ -358,6 +415,11 @@ class Store:
                 e.names = fi.names[:16]
                 if i % 100 == 0:
                     log(f"  classified {i}/{len(ents)} ({time.time() - t0:.0f}s)")
+        if thumbnails:
+            from .thumbs import build_all
+            self.entries = ents + self.disc_entries()
+            self.by_id = {e.id: e for e in self.entries}
+            log(f"thumbnails: {build_all(self, log=log)} written")
         cov = coverage(ents, self.archive.size)
         meta = {"archive": self.archive.path.name, "archive_size": self.archive.size,
                 "source": self.archive.source, "covered_bytes": cov["covered"],

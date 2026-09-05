@@ -19,7 +19,13 @@ def fmt_size(n: int) -> str:
 
 def cmd_index(a):
     store = Store()
-    store.rebuild_index(verify=not a.no_verify, classify=not a.no_classify, scan=not a.no_scan)
+    store.rebuild_index(verify=not a.no_verify, classify=not a.no_classify, scan=not a.no_scan, thumbnails=not a.no_thumbs)
+
+
+def cmd_thumbs(a):
+    from .thumbs import build_all
+    store = Store()
+    print(f"{build_all(store, force=a.force)} thumbnails written")
 
 
 def cmd_list(a):
@@ -270,7 +276,12 @@ def main(argv=None):
     s.add_argument("--no-verify", action="store_true", help="skip decode verification (faster, noisier)")
     s.add_argument("--no-classify", action="store_true", help="skip content classification")
     s.add_argument("--no-scan", action="store_true", help="skip the AdGCForm and brute-force gap scans")
+    s.add_argument("--no-thumbs", action="store_true", help="skip thumbnail generation")
     s.set_defaults(fn=cmd_index)
+
+    s = sub.add_parser("thumbs", help="(re)generate the shipped thumbnails in index/thumbs")
+    s.add_argument("--force", action="store_true")
+    s.set_defaults(fn=cmd_thumbs)
 
     s = sub.add_parser("list", help="list entries")
     s.add_argument("--kind")

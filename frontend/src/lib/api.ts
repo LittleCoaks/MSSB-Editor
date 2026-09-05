@@ -63,6 +63,7 @@ export const api = {
 
 export const urls = {
   tex: (id: number, n: number) => `/api/entry/${id}/tex/${n}.png`,
+  thumb: (id: number) => `/api/thumb/${id}.png`,
   audio: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav`,
   audioDownload: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav?download=1`,
   glb: (id: number, sec: number) => `/api/entry/${id}/model/${sec}.glb`,

@@ -1,9 +1,9 @@
 import { api, friendlyName, setCatalogNames, type Catalog, type EntrySummary, type GameInfo } from './api'
 
-export type Page = 'home' | 'browse' | 'music' | 'game'
+export type Page = 'browse' | 'music' | 'game'
 
 class AppState {
-  page = $state<Page>('home')
+  page = $state<Page>('browse')
   game = $state<GameInfo | null>(null)
   entries = $state<Map<number, EntrySummary>>(new Map())
   catalog = $state<Catalog | null>(null)

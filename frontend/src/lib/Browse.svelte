@@ -16,8 +16,11 @@
     else ids = groups.flatMap(g => g.items)
     let list = ids.map(id => app.entries.get(id)!).filter(Boolean)
     if (q) list = list.filter(e => app.nameOf(e).toLowerCase().includes(q) || e.names.some(n => n.toLowerCase().includes(q)) || String(e.id) === q || e.symbol.toLowerCase().includes(q))
-    return list.slice(0, 600)
+    return list
   })
+  let shown = $state(120)
+  $effect(() => { app.category; app.group; q; shown = 120 })
+  const visible = $derived(items.slice(0, shown))
   const kindLabel = (e: EntrySummary) => e.archive === 'disc' ? 'music' : (KIND_LABEL[e.kind] ?? e.kind)
 </script>
 
@@ -42,19 +45,25 @@
   <section class="grid" class:narrow={app.selected !== null}>
     <div class="crumbs">
       {#if q}Search results for “{app.search}”{:else}{cat?.name}{#if grp} › {grp.name}{/if}{/if}
-      <span class="dim"> · {items.length === 600 ? 'first 600 of ' : ''}{q ? items.length : (grp ? grp.items.length : groups.reduce((s, g) => s + g.items.length, 0))} items</span>
+      <span class="dim"> · {items.length} items</span>
     </div>
+    {#if !app.game?.writable}
+      <div class="dim" style="margin-bottom:10px">Viewing a disc image: everything can be browsed and exported; to change music or files, <a href="#game" onclick={() => app.go('game')}>extract the game to a folder</a>.</div>
+    {/if}
     <div class="cards">
-      {#each items as e (e.id)}
+      {#each visible as e (e.id)}
         <button class="item" class:on={app.selected === e.id} onclick={() => (app.selected = e.id)} title={e.symbol}>
           <div class="thumb checker">
-            {#if e.ntex}<img loading="lazy" src={urls.tex(e.id, e.thumb)} alt="">{:else}<span class="noimg">{kindLabel(e) === 'music' ? '🎵' : kindLabel(e) === 'movie' ? '🎬' : kindLabel(e) === 'animation' ? '🏃' : '▫'}</span>{/if}
+            {#if e.ntex}<img loading="lazy" src={urls.thumb(e.id)} alt="">{:else}<span class="noimg">{kindLabel(e) === 'music' ? '🎵' : kindLabel(e) === 'movie' ? '🎬' : kindLabel(e) === 'animation' ? '🏃' : '▫'}</span>{/if}
           </div>
           <div class="name">{#if app.modified.includes(e.id)}<span title="replaced" class="ok">● </span>{/if}{app.nameOf(e)}</div>
           <div class="meta"><span class="badge {kindLabel(e).replace(' ', '-')}">{kindLabel(e)}</span>{#if e.ntex}<span class="dim">{e.ntex} tex</span>{/if}</div>
         </button>
       {/each}
     </div>
+    {#if shown < items.length}
+      <div style="text-align:center;margin:14px 0"><button onclick={() => (shown += 240)}>Show more ({items.length - shown} left)</button></div>
+    {/if}
   </section>
 
   {#if app.selected !== null}
