@@ -19,6 +19,7 @@
     else if (h.startsWith('stadiums/')) app.page = 'stadiums'
     else if (pages.some(p => p.id === h)) app.page = h as Page
     app.refresh()
+    app.checkUpdates()
   })
 </script>
 
@@ -42,6 +43,14 @@
     {/if}
   </div>
 </header>
+
+{#if app.update?.status?.available && !app.updateDismissed}
+  <div class="update">
+    <span>MSSB Editor {app.update.status.latest} is available (you have {app.update.version}).</span>
+    <button class="primary" onclick={() => app.go('game')}>See what's new</button>
+    <button onclick={() => (app.updateDismissed = true)} title="hide until the next start">Later</button>
+  </div>
+{/if}
 
 <main>
   {#if app.error}
@@ -72,4 +81,5 @@
   .pill.rw { color: var(--acc2); border-color: #3a5a48; }
   .pill.bad { color: var(--warn); border-color: #6a3a3a; }
   main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .update { display: flex; gap: 10px; align-items: center; padding: 6px 16px; background: #1f2e22; border-bottom: 1px solid #3a5a48; font-size: 13px; }
 </style>

@@ -348,8 +348,20 @@ python build.py            # -> dist/MSSB Editor/MSSB Editor.exe
 Program Files, a Start menu entry, an optional desktop shortcut and an
 uninstaller. The installed program keeps its settings and cache in
 `%APPDATA%\MSSB Editor` and writes exports to `Documents\MSSB Editor\extracted`,
-so uninstalling never touches your work. CI builds the folder and the
-installer on every push.
+so uninstalling never touches your work. On macOS the same command
+produces `dist/MSSB Editor <version>.dmg` with the .app bundle and an
+Applications shortcut. CI builds the Windows folder and installer on every
+push; pushing a tag `vX.Y.Z` (matching `zzzzdat/version.py`) runs the
+Release workflow, which builds the Windows installer and the macOS disk image
+and publishes them as a GitHub Release.
+
+**Updates.** The program checks the newest GitHub Release when it starts
+(`zzzzdat/update.py`; a setting on the Game page turns the check off, and a
+button runs it by hand). When a newer version exists a bar appears at the
+top; Install downloads the installer for your platform into the data folder
+and starts it: on Windows the setup upgrades in place, on macOS the disk
+image opens for a drag to Applications. A development checkout only reports
+updates.
 
 The bundle carries the UI, three.js and the shipped index; the executable
 opens the window when double-clicked and behaves like the CLI when given

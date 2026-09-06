@@ -52,6 +52,8 @@ export interface StadiumFile { entry: number; textures: number; size: number; sl
 export interface StadiumProp { entry: number; name: string; triangles: number; textures: number; models: { section: number; meshes: string[]; triangles: number; textures: number }[] }
 export interface StadiumEntry { id: number; name: string; files: StadiumFile[]; thumb: number | null }
 export interface StadiumDetail extends StadiumEntry { props: StadiumProp[] }
+export interface UpdateStatus { current: string; latest: string | null; available: boolean; asset: { name: string; url: string; size: number } | null; notes: string; url: string; checked_at: number; error: string | null; can_install: boolean }
+export interface UpdateInfo { version: string; releases: string; check_updates: boolean; repo: string; status: UpdateStatus | null }
 export interface RosterDetail extends Omit<RosterEntry, 'variants'> {
   models: RosterModel[]; variants: RosterVariant[]; parts: RosterModel[]; banks: RosterBank[]; sounds: RosterSounds | null; files: RosterFile[]; viewer_parts: string[]
 }
@@ -95,6 +97,9 @@ export const api = {
   roster: () => j<{ characters: RosterEntry[] }>('/api/roster'),
   character: (id: number) => j<RosterDetail>('/api/roster/' + id),
   exportCharacter: (id: number, what: string) => j<{ written: string[]; dest: string }>(`/api/roster/${id}/export?what=${what}`),
+  update: (check = false, force = false) => j<UpdateInfo>(`/api/update?${check ? 'check=1' : ''}${force ? '&force=1' : ''}`),
+  updateSettings: (checkUpdates: boolean) => j<{ check_updates: boolean; repo: string }>(`/api/update/settings?check_updates=${checkUpdates ? 1 : 0}`, { method: 'POST' }),
+  installUpdate: () => j<{ job: string }>('/api/update/install', { method: 'POST' }),
   stadiums: () => j<{ stadiums: StadiumEntry[] }>('/api/stadiums'),
   stadium: (id: number) => j<StadiumDetail>('/api/stadiums/' + id),
 }

@@ -1,4 +1,4 @@
-import { api, friendlyName, setCatalogNames, type Catalog, type EntrySummary, type GameInfo } from './api'
+import { api, friendlyName, setCatalogNames, type Catalog, type EntrySummary, type GameInfo, type UpdateInfo } from './api'
 
 export type Page = 'browse' | 'files' | 'characters' | 'stadiums' | 'music' | 'game'
 
@@ -18,6 +18,9 @@ class AppState {
   modified = $state<number[]>([])
   thumbs = $state<{ running: boolean; done: number; total: number }>({ running: false, done: 0, total: 0 })
   thumbGen = $state(0)  // bumps when the thumbnail build finishes so cards reload their images
+  update = $state<UpdateInfo | null>(null)   // version and the last release check
+  updateDismissed = $state(false)
+
 
   async watchThumbs() {
     for (;;) {
@@ -25,6 +28,14 @@ class AppState {
       if (!this.thumbs.running) { this.thumbGen++; return }
       await new Promise(r => setTimeout(r, 1500))
     }
+  }
+
+  async checkUpdates(force = false) {
+    try {
+      const info = await api.update(false)
+      this.update = info
+      if (info.check_updates || force) this.update = await api.update(true, force)
+    } catch { /* offline or no server: the banner just stays away */ }
   }
 
   async refresh() {

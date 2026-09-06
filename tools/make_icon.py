@@ -6,6 +6,7 @@ plain seams bowing towards the centre) is written out as
     frontend/public/favicon.svg   the browser-tab icon (Vite copies it into the UI bundle)
     zzzzdat/ui/icon.png           the window icon on macOS/Linux
     zzzzdat/ui/icon.ico           the window icon on Windows and the executable's icon
+    zzzzdat/ui/icon.icns          the app bundle icon on macOS
 
 The raster files are drawn with Pillow (pip install pillow) at 16x oversampling
 so the small sizes stay crisp. Re-run after changing the geometry, then
@@ -80,6 +81,10 @@ def main() -> None:
     png = ROOT / "zzzzdat" / "ui" / "icon.png"
     images[256].save(png)
     print("wrote", png)
+    icns = ROOT / "zzzzdat" / "ui" / "icon.icns"
+    # macOS: Pillow writes ICNS from the largest image and scales the rest
+    raster(1024).save(icns, append_images=[images[n] for n in (256, 128, 64, 32, 16)])
+    print("wrote", icns)
     ico = ROOT / "zzzzdat" / "ui" / "icon.ico"
     # Pillow's ICO writer builds every size from the image given, so hand it
     # the largest and let append_images supply the properly drawn smaller ones.

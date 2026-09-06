@@ -1,0 +1,66 @@
+name: Release
+
+# Tag a commit `vX.Y.Z` (matching zzzzdat/version.py) and push the tag: this
+# builds the Windows installer and the macOS disk image and publishes them as
+# a GitHub Release. The editor's updater looks at the newest release.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ".[build]"
+      - run: python native/build_hvqm4.py
+      - run: python build.py --installer
+      - name: Check the tag matches the version
+        shell: pwsh
+        run: |
+          $v = (python -c "from zzzzdat.version import VERSION; print(VERSION)").Trim()
+          if ("v$v" -ne "${{ github.ref_name }}") { throw "tag ${{ github.ref_name }} does not match VERSION $v" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/MSSB Editor Setup *.exe
+
+  macos:
+    name: macOS disk image
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ".[build]" pillow
+      - run: python native/build_hvqm4.py
+      - run: python tools/make_icon.py
+      - run: python build.py --installer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/MSSB Editor *.dmg
+
+  publish:
+    name: Publish the release
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+      - name: Create the release with both installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -R assets
+          gh release create "${{ github.ref_name }}" assets/windows-installer/* assets/macos-dmg/* \
+            --repo "${{ github.repository }}" --title "MSSB Editor ${{ github.ref_name }}" --generate-notes

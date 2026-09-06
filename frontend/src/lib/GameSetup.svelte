@@ -3,6 +3,28 @@
   import { app } from './state.svelte'
   import { api, native, kb, pollJob, type FsListing, type Job } from './api'
 
+  // updates
+  let updBusy = $state(false)
+  let updMsg = $state('')
+  let updJob = $state<Job | null>(null)
+  async function checkNow() {
+    updBusy = true; updMsg = ''
+    try { await app.checkUpdates(true); if (app.update?.status && !app.update.status.available && !app.update.status.error) updMsg = 'You have the newest version.' }
+    finally { updBusy = false }
+  }
+  async function setAuto(on: boolean) {
+    try { const r = await api.updateSettings(on); if (app.update) app.update = { ...app.update, check_updates: r.check_updates } } catch (e: any) { updMsg = e.message }
+  }
+  async function install() {
+    updBusy = true; updMsg = 'downloading…'
+    try {
+      const { job } = await api.installUpdate()
+      const done = await pollJob(job, api.job, j => (updJob = j))
+      updMsg = done.state === 'error' ? done.error ?? 'failed' : (done.result?.message ?? 'done')
+    } catch (e: any) { updMsg = e.message } finally { updBusy = false }
+  }
+  const status = $derived(app.update?.status ?? null)
+
   let path = $state('')
   let msg = $state('')
   let busy = $state(false)
@@ -123,6 +145,37 @@
         <li class="iso" onclick={() => use(join(fs!.path, f.name))}><span>💿 {f.name}</span><span class="dim">{kb(f.size)} · click to use</span></li>
       {/each}
     </ul>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin:0 0 6px">Updates</h2>
+    <div class="row">
+      <span>Version <b>{app.update?.version ?? '…'}</b></span>
+      {#if status?.latest}<span class="dim">· newest release {status.latest}</span>{/if}
+      <button onclick={checkNow} disabled={updBusy}>Check now</button>
+      <label class="dim"><input type="checkbox" checked={app.update?.check_updates ?? true} onchange={e => setAuto((e.target as HTMLInputElement).checked)}> check on start-up</label>
+      <a href={app.update?.releases ?? '#'} target="_blank" class="dim">all releases</a>
+    </div>
+    {#if status?.error}
+      <p class="dim" style="margin:8px 0 0">Could not check: {status.error}</p>
+    {:else if status?.available}
+      <p class="ok" style="margin:8px 0 0">MSSB Editor {status.latest} is available.</p>
+      {#if status.notes}<pre style="margin:8px 0;max-height:220px;white-space:pre-wrap">{status.notes}</pre>{/if}
+      <div class="row">
+        {#if status.asset && status.can_install}
+          <button class="primary" onclick={install} disabled={updBusy}>Install {status.latest}</button>
+          <span class="dim">downloads {status.asset.name} ({kb(status.asset.size)}) and starts it; the editor closes while the installer runs</span>
+        {:else if status.asset}
+          <a class="btn" href={status.asset.url}>Download {status.asset.name}</a>
+          <span class="dim">a development checkout is not replaced by an installer</span>
+        {:else}
+          <a class="btn" href={status.url} target="_blank">Open the release page</a>
+          <span class="dim">no installer for this platform is attached to the release</span>
+        {/if}
+      </div>
+      {#if updJob && updJob.state === 'running'}<div class="bar" style="margin-top:8px"><i style="width:{Math.round(updJob.progress * 100)}%"></i></div>{/if}
+    {/if}
+    {#if updMsg}<p class="dim" style="margin:8px 0 0">{updMsg}</p>{/if}
   </div>
 </div>
 
