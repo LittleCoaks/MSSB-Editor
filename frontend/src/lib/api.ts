@@ -16,7 +16,7 @@ export interface ModelInfo { section: number; offset: number; meshes: string[]; 
 export interface BankInfo { key: string; entry: number; section: number; label: string; sequences: number | null }
 export interface EntryDetail extends EntrySummary {
   file_kind: string; hvqm4: Record<string, string | number> | null; sections: Section[]; textures: Texture[];
-  audio: AudioStream[]; sfx: SfxInfo[]; songs: SongInfo[]; group: GroupInfo | null; models: ModelInfo[]; banks: BankInfo[]; parts: string[]; file_name: string;
+  audio: AudioStream[]; sfx: SfxInfo[]; songs: SongInfo[]; group: GroupInfo | null; models: ModelInfo[]; banks: BankInfo[]; parts: string[]; variants: { slot: number; name: string; entry: number }[]; file_name: string;
 }
 export interface IndexDoc { meta: Record<string, any>; archive: string | null; archive_size: number; entries: EntrySummary[]; error?: string }
 export interface GameInfo {
@@ -90,7 +90,7 @@ export const urls = {
   songMix: (id: number, ns: number[], loops = 1) => `/api/entry/${id}/song/mix.wav?songs=${ns.join(',')}&loops=${loops}`,
   movieFrame: (id: number, n: number) => `/api/entry/${id}/movie/frame/${n}.jpg`,
   movieAudio: (id: number) => `/api/entry/${id}/movie/audio.wav`,
-  glb: (id: number, sec: number, anim?: string, parts?: string) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}`,
+  glb: (id: number, sec: number, anim?: string, parts?: string, variant?: number) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}`,
   obj: (id: number, sec: number) => `/api/entry/${id}/model/${sec}.obj`,
   data: (id: number) => `/api/entry/${id}/data`,
   raw: (id: number) => `/api/entry/${id}/raw`,

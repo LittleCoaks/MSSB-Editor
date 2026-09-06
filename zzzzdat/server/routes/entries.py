@@ -33,6 +33,7 @@ def entry_detail(store, e) -> dict:
     d["models"] = store.models(e) if fi.kind == "container" else []
     d["banks"] = store.banks(e) if d["models"] else []
     d["parts"] = sorted({p["name"] for p in store.parts(e)}) if d["models"] else []
+    d["variants"] = store.variants(e) if d["models"] else []
     d["file_name"] = store.file_name(e)
     return d
 

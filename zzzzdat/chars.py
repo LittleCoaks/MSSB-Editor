@@ -15,6 +15,10 @@ Two 16-byte descriptor tables describe every playable character:
                 batting grip, pitching grip, catching grip
     432..485    per-slot rig / animation set
     486..515    shared items
+* **Slot table** at 0x800F73B8: one u16 per slot, `model << 8 | textureSet`,
+  where model indexes the 33 body models (master entries 0..32) and
+  textureSet the 21 recolour sets (master entries 33..53, 0xFF = none). This
+  is what makes a colour variant: the same model with another texture set.
 * **Character ids**: the game numbers the 32 base characters separately from
   the roster; `findCharacterID` (0x800698F8) maps a slot to its id through
   the table at 0x80108DB8 (id -> base slot) and folds colour variants onto
@@ -25,9 +29,9 @@ Two 16-byte descriptor tables describe every playable character:
 The slot order below is the game's roster order, confirmed from the model
 names embedded in each slot's track-0 pack and from the community's
 "First Found" names (which list the slots in order). The body-model and
-texture-set mappings were derived from the data: the 21 texture sets were
-matched to their models by texture layout; the order inside a family is
-assumed to follow slot order. DrSeil's toolkit (github.com/DrSeil/mssb-dtk,
+texture-set mappings come from the slot table (they also match the texture
+layouts). Note the table's own quirk: the Hammer Bro slot uses texture set
+47 while the Fire Bro slot uses the HB model's built-in textures. DrSeil's toolkit (github.com/DrSeil/mssb-dtk,
 feat/character-cloning-texture-decoupling) first documented the tables but
 lists the slots in a different order and assumes one body model per slot.
 """
@@ -76,18 +80,28 @@ SLOT_NAMES = [
 ]
 assert len(SLOT_NAMES) == SLOTS
 
-# master body-model index -> the slots that use it (the first is the base colour)
-MODEL_SLOTS: dict[int, list[int]] = {i: [i] for i in range(22)}
-MODEL_SLOTS.update({12: [12, 42], 13: [13, 29, 30, 31, 32], 16: [16, 44, 45, 46, 47], 20: [20, 43], 21: [21, 22, 23],
-                    22: [24, 25, 26], 23: [28], 24: [33, 34, 35, 36], 25: [37], 26: [38], 27: [39], 28: [40],
-                    29: [41], 30: [48, 49, 51], 31: [50], 32: [27, 52, 53]})
-SLOT_MODEL = {s: m for m, slots in MODEL_SLOTS.items() for s in slots}
-assert len(SLOT_MODEL) == SLOTS
+SLOT_TABLE_VA = 0x800F73B8
+# the slot table as shipped: model << 8 | texture set (0xFF = the model's own textures)
+SLOT_TABLE = [0x00FF, 0x01FF, 0x02FF, 0x03FF, 0x04FF, 0x05FF, 0x06FF, 0x07FF, 0x08FF, 0x09FF, 0x0AFF, 0x0BFF, 0x0CFF,
+              0x0DFF, 0x0EFF, 0x0FFF, 0x10FF, 0x11FF, 0x12FF, 0x13FF, 0x14FF, 0x15FF, 0x152B, 0x152C, 0x16FF, 0x162D,
+              0x162E, 0x202F, 0x17FF, 0x0D22, 0x0D23, 0x0D24, 0x0D25, 0x18FF, 0x1831, 0x1832, 0x1833, 0x19FF, 0x1AFF,
+              0x1BFF, 0x1CFF, 0x1DFF, 0x0C21, 0x142A, 0x1026, 0x1027, 0x1028, 0x1029, 0x1EFF, 0x1E34, 0x1FFF, 0x1E35,
+              0x20FF, 0x2030]
+assert len(SLOT_TABLE) == SLOTS
+SLOT_MODEL = {s: v >> 8 for s, v in enumerate(SLOT_TABLE)}
+SLOT_TEXTURE_SET = {s: v & 0xFF for s, v in enumerate(SLOT_TABLE) if v & 0xFF != 0xFF}
+TEXTURE_SET_SLOT = {t: s for s, t in SLOT_TEXTURE_SET.items()}
+# master body-model index -> the slots that use it (the first has the model's own textures when any does)
+MODEL_SLOTS: dict[int, list[int]] = {}
+for _s in range(SLOTS):
+    MODEL_SLOTS.setdefault(SLOT_MODEL[_s], []).append(_s)
+for _m, _slots in MODEL_SLOTS.items():
+    _slots.sort(key=lambda s: (s in SLOT_TEXTURE_SET, s))
 
-# master texture-set index (33..53) -> the colour-variant slot it recolours
-TEXTURE_SET_SLOT = {33: 42, 34: 29, 35: 30, 36: 31, 37: 32, 38: 44, 39: 45, 40: 46, 41: 47, 42: 43, 43: 22, 44: 23,
-                    45: 25, 46: 26, 47: 52, 48: 53, 49: 34, 50: 35, 51: 36, 52: 49, 53: 51}
-SLOT_TEXTURE_SET = {s: i for i, s in TEXTURE_SET_SLOT.items()}
+
+def variants_of(slot: int) -> list[int]:
+    """Slots that share this slot's body model (itself first)."""
+    return [slot] + [s for s in MODEL_SLOTS[SLOT_MODEL[slot]] if s != slot]
 
 TRACK_NAMES = {0: "model", 1: "equipment", **{t: f"animations {t - 1}" for t in range(2, TRACKS)}}
 SUB_ITEM_NAMES = ["left hand", "right hand", "left glove", "right glove", "item data 1", "item data 2", "item data 3"]

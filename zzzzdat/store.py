@@ -438,6 +438,26 @@ class Store:
         label = f"{c['role']}" if (c and x.kind == "anim") else (f"section {sec}" if base else f"file {x.id}")
         return label, b
 
+    def variants(self, e: Entry) -> list[dict]:
+        """Colour variants of a character model: slots sharing its body model
+        that have their own texture set, with the entry holding that set."""
+        c = chars.classify_entry(e.refs)
+        if not c or c.get("slot") is None or c["role"] not in ("model", "body model (ARAM)") and not c["role"].startswith("body model"):
+            return []
+        sets = {}
+        for x in self.entries:
+            cx = chars.classify_entry(x.refs)
+            if cx and cx.get("role") == "textures (ARAM)":
+                sets[cx["slot"]] = x.id
+        out = []
+        for s in chars.variants_of(c["slot"]):
+            t = chars.SLOT_TEXTURE_SET.get(s)
+            if t is None:
+                continue
+            if s in sets:
+                out.append({"slot": s, "name": chars.SLOT_NAMES[s], "entry": sets[s]})
+        return out
+
     # attached parts: mesh name -> wrist bone id (every character rig shares the
     # Biped-style ids: 16..20 right arm, 22..26 left arm; the hand meshes are
     # modelled from the wrist along +X)
@@ -483,8 +503,8 @@ class Store:
         return (m.meshes if m else []), fi.all_textures(), data
 
     def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = (),
-            parts: str = "") -> bytes:
-        key = (e.id, section, rig, bank_keys, parts)
+            parts: str = "", variant: int | None = None) -> bytes:
+        key = (e.id, section, rig, bank_keys, parts, variant)
         if key in self._glb:
             return self._glb[key]
         bones = self.actor(e) if rig else None
@@ -493,6 +513,16 @@ class Store:
         texs = self.info(e).all_textures()
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
         pngs = {i: t.decode_png(data) for i, (_sec, t) in enumerate(texs) if i in used}
+        if variant is not None:
+            # a colour variant: the same model drawn with the slot's texture set
+            v = next((x for x in self.variants(e) if x["slot"] == variant), None)
+            if v:
+                ve = self.get(v["entry"])
+                vdata = self.data(ve)
+                vtexs = self.info(ve).all_textures()
+                for i, (_sec, t) in enumerate(vtexs):
+                    if i in used:
+                        pngs[i] = t.decode_png(vdata)
         if bones and parts:
             want = self.PART_SETS.get(parts, ())
             m = c3.Model(list(m.meshes))

@@ -69,6 +69,7 @@ def slot_vas(slot: int) -> dict:
             "body": chars.MASTER_VA + chars.SLOT_MODEL[slot] * 16,
             "body_shared": [s for s in chars.MODEL_SLOTS[chars.SLOT_MODEL[slot]] if s != slot],
             "texture_set": chars.SLOT_TEXTURE_SET.get(slot),
+            "slot_entry": chars.SLOT_TABLE_VA + slot * 2,
             "items": [chars.MASTER_VA + (54 + slot * 7 + k) * 16 for k in range(7)],
             "rig": chars.MASTER_VA + (432 + slot) * 16,
             "glove": chars.GLOVE_VA + slot * 2}
@@ -125,14 +126,16 @@ class Cloner:
         s, t = slot_vas(source), slot_vas(target)
         rec = {"source": source, "copy": copy, "backup": {}, "glove": f"{self._u16(t['glove']):04x}",
                "copied": [], "shared": [], "inplace": [], "notes": []}
-        # the ARAM body model is shared by every colour variant of a model and the
-        # slot -> model table has not been found, so it can only change when the
-        # target is the model's only user
-        aram_keys = ["rig"] if t["body_shared"] else ["body", "rig"]
-        if t["body_shared"]:
-            rec["notes"].append("ARAM body model left alone: shared with " + ", ".join(chars.SLOT_NAMES[x] for x in t["body_shared"]))
-        if t["texture_set"] is not None:
-            rec["notes"].append("the slot's ARAM texture set (colour variant) stays as it was")
+        # The slot table (model << 8 | texture set) is what selects the ARAM body
+        # model and recolour, so the target simply takes the source's entry. In
+        # copy mode the source body is additionally written over the target's own
+        # model when nothing else uses that model and the source has no recolour,
+        # so the copy keeps its own bytes; otherwise the model is shared.
+        own_copy = copy and not t["body_shared"] and s["texture_set"] is None
+        aram_keys = ["body", "rig"] if own_copy else ["rig"]
+        rec["slot_entry"] = f"{self._u16(t['slot_entry']):04x}"
+        if not own_copy:
+            rec["notes"].append("ARAM body model shared with the source" + (" (its recolour included)" if s["texture_set"] is not None else ""))
         for va in t["subfiles"] + [t[k] for k in aram_keys] + t["items"]:
             rec["backup"][f"{va:#x}"] = REC.pack(*self._rec(va)).hex()
         # 19 sub-files
@@ -193,6 +196,11 @@ class Cloner:
         # glove attachment
         g = self._u16(s["glove"])
         struct.pack_into(">H", self.dol, self.ed._dol_offset(t["glove"]), g)
+        # slot table: model + texture set (keep the target's own model when it was copied in place)
+        sv = self._u16(s["slot_entry"])
+        if own_copy:
+            sv = (chars.SLOT_MODEL[target] << 8) | 0xFF
+        struct.pack_into(">H", self.dol, self.ed._dol_offset(t["slot_entry"]), sv)
         self.ed.dol.write_bytes(bytes(self.dol))
         self.ed.write_descriptors(menu_writes)
         self.dol = bytearray(self.ed.dol.read_bytes())  # the REL repack updates the DOL's aaaa.dat descriptor
@@ -211,6 +219,8 @@ class Cloner:
         menu_writes = [(Ref(x["module"], x["section"], x["addr"]), bytes.fromhex(x["backup"]))
                        for x in rec["copied"] + rec["shared"] if "module" in x]
         struct.pack_into(">H", self.dol, self.ed._dol_offset(chars.GLOVE_VA + target * 2), int(rec["glove"], 16))
+        if "slot_entry" in rec:
+            struct.pack_into(">H", self.dol, self.ed._dol_offset(chars.SLOT_TABLE_VA + target * 2), int(rec["slot_entry"], 16))
         for x in rec["inplace"]:
             bak = self.ed.backup_dir / x["backup"]
             with open(self.ed.archive, "r+b") as f:

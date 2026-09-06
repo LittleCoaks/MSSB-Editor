@@ -5,8 +5,9 @@
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
   import { urls, type BankInfo, type ModelInfo } from './api'
 
-  let { entry, models, banks = [], parts = [] }: { entry: number; models: ModelInfo[]; banks?: BankInfo[]; parts?: string[] } = $props()
+  let { entry, models, banks = [], parts = [], variants = [] }: { entry: number; models: ModelInfo[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[] } = $props()
   let part = $state('')          // '', 'hands' or 'gloves'
+  let variant = $state<number | undefined>(undefined)  // colour variant slot
   let canvas: HTMLCanvasElement
   let section = $state(models[0]?.section ?? 0)
   let wire = $state(false)
@@ -49,14 +50,14 @@
     return () => { alive = false; renderer.dispose() }
   })
 
-  $effect(() => { const s = section, e = entry, b = bank, p = part; if (renderer) load(e, s, b, p) })
+  $effect(() => { const s = section, e = entry, b = bank, p = part, v = variant; if (renderer) load(e, s, b, p, v) })
   $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshStandardMaterial).wireframe = w }) })
   $effect(() => { const c = clip; if (mixer) play(c) })
-  $effect(() => { entry; bank = ''; part = '' })
+  $effect(() => { entry; bank = ''; part = ''; variant = undefined })
 
-  function load(e: number, s: number, b: string, p: string) {
+  function load(e: number, s: number, b: string, p: string, v?: number) {
     msg = 'loading…'
-    new GLTFLoader().load(urls.glb(e, s, b || undefined, p || undefined), g => {
+    new GLTFLoader().load(urls.glb(e, s, b || undefined, p || undefined, v), g => {
       if (root) scene.remove(root)
       root = g.scene; scene.add(root)
       let tris = 0
@@ -115,6 +116,12 @@
       {#each banks as b}<option value={b.key}>{b.label}{b.sequences ? ` · ${b.sequences} sequences` : ''}</option>{/each}
     </select>
   {/if}
+  {#if variants.length}
+    <select bind:value={variant} title="Colour variant (same model, another texture set)">
+      <option value={undefined}>own colours</option>
+      {#each variants as v}<option value={v.slot}>{v.name}</option>{/each}
+    </select>
+  {/if}
   {#if parts.length}
     <select bind:value={part} title="Attached parts">
       <option value="">body only</option>
@@ -125,7 +132,7 @@
   {/if}
   <label><input type="checkbox" bind:checked={wire}> wireframe</label>
   <button onclick={reset}>Reset view</button>
-  <a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined)}>Download .glb</a>
+  <a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined, variant)}>Download .glb</a>
   <a class="btn" href={urls.obj(entry, section)}>Download .obj</a>
   <span class="dim">{msg}</span>
 </div>

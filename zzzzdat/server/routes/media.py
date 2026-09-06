@@ -28,8 +28,9 @@ def get_model(req: Request, eid: str, sec: str, ext: str):
     if ext == "glb":
         banks = tuple(k for k in (req.q("anim") or "").split(",") if k)
         parts = req.q("parts") or ""
-        req.bytes(st.glb(e, int(sec), rig=bool(banks) or bool(parts) or req.flag("rig"), bank_keys=banks, parts=parts),
-                  "model/gltf-binary", stem + ".glb")
+        variant = int(req.q("variant")) if (req.q("variant") or "").isdigit() else None
+        req.bytes(st.glb(e, int(sec), rig=bool(banks) or bool(parts) or req.flag("rig"), bank_keys=banks, parts=parts,
+                         variant=variant), "model/gltf-binary", stem + ".glb")
     else:
         req.bytes(c3.to_obj(st.model(e, int(sec))).encode(), "text/plain", stem + ".obj")
 

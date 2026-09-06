@@ -42,3 +42,13 @@ def test_display_name_and_grouping():
     assert 1 in groups["Mario"] and 4 in groups["Mario"]   # the hand is filed by its owner's model name
     assert 2 in groups["Baby Luigi"] and 3 in groups["Toad"] and 6 in groups["Toad (green)"]
     assert 5 in by_id["movies"]["groups"][0]["items"]
+
+
+def test_slot_table_variants():
+    # slot table: model index within the 33 body models, texture sets are the 21 recolours
+    assert all(0 <= v >> 8 < 33 for v in chars.SLOT_TABLE)
+    assert all(33 <= v & 0xFF < 54 for v in chars.SLOT_TABLE if v & 0xFF != 0xFF)
+    assert len(chars.SLOT_TEXTURE_SET) == 21 and len(set(chars.SLOT_TEXTURE_SET.values())) == 21
+    assert chars.variants_of(13) == [13, 29, 30, 31, 32]          # Toad and its recolours
+    assert chars.variants_of(27) == [27, 52, 53]                   # Hammer Bro model
+    assert chars.SLOT_TEXTURE_SET[27] == 47 and 52 not in chars.SLOT_TEXTURE_SET

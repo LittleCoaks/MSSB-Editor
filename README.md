@@ -162,26 +162,32 @@ same files as their base slot) and the **master descriptors** at
 `0x800EFD38` (516 entries, offsets relative to the 0x1A15E800 ARAM chunk:
 the 33 distinct body models, 21 texture sets for the colour-variant slots,
 then per slot right/left hand, bat, alternate bat, three grip poses, and the
-rig). The slot order is the game's roster order, confirmed from the model
-names inside each slot's pack and the community's "First Found" names; the
-texture sets were matched to their models by texture layout. DrSeil's guide
-first documented the tables but lists the slots in another order. The
-catalog uses both tables to name assets ("Toad (blue) - textures (ARAM)",
-"Bowser - pitching grip") and groups every slot, variants included.
+rig), plus the **slot table** at `0x800F73B8` (54 x u16, `model << 8 |
+textureSet`, 0xFF = the model's own textures), which is what makes a colour
+variant: the same body model drawn with another texture set. The slot order
+is the game's roster order, confirmed from the model names inside each
+slot's pack and the community's "First Found" names. DrSeil's guide first
+documented the tables but lists the slots in another order. The catalog
+uses these tables to name assets ("Toad (blue) - textures (ARAM)", "Bowser -
+pitching grip") and groups every slot, variants included. A character
+model's viewer has a colour-variant selector that draws it with a variant
+slot's texture set (the `variant=` query of the `.glb` route).
 
 ### Character cloning
 
 The **Characters** page (and `clone-character SOURCE TARGET`) makes one
 roster slot play as another character, following DrSeil's verified recipe:
 the slot's 19 sub-file descriptors, seven sub-items and rig in the master
-table, and its glove index are rewritten to describe the source; the ARAM
-body model too, but only when the target slot is its model's only user (the
-slot-to-model table has not been found, and colour variants share one
-model), and a variant slot keeps its ARAM texture set. By default the 19 sub-files are copied to the end of ZZZZ.dat so
-the clone can be retextured on its own, and the body model and rig are
-copied in place inside the ARAM chunk when the source fits the target's
-span (the chunk is packed tightly and loaded whole, so it cannot grow);
-sub-items are shared. `--share` writes no data at all. The index shows the
+table, its glove index and its slot-table entry (body model and texture
+set) are rewritten to describe the source, so cloning a colour variant gives
+the recolour too. By default the 19 sub-files are copied to the end of
+ZZZZ.dat so the clone can be retextured on its own, and the rig is copied in
+place inside the ARAM chunk when the source fits the target's span (the
+chunk is packed tightly and loaded whole, so it cannot grow); the body
+model is copied in place as well when the target's own model has no other
+user and the source has no recolour, otherwise the clone shares the
+source's model through the slot table. Sub-items are shared. `--share`
+writes no data at all. The index shows the
 copies under the target character; `restore-character` puts every table and
 in-place byte back exactly. See `zzzzdat/clone.py`.
 
