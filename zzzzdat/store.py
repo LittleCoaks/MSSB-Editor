@@ -7,7 +7,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import anim, c3, chars, dsp, formats, handpose, musyx, song
+from . import anim, c3, chars, collision, dsp, formats, handpose, musyx, song
 from .paths import EXTRACT_DIR as _EXTRACT_DIR  # noqa: F401
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
@@ -317,18 +317,28 @@ class Store:
             if hp and 0 <= pose < hp.count and hp.vertices == len(m.meshes[0].positions):
                 m.meshes[0].positions = list(hp.blocks[pose])
         if posed:
-            # the actor (skeleton) is normally the nearest preceding ACT section;
-            # the prototype packs put it after the geometry instead, so fall
-            # back to any ACT section in the file (without one the model would
-            # stay in actor space, upside down)
-            order = list(reversed(secs[:section])) + secs[section + 1:]
-            for other in order:
-                if other.magic == c3.ACT_VERSION and c3.is_actor(data, other.offset):
-                    bones = c3.parse_actor(data, other.offset)
-                    if bones:
-                        c3.apply_actor(m, bones)
-                    break
+            bones = self.actor_for(e, section)
+            if bones:
+                c3.apply_actor(m, bones)
         return m
+
+    def actor_for(self, e: Entry, section: int) -> list[c3.Bone] | None:
+        """The skeleton that poses GeoPalette `section`. A pack lists its actors
+        in the same order as its GeoPalettes (a stadium: the park's, then the
+        sky's), so the n-th actor goes with the n-th GeoPalette when the counts
+        match; otherwise the nearest preceding actor, or any actor in the file
+        (the prototype packs put it after the geometry)."""
+        data = self.data(e)
+        secs = self.info(e).sections
+        acts = [s for s in secs if s.magic == c3.ACT_VERSION and c3.is_actor(data, s.offset)]
+        geos = [s for s in secs if s.kind == "geopalette"]
+        pick = None
+        if acts and len(acts) == len(geos) and any(g.index == section for g in geos):
+            pick = acts[[g.index for g in geos].index(section)]
+        else:
+            order = list(reversed(secs[:section])) + secs[section + 1:]
+            pick = next((s for s in order if s.magic == c3.ACT_VERSION and c3.is_actor(data, s.offset)), None)
+        return c3.parse_actor(data, pick.offset) if pick else None
 
     # -------------------------------------------------------------- songs --
     def midi(self, e: Entry, n: int) -> bytes:
@@ -616,6 +626,16 @@ class Store:
         while len(self._glb) > 8:
             self._glb.popitem(last=False)
         return g
+
+    def collision_mesh(self, e: Entry) -> dict:
+        """The collision triangles of a stadium pack in the viewer's space (the
+        same 180-degree turn about X the static model export applies)."""
+        data = self.data(e)
+        for s in self.info(e).sections:
+            if collision.is_table(s.magic):
+                tris, tags, problems = collision.triangles(data[s.offset:s.offset + s.size])
+                return {"triangles": [[[x, -y, -z] for x, y, z in t] for t in tris], "tags": tags, "problems": problems}
+        return {"triangles": [], "tags": [], "problems": []}
 
     def extract_models(self, e: Entry, dest: Path, fmt: str = "glb") -> list[Path]:
         out = []

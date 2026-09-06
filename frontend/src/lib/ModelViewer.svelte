@@ -5,7 +5,9 @@
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
   import { urls, type BankInfo, type ModelInfo } from './api'
 
-  let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean } = $props()
+  let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false, overlay = undefined }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean; overlay?: string } = $props()
+  let showLines = $state(true)
+  let lines: THREE.Group | null = null
   let part = $state('')          // '', 'hands' or 'gloves'
   let variant = $state<number | undefined>(undefined)  // colour variant slot
   let canvas: HTMLCanvasElement
@@ -53,6 +55,27 @@
   $effect(() => { const s = section, e = entry, b = bank, p = part, v = variant, k = pose; if (renderer) load(e, s, b, p, v, k) })
   $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshStandardMaterial).wireframe = w }) })
   $effect(() => { const c = clip; if (mixer) play(c) })
+  // field lines: fences, walls and base paths from the stadium's collision table
+  $effect(() => {
+    const url = overlay
+    if (lines) { scene.remove(lines); lines = null }
+    if (!url || !renderer) return
+    fetch(url).then(r => r.json()).then((j: { triangles: number[][][] }) => {
+      if (url !== overlay) return
+      // the collision mesh: translucent panels with their edges, so fences, walls and the ground read as surfaces
+      const g = new THREE.Group(); g.name = 'collision'
+      const fill = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false })
+      const edge = new THREE.LineBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.7 })
+      const flat = new Float32Array(j.triangles.length * 9)
+      j.triangles.forEach((t, i) => t.forEach((p, k) => { flat.set(p, i * 9 + k * 3) }))
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(flat, 3))
+      g.add(new THREE.Mesh(geo, fill))
+      g.add(new THREE.LineSegments(new THREE.WireframeGeometry(geo), edge))
+      g.visible = showLines
+      lines = g; scene.add(g)
+    }).catch(() => {})
+  })
+  $effect(() => { if (lines) lines.visible = showLines })
   let lastEntry = entry
   $effect(() => { if (entry !== lastEntry) { lastEntry = entry; bank = ''; part = ''; variant = undefined } })
 
@@ -135,6 +158,7 @@
     </select>
   {/if}
   <label><input type="checkbox" bind:checked={wire}> wireframe</label>
+  {#if overlay}<label title="the stadium's collision panels: fences, walls, dugouts"><input type="checkbox" bind:checked={showLines}> collision</label>{/if}
   <button onclick={reset}>Reset view</button>
   {#if whole}<a class="btn" href={urls.scene(entry)}>Download .glb (whole scene)</a>{:else}<a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined, variant, pose)}>Download .glb</a>
   <a class="btn" href={urls.obj(entry, section, pose)}>Download .obj</a>{/if}

@@ -111,6 +111,7 @@ export const urls = {
   movieAudio: (id: number) => `/api/entry/${id}/movie/audio.wav`,
   glb: (id: number, sec: number, anim?: string, parts?: string, variant?: number, pose?: number) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}${pose !== undefined ? '&pose=' + pose : ''}`,
   scene: (id: number) => `/api/entry/${id}/model/all.glb`,
+  collision: (id: number) => `/api/entry/${id}/collision.json`,
   obj: (id: number, sec: number, pose?: number) => `/api/entry/${id}/model/${sec}.obj${pose !== undefined ? '?pose=' + pose : ''}`,
   data: (id: number) => `/api/entry/${id}/data`,
   raw: (id: number) => `/api/entry/${id}/raw`,

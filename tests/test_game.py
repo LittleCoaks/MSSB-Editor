@@ -265,3 +265,16 @@ def test_stadium_vertex_colours(store):
     assert any("COLOR_0" in p["attributes"] for m in doc["meshes"] for p in m["primitives"])
     body = store.model(store.get(91), 2)
     assert len(body.meshes[0].colors) == 1  # characters: one white colour, not exported
+
+
+def test_stadium_collision_mesh(store):
+    from zzzzdat import collision
+    e = store.get(8)
+    sec = next(s for s in store.info(e).sections if collision.is_table(s.magic))
+    tris, tags, problems = collision.triangles(store.data(e)[sec.offset:sec.offset + sec.size])
+    assert not problems and len(tris) > 1500 and len(tags) == len(tris)
+    # the park pairs with the first actor, the sky with the second: the sky ends up above the park
+    sky = store.model(e, 4, posed=True)
+    park = store.model(e, 3, posed=True)
+    assert max(p[1] for mm in sky.meshes for p in mm.positions) > 200
+    assert max(p[1] for mm in park.meshes for p in mm.positions) < 100

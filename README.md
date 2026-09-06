@@ -236,9 +236,15 @@ still unknown. The night look is baked into the geometry: every stadium mesh
 carries per-vertex colours (GX RGB565/RGB8/RGBA4 arrays, now exported as
 glTF COLOR_0), and the night file's average about half the day file's, which
 is where the shadows and lighting live; the skeleton sections only differ in
-object positions. Each pack also has 0x..4300 tables of records of
-(x, y, z, flags) points at field height (fence and wall lines, bases), read
-far enough to say what they are but not yet drawn. Two field packs (Wario Palace, Toy Field) are GeoPalettes with a
+object positions. Each pack also has a collision mesh (`zzzzdat/collision.py`): a
+`00 NN 43 00` section of NN records, each a run of GX-style primitives
+(u16 kind, u16 n: kind 1 = triangle strip of n triangles, kind 0 = triangle
+list of n triangles) whose points are (x, y, z, u16 surface tag, u16 0). The
+viewer's "collision" tick draws it as translucent panels: the outfield wall
+ring, the dugouts and the ground. Finding it also fixed the posing of packs
+with several skeletons: actors pair with GeoPalettes in order (the park's,
+then the sky's), not by nearest-preceding section, which had posed the park
+with the sky's transform. Two field packs (Wario Palace, Toy Field) are GeoPalettes with a
 version word of 0, which the parser now accepts; before that they rendered
 as an empty sky.
 

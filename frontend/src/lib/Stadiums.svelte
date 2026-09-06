@@ -94,7 +94,7 @@
         </div>
         {#if section === 'scene' && entry !== null && shown}
           {#key entry}
-            <ModelViewer {entry} models={shown.models ?? []} whole={true} height="62vh" />
+            <ModelViewer {entry} models={shown.models ?? []} whole={true} height="62vh" overlay={shownFile ? urls.collision(entry) : undefined} />
           {/key}
           <p class="dim small" style="margin:8px 0 0">
             Every model section of the file drawn together{#if shown.models}: {shown.models.map(m => `${m.meshes.join(', ')} (${m.triangles.toLocaleString()})`).join(' · ')}{/if}.

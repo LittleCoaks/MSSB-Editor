@@ -20,6 +20,12 @@ def get_texture(req: Request, eid: str, n: str):
     req.bytes(st.texture_png(st.get(eid), int(n)), "image/png", cache="max-age=3600")
 
 
+@router.get(r"/api/entry/(?P<eid>\d+)/collision\.json")
+def get_collision(req: Request, eid: str):
+    st = req.ctx.require_store()
+    req.json(st.collision_mesh(st.get(eid)))
+
+
 @router.get(r"/api/entry/(?P<eid>\d+)/model/all\.glb")
 def get_scene(req: Request, eid: str):
     st = req.ctx.require_store()
