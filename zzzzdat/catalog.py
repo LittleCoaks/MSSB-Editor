@@ -133,6 +133,10 @@ def build_catalog(entries: list[Entry]) -> dict:
             g = group("music", "Music", "streams", "Streamed music")
         elif e.kind == "hvqm4":
             g = group("movies", "Movies", "movies", "Movies")
+        elif e.kind == "songs":
+            g = group("music", "Music", "songs", "Sequenced songs")
+        elif e.kind == "text":
+            g = group("other", "Everything else", "text", "Text strings")
         elif e.kind == "musyx":
             gid = musyx_group_id(e)
             slots = chars.VOICE_SLOTS.get(gid, []) if gid is not None else []

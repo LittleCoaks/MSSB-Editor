@@ -39,7 +39,7 @@ import re
 import struct
 from dataclasses import dataclass, field
 
-from . import dsp, gx, musyx
+from . import dsp, gx, musyx, song
 
 
 @dataclass
@@ -188,6 +188,10 @@ def classify_blob(data: bytes) -> str:
         return "hvqm4"
     if musyx.is_group(data):
         return "musyx"
+    if song.song_offsets(data):
+        return "songs"
+    if is_text_table(data):
+        return "text"
     if data[:8] == b"AdGCForm":
         return "adgc"
     magic = struct.unpack_from(">I", data, 0)[0] if len(data) >= 4 else 0
@@ -224,6 +228,8 @@ class FileInfo:
     names: list[str] = field(default_factory=list)
     audio: list[dict] = field(default_factory=list)  # {pos, kind, rate, channels, seconds, samples}
     sfx: list[dict] = field(default_factory=list)    # MusyX groups: {id, macro, samples (stream numbers)}
+    songs: list[dict] = field(default_factory=list)  # sequenced songs: {n, bpm, tracks, notes, seconds, tempo}
+    text: dict | None = None                         # text string tables: {count}
     group: dict | None = None                        # MusyX groups: {id, type, kind}
     musyx: "musyx.Group | None" = None
 
@@ -244,17 +250,46 @@ def identify(data: bytes) -> FileInfo:
         return FileInfo("hvqm4", hvqm4=hvqm4_info(data))
     if musyx.is_group(data):
         return musyx_info(data)
+    if song.song_offsets(data):
+        return songs_info(data)
+    if is_text_table(data):
+        n = struct.unpack_from(">H", data, 0)[0]
+        fi = FileInfo("text", text={"count": n})
+        fi.names = [f"Text strings ({n})"]
+        return fi
     texs = parse_texture_table(data)
     if texs:
         fi = FileInfo("textures", textures=texs)
     else:
         secs = parse_container(data)
         fi = FileInfo("container", sections=secs) if secs else FileInfo(classify_blob(data))
-    if fi.kind not in ("dsp-adpcm", "musyx"):
+    if fi.kind not in ("dsp-adpcm", "musyx", "songs", "text"):
         fi.names = find_names(data)
     for pos, h in dsp.find_dsp_streams(data):
         fi.audio.append({"pos": pos, "kind": "dsp-adpcm", "rate": h.sample_rate, "channels": 1,
                          "seconds": round(h.seconds, 2), "samples": h.sample_count, "loop": bool(h.loop_flag)})
+    return fi
+
+
+def is_text_table(data: bytes) -> bool:
+    """The string tables of menus.rel / game.rel: u16 count, u16 0x0131, then
+    `count` ascending u32 offsets to short records of 16-bit glyph codes."""
+    if len(data) < 16:
+        return False
+    n, ver = struct.unpack_from(">HH", data, 0)
+    if ver != 0x131 or n == 0 or 4 + n * 4 > len(data):
+        return False
+    offs = struct.unpack_from(f">{n}I", data, 4)
+    return offs[0] == 4 + n * 4 and all(a < b <= len(data) for a, b in zip(offs, offs[1:]))
+
+
+def songs_info(data: bytes) -> FileInfo:
+    fi = FileInfo("songs")
+    for n, s in enumerate(song.parse_songs(data)):
+        fi.songs.append({"n": n, "offset": s.offset, "bpm": s.bpm, "tracks": s.track_count, "notes": s.notes,
+                         "seconds": round(s.seconds, 1), "tempo": len(s.tempo),
+                         "channels": [c for c in s.channels if c != 0xFF]})
+    fi.names = [f"Sequenced songs ({len(fi.songs)})"]
     return fi
 
 

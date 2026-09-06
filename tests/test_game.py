@@ -161,3 +161,12 @@ def test_attached_parts(store):
     assert node_of["R_hand"] in doc["nodes"][node_of["bone19"]]["children"]
     e2 = store.get(893)  # menu Mario carries its hands in the same container
     assert sorted({p["name"] for p in store.parts(e2)}) == ["L_hand", "R_hand"]
+
+
+def test_sequenced_songs(store):
+    e = store.get(28)
+    fi = store.info(e)
+    assert fi.kind == "songs" and len(fi.songs) == 19 and fi.songs[0]["bpm"] == 190 and fi.songs[0]["tracks"] == 5
+    mid = store.midi(e, 0)
+    assert mid[:4] == b"MThd" and mid.count(b"MTrk") == 6
+    assert store.info(store.get(82)).kind == "text"

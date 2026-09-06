@@ -285,8 +285,9 @@ Index entries are classified by content:
 | `hvqm4` | 3 | Nintendo HVQM4 1.3 movies (intro 82 MB, 23 MB, 3 MB) |
 | `rel` | 3 | `menus.rel`, `game.rel`, `debug.rel` in `aaaa.dat` (listed for completeness) |
 | `adgc` | 1 | the DSP-ADPCM sound bank |
+| `songs` | 2 | MusyX song containers (19 + 1 sequenced songs), exported as MIDI |
+| `text` | 3 | text string tables from menus.rel and game.rel |
 | `musyx` | 48 | MusyX sound groups from the `lbl_800EF508` table: 47 sound-effect groups (875 effects, 1,300 samples) and one instrument bank |
-| `dsp-adpcm` | 2 | small tables (`0x131` version word) referenced from menus.rel and game.rel, purpose unknown; flagged by the ADPCM heuristic |
 | `unknown` | 175 | |
 | `dtk-adpcm` | 17 | disc `.adp` music (not in the archive; ids 10000+) |
 
@@ -383,6 +384,25 @@ groups are character voice sets (13 lines each); which character each
 belongs to is not yet known. Sequenced music (the instrument bank plus
 `.song` data elsewhere) is not rendered.
 
+### Sequenced songs
+
+The menu themes, jingles and results music are not recordings: they are
+MusyX sequences played on the instrument bank (sound group 31). They live in
+two files referenced from game.rel, a 19-song container and a one-song
+container, and `src/menus/rep_01A0.c` in the decomp shows the menus using
+the first two songs of the 19. `zzzzdat/song.py` documents the arrangement
+layout (an older MusyX version: track table at 0x18, no loop-point table),
+decodes the 4- and 6-byte pattern events and writes standard MIDI files
+with the tempo track and one track per channel at 384 ticks per quarter.
+Program numbers are the bank's instrument slots, so a General MIDI player
+substitutes its own sounds; rendering with the bank's samples is future
+work. The Songs tab lists each song's tempo, length and channels with a
+MIDI download; *Export MIDI* writes them all.
+
+The two small tables from menus.rel and game.rel that an earlier heuristic
+called ADPCM are the games text string tables (u16 count, version 0x131,
+offsets to records of 16-bit glyph codes) and are now labelled as such.
+
 ### Texture table
 
 0x20-byte records, data offsets relative to the table start:
@@ -436,6 +456,7 @@ zzzzdat/
   texedit.py      in-place texture replacement inside an entry
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
   musyx.py        MusyX sound groups: sfx -> macro -> sample, sample decoding
+  song.py         MusyX sequenced songs -> MIDI
   c3.py           C3 GeoPalette model parsing, actors, OBJ and glTF export (rigged)
   anim.py         ANIM banks and skin files
   app.py          desktop window (pywebview) around the server

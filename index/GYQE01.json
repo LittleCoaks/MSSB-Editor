@@ -930,11 +930,13 @@
     "game:.data:0x3d60 lbl_3_data_3D60"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "container",
+   "kind": "songs",
    "ntex": 0,
-   "nsec": 19,
-   "label": "",
-   "names": [],
+   "nsec": 0,
+   "label": "Sequenced songs (19)",
+   "names": [
+    "Sequenced songs (19)"
+   ],
    "known": "",
    "naud": 0,
    "thumb": 0
@@ -952,11 +954,13 @@
     "game:.data:0x3d70 lbl_3_data_3D70"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "container",
+   "kind": "songs",
    "ntex": 0,
-   "nsec": 1,
-   "label": "",
-   "names": [],
+   "nsec": 0,
+   "label": "Sequenced songs (1)",
+   "names": [
+    "Sequenced songs (1)"
+   ],
    "known": "",
    "naud": 0,
    "thumb": 0
@@ -2264,11 +2268,13 @@
     "menus:.data:0x12298 lbl_2_data_12298"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "dsp-adpcm",
+   "kind": "text",
    "ntex": 0,
    "nsec": 0,
-   "label": "",
-   "names": [],
+   "label": "Text strings (954)",
+   "names": [
+    "Text strings (954)"
+   ],
    "known": "",
    "naud": 0,
    "thumb": 0
@@ -2287,11 +2293,13 @@
     "menus:.data:0x20c00 lbl_2_data_20C00"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "unknown",
+   "kind": "text",
    "ntex": 0,
    "nsec": 0,
-   "label": "",
-   "names": [],
+   "label": "Text strings (599)",
+   "names": [
+    "Text strings (599)"
+   ],
    "known": "",
    "naud": 0,
    "thumb": 0
@@ -2403,11 +2411,13 @@
     "game:.data:0x284e8 lbl_3_data_284E8"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "dsp-adpcm",
+   "kind": "text",
    "ntex": 0,
    "nsec": 0,
-   "label": "",
-   "names": [],
+   "label": "Text strings (168)",
+   "names": [
+    "Text strings (168)"
+   ],
    "known": "",
    "naud": 0,
    "thumb": 0

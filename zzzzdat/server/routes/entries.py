@@ -28,6 +28,7 @@ def entry_detail(store, e) -> dict:
                      for n, (sec, t) in enumerate(fi.all_textures())]
     d["audio"] = fi.audio
     d["sfx"] = fi.sfx
+    d["songs"] = fi.songs
     d["group"] = fi.group
     d["models"] = store.models(e) if fi.kind == "container" else []
     d["banks"] = store.banks(e) if d["models"] else []

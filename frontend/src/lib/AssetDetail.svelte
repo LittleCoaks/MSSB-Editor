@@ -20,7 +20,7 @@
   $effect(() => {
     const cur = id
     d = null; msg = ''; bigTex = null; playing = null
-    api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : 'details' } })
+    api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : x.songs.length ? 'songs' : 'details' } })
   })
   $effect(() => { if (tab === 'hex' && d) loadHex() })
 
@@ -92,6 +92,7 @@
       {#if d.models.length}<button class:on={tab === 'model'} onclick={() => (tab = 'model')}>3D model</button>{/if}
       {#if d.textures.length}<button class:on={tab === 'textures'} onclick={() => (tab = 'textures')}>Textures</button>{/if}
       {#if d.audio.length}<button class:on={tab === 'audio'} onclick={() => (tab = 'audio')}>Audio</button>{/if}
+      {#if d.songs.length}<button class:on={tab === 'songs'} onclick={() => (tab = 'songs')}>Songs</button>{/if}
       <button class:on={tab === 'details'} onclick={() => (tab = 'details')}>Details</button>
       <button class:on={tab === 'hex'} onclick={() => (tab = 'hex')}>Hex</button>
       <span style="flex:1"></span>
@@ -99,6 +100,7 @@
         {#if d.textures.length}<button onclick={() => extract({ png: true })}>Export PNGs</button>{/if}
         {#if d.models.length}<button onclick={() => extract({ model: 'both' })}>Export model</button>{/if}
         {#if d.audio.length}<button onclick={() => extract({ wav: true })}>Export WAV</button>{/if}
+        {#if d.songs.length}<button onclick={() => extract({ wav: true })}>Export MIDI</button>{/if}
         <a class="btn" href={urls.data(d.id)}>Raw file</a>
       </div>
     </div>
@@ -154,6 +156,16 @@
             <audio controls preload={s.kind === 'musyx' ? 'none' : 'metadata'} src={urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
           </div>
         {/each}
+      {:else if tab === 'songs'}
+        <p class="dim" style="margin-top:0">Sequenced music played by the game's synthesizer on the instrument bank (sound group 31): jingles, results and menu themes. Each song downloads as a standard MIDI file; instrument numbers are the bank's program slots, so a General MIDI player will pick different sounds.</p>
+        <table>
+          <thead><tr><th>#</th><th>tempo</th><th>length</th><th>tracks</th><th>notes</th><th>channels</th><th></th></tr></thead>
+          <tbody>
+            {#each d.songs as s}
+              <tr><td>{s.n + 1}</td><td>{s.bpm} bpm{s.tempo > 1 ? ` (${s.tempo} changes)` : ''}</td><td>{s.seconds} s</td><td>{s.tracks}</td><td>{s.notes}</td><td class="dim">{s.channels.map(c => c + 1).join(', ')}</td><td><a href={urls.midi(d.id, s.n)}>download MIDI</a></td></tr>
+            {/each}
+          </tbody>
+        </table>
       {:else if tab === 'details'}
         <table>
           <tbody>

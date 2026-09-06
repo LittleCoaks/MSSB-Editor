@@ -7,7 +7,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import anim, c3, chars, dsp, formats, musyx
+from . import anim, c3, chars, dsp, formats, musyx, song
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
 from .disc import Archive, Game, current_game, find_archive
@@ -16,7 +16,7 @@ from .lzss import decompress
 
 KNOWN_NAMES_PATH = INDEX_DIR / "known_names.json"
 
-EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin", "musyx": "grp",
+EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin", "musyx": "grp", "songs": "arr", "text": "txt",
                "anim": "anm", "adgc": "adgc", "geopalette": "geo", "dtk-adpcm": "adp", "unknown": "bin", "": "bin"}
 DISC_ID_BASE = 10000
 CLONE_ID_BASE = 20000
@@ -309,6 +309,25 @@ class Store:
                     break
         return m
 
+    # -------------------------------------------------------------- songs --
+    def midi(self, e: Entry, n: int) -> bytes:
+        songs = song.parse_songs(self.data(e))
+        if n >= len(songs):
+            raise KeyError(f"entry {e.id} has no song {n}")
+        return song.to_midi(songs[n], f"{self.file_name(e).rsplit('.', 1)[0]} song {n + 1}")
+
+    def extract_midi(self, e: Entry, dest: Path) -> list[Path]:
+        songs = song.parse_songs(self.data(e))
+        if not songs:
+            return []
+        dest.mkdir(parents=True, exist_ok=True)
+        out = []
+        for n, s in enumerate(songs):
+            p = dest / f"{n + 1:02d}_{s.bpm}bpm_{s.seconds:.0f}s.mid"
+            p.write_bytes(song.to_midi(s, f"song {n + 1}"))
+            out.append(p)
+        return out
+
     # ---------------------------------------------------------- animation --
     def actor(self, e: Entry) -> list[c3.Bone] | None:
         """The skeleton of a container: bones of its first ACT section."""
@@ -536,6 +555,7 @@ class Store:
             written += self.extract_textures(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_tex"))
         if wav:
             written += self.extract_audio(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_wav"))
+            written += self.extract_midi(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_midi"))
         if model:
             written += self.extract_models(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_model"), model)
         return written

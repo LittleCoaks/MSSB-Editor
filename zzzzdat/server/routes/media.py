@@ -34,6 +34,13 @@ def get_model(req: Request, eid: str, sec: str, ext: str):
         req.bytes(c3.to_obj(st.model(e, int(sec))).encode(), "text/plain", stem + ".obj")
 
 
+@router.get(r"/api/entry/(?P<eid>\d+)/song/(?P<n>\d+)(?:\.mid)?")
+def get_midi(req: Request, eid: str, n: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    req.bytes(st.midi(e, int(n)), "audio/midi", f"{st.file_name(e).rsplit('.', 1)[0]}_song{int(n) + 1}.mid")
+
+
 @router.get(r"/api/entry/(?P<eid>\d+)/audio/(?P<n>\d+)(?:\.wav)?")
 def get_audio(req: Request, eid: str, n: str):
     st = req.ctx.require_store()
