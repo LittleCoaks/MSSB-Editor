@@ -209,6 +209,8 @@ class Editor:
             return
         still = any(any(r["module"] == module for r in v.get("refs", []))
                     for k, v in self.journal.items() if not k.startswith("_"))
+        still = still or any(x.get("module") == module
+                             for c in self.journal.get("_clones", {}).values() for x in c["copied"] + c["shared"])
         if still:
             return
         info = rb.pop(module)
