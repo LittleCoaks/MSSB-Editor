@@ -192,5 +192,5 @@ def test_movie_decode(store):
     e = store.get(2)  # the 300-frame movie
     m = hvqm.decode(game_key(store.game), e.id, store.data(e))
     assert m.ready and m.info["frames"] == 300 and m.info["width"] == 640
-    assert m.frame(0)[:2] == b"ÿØ" and m.frame(299)[-2:] == b"ÿÙ"
+    assert m.frame(0)[:2] == bytes((0xFF, 0xD8)) and m.frame(299)[-2:] == bytes((0xFF, 0xD9))
     assert m.audio().stat().st_size > 300 * 32028 * 2 // 30
