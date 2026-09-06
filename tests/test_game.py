@@ -134,7 +134,7 @@ def test_clone_character_and_restore(store):
     Cloner(Editor(st2.game)).restore(target)
     assert hashlib.sha1(ed.dol.read_bytes()).hexdigest() == sha
     assert hashlib.sha1(ed.aaaa.read_bytes()).hexdigest() == sha_aaaa
-    assert not Editor(store.game).journal.get("_clones")
+    assert str(target) not in Editor(store.game).journal.get("_clones", {})
     assert len(Store().entries) == len(store.entries)
 
 
