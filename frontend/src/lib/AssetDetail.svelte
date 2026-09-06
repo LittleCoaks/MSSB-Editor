@@ -16,6 +16,15 @@
   let songPlayer: HTMLAudioElement | undefined = $state()
   let songPlaying = $state<number | null>(null)
   let songMsg = $state('')
+  function tagText(tag: string): string {
+    const t = tag.split(':')
+    if (t[0] === 'animsrc') return 'animation source bank, not referenced by the game (sequence names kept)'
+    if (t[0] === 'names') return 'sequence names come from an unreferenced source bank'
+    if (t[0] === 'mirror') return 'part of an earlier, unreferenced copy of the character data chunk'
+    if (t[0] === 'proto') return 'prototype animation library, not referenced by the game'
+    if (t[0] === 'leftover') return 'unreferenced leftover data'
+    return tag
+  }
   function playSong(n: number) {
     if (songPlaying === n) { songPlayer?.pause(); songPlaying = null; return }
     songPlaying = n; songMsg = 'rendering…'
@@ -208,7 +217,8 @@
             <tr><th>Location</th><td>{d.archive} at {hex(d.offset)}</td></tr>
             <tr><th>Size</th><td>{kb(d.size)} ({hex(d.size)}), {d.compressed ? `LZSS compressed to ${kb(d.disc_size)}` : 'stored uncompressed'}</td></tr>
             <tr><th>Loaded by</th><td>{d.refs.join(', ')}</td></tr>
-            {#if d.known}<tr><th>Community name</th><td>{d.known}</td></tr>{/if}
+            {#if d.known}<tr><th>Name</th><td>{d.known}</td></tr>{/if}
+            {#if d.tag}<tr><th>Analysis</th><td>{tagText(d.tag)}{#if d.twin >= 0} <a href="#/entry/{d.twin}">{d.tag.startsWith('animsrc') ? 'names the shipped bank' : 'identical to'} file {d.twin}</a>{/if}</td></tr>{/if}
             {#if d.names.length}<tr><th>Embedded names</th><td>{d.names.join(', ')}</td></tr>{/if}
             {#if d.hvqm4}<tr><th>Movie</th><td>{d.hvqm4.width}×{d.hvqm4.height}, {d.hvqm4.video_frames} frames at {d.hvqm4.fps} fps, audio {d.hvqm4.audio_hz} Hz</td></tr>{/if}
             <tr><th>Export name</th><td>{d.file_name}</td></tr>

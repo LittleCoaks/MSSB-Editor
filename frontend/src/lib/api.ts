@@ -4,7 +4,7 @@ export interface EntrySummary {
   id: number; offset: number; disc_size: number; size: number; compressed: boolean;
   lookback_bits: number; repeat_bits: number; kind: string; ntex: number; nsec: number; naud: number;
   module: string; symbol: string; archive: string; name: string; refs: string[];
-  label: string; names: string[]; known: string; thumb: number;
+  label: string; names: string[]; known: string; thumb: number; twin: number; tag: string;
 }
 export interface Texture { n: number; section: number | null; index: number; width: number; height: number; fmt: string; mips: number; offset: number; size: number; tlut: number; flags: string }
 export interface Section { index: number; offset: number; size: number; kind: string; magic: number; ntex: number }

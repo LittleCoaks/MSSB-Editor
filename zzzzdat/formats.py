@@ -277,7 +277,7 @@ def is_text_table(data: bytes) -> bool:
     if len(data) < 16:
         return False
     n, ver = struct.unpack_from(">HH", data, 0)
-    if ver != 0x131 or n == 0 or 4 + n * 4 > len(data):
+    if ver not in (0x131, 0x132) or n == 0 or 4 + n * 4 > len(data):
         return False
     offs = struct.unpack_from(f">{n}I", data, 4)
     return offs[0] == 4 + n * 4 and all(a < b <= len(data) for a, b in zip(offs, offs[1:]))

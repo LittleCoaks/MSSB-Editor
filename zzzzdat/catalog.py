@@ -45,14 +45,34 @@ def musyx_group_id(e: Entry) -> int | None:
     return int(m.group(1)) if m else None
 
 
-def display_name(e: Entry) -> str:
+SOURCE_CATEGORIES = {"b": "batting", "r": "running", "p": "pitching", "f": "fielding", "c": "catching",
+                     "e": "reaction", "o": "misc"}
+
+
+def display_name(e: Entry, by_id: dict[int, Entry] | None = None) -> str:
     """A name a person would use: the character table's slot and role, else the
-    community name, else the character/part behind the embedded model name."""
+    community name, else the character/part behind the embedded model name,
+    else what the unreferenced-file analysis (twins.py) made of it."""
     c = chars.classify_entry(e.refs)
     if c and c["character"]:
         return f"{c['character']} - {c['role']}"
     if c:
         return c["role"]
+    tag = e.tag.split(":")
+    if tag[0] == "animsrc":
+        cat = SOURCE_CATEGORIES.get(tag[2], "misc")
+        who = chars.SLOT_NAMES[int(tag[1])] + " - " if tag[1] != "-" else ""
+        twin = by_id.get(e.twin) if by_id and e.twin >= 0 else None
+        ct = chars.classify_entry(twin.refs) if twin else None
+        same = f" (names {ct['role']})" if ct and ct["role"].startswith("animations") else ""
+        return f"{who}{cat} animation source{same}"
+    if tag[0] == "proto":
+        return f"prototype {SOURCE_CATEGORIES[tag[1]]} animations" if len(tag) > 1 else "prototype " + (e.label.rsplit(".", 1)[0] if e.label else e.kind)
+    if e.twin >= 0 and by_id and e.twin in by_id:
+        return "copy of " + (display_name(by_id[e.twin], by_id) or f"file {e.twin}")
+    tbl = table_of(e)
+    if tbl == "lbl_800F71D8":
+        return f"shared item {(int(e.refs[0].split(':')[2].split(' ')[0], 16) - 0x800F71D8) // 16} (copy outside ARAM)"
     if e.known:
         return e.known.replace("First Found ", "")
     if e.kind == "musyx":
@@ -119,6 +139,7 @@ def thumb_for(e: Entry) -> str | None:
 def build_catalog(entries: list[Entry]) -> dict:
     cats: dict[str, dict] = {}
     names: dict[int, str] = {}
+    by_id = {e.id: e for e in entries}
 
     def group(cat_id: str, cat_name: str, grp_id: str, grp_name: str) -> dict:
         c = cats.setdefault(cat_id, {"id": cat_id, "name": cat_name, "groups": {}})
@@ -148,6 +169,17 @@ def build_catalog(entries: list[Entry]) -> dict:
                           "Sound effects" if "effects" in e.label else "Instrument banks")
         elif e.kind in ("adgc", "dsp-adpcm") or e.naud:
             g = group("sounds", "Sounds", "banks", "Sound banks")
+        elif e.tag.startswith("animsrc:"):
+            slot = e.tag.split(":")[1]
+            if slot != "-":
+                ch = chars.SLOT_NAMES[int(slot)]
+                g = group("characters", "Characters", re.sub(r"\W+", "_", ch.lower()), ch)
+            else:
+                g = group("unused", "Unused data", "animsrc", "Animation sources (no character)")
+        elif e.tag == "mirror" or e.tag.startswith("proto") or e.tag == "leftover":
+            g = group("unused", "Unused data", *{"mirror": ("mirror", "Earlier copy of the character data"),
+                                                 "proto": ("proto", "Prototype animation library"),
+                                                 "leftover": ("leftover", "Leftovers")}[e.tag.split(":")[0]])
         else:
             ch = character_of(e)
             tbl = table_of(e)
@@ -156,6 +188,8 @@ def build_catalog(entries: list[Entry]) -> dict:
                 ch = cc["character"]
             if ch:
                 g = group("characters", "Characters", re.sub(r"\W+", "_", ch.lower()), ch)
+            elif cc or tbl == "lbl_800F71D8":
+                g = group("characters", "Characters", "_shared", "Shared item records")
             elif e.known and ("Stadium" in e.known or "Park" in e.known) or tbl in ("StadiumFiles", "marioStadiumCDR"):
                 name = e.known or ({"StadiumFiles": "Stadium files", "marioStadiumCDR": "Mario Stadium props"}.get(tbl, tbl))
                 g = group("stadiums", "Stadiums", re.sub(r"\W+", "_", name.lower()), name)
@@ -163,18 +197,22 @@ def build_catalog(entries: list[Entry]) -> dict:
                 g = group("characters", "Characters", "_animations", "Animations (unsorted)")
             elif e.module == "menus" and e.ntex:
                 g = group("menus", "Menus & UI", "menus_" + tbl, f"Menu textures ({tbl})")
+            elif tbl == "lbl_800E8AA8" and e.ntex:
+                g = group("menus", "Menus & UI", "screens", "Screens & UI (main.dol)")
+            elif tbl == "lbl_1_data_CC8":
+                g = group("menus", "Menus & UI", "debug", "Debug menu")
             elif e.label and e.label.endswith(".gpc"):
                 g = group("props", "Props & objects", _stem(e.label), e.label.rsplit(".", 1)[0])
             else:
                 g = group("other", "Everything else", tbl, tbl)
         g["items"].append(e.id)
-        dn = display_name(e)
+        dn = display_name(e, by_id)
         if dn:
             names[e.id] = dn
         if g["thumb"] is None and e.ntex:
             g["thumb"] = thumb_for(e)
 
-    order = ["characters", "stadiums", "menus", "props", "movies", "music", "sounds", "other"]
+    order = ["characters", "stadiums", "menus", "props", "movies", "music", "sounds", "other", "unused"]
     out = []
     for cid in order:
         if cid not in cats:

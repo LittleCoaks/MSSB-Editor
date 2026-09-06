@@ -69,6 +69,8 @@ class Entry:
     known: str = ""       # community name from index/known_names.json
     naud: int = 0         # audio streams found inside
     thumb: int = 0        # index of the texture that best represents the entry
+    twin: int = -1        # a referenced entry with the same content (twins.py)
+    tag: str = ""         # what an unreferenced file is (twins.py)
 
     @property
     def symbol(self) -> str:
@@ -491,10 +493,14 @@ def scan_unreferenced(archive, known: list[Entry], log=lambda *a: None, probe: i
 
 
 def load_known_names(path: Path) -> dict[int, str]:
-    if not path.exists():
-        return {}
-    doc = json.loads(path.read_text(encoding="utf-8"))
-    return {int(k, 16): v for k, v in doc.get("names", {}).items()}
+    """Community names, plus the editor's own identifications from
+    editor_names.json next to it (the community file wins)."""
+    out = {}
+    for p in (path.with_name("editor_names.json"), path):
+        if p.exists():
+            doc = json.loads(p.read_text(encoding="utf-8"))
+            out.update({int(k, 16): v for k, v in doc.get("names", {}).items()})
+    return out
 
 
 # ----------------------------------------------------------------- persist --

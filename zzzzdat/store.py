@@ -434,6 +434,12 @@ class Store:
         b = anim.parse_bank(data, base)
         if not b:
             return None
+        if not base:
+            from .twins import sequence_names
+            names = sequence_names(self, x)
+            if names and len(names) == len(b.sequences):
+                for s, n in zip(b.sequences, names):
+                    s.name = n
         c = chars.classify_entry(x.refs)
         label = f"{c['role']}" if (c and x.kind == "anim") else (f"section {sec}" if base else f"file {x.id}")
         return label, b
@@ -702,6 +708,14 @@ class Store:
                 e.names = fi.names[:16]
                 if i % 100 == 0:
                     log(f"  classified {i}/{len(ents)} ({time.time() - t0:.0f}s)")
+        if classify:
+            from .twins import annotate
+            self.entries = ents
+            self.by_id = {e.id: e for e in ents}
+            self._data.clear()
+            self._info.clear()
+            annotate(self, ents, log)
+            log(f"annotated unreferenced files ({time.time() - t0:.0f}s)")
         cov = coverage(ents, self.archive.size)
         meta = {"archive": self.archive.path.name, "archive_size": self.archive.size,
                 "source": self.archive.source, "covered_bytes": cov["covered"],

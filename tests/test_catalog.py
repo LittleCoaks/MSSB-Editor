@@ -52,3 +52,20 @@ def test_slot_table_variants():
     assert chars.variants_of(13) == [13, 29, 30, 31, 32]          # Toad and its recolours
     assert chars.variants_of(27) == [27, 52, 53]                   # Hammer Bro model
     assert chars.SLOT_TEXTURE_SET[27] == 47 and 52 not in chars.SLOT_TEXTURE_SET
+
+
+def test_analysis_tags_name_and_group():
+    from zzzzdat.descriptors import Entry
+    src = Entry(id=1, offset=0x0F12C800, disc_size=0x800, size=0x800, flags=4, lookback_bits=11, repeat_bits=4,
+                refs=["scan:lzss-probe"], kind="anim", tag="animsrc:0:b", twin=2)
+    shipped = Entry(id=2, offset=0x1000, disc_size=0x800, size=0x800, flags=4, lookback_bits=11, repeat_bits=4,
+                    refs=["dol:.data:0x800f1d98 lbl_800F1D78+0x20"], kind="anim", tag="names:1")
+    copy = Entry(id=3, offset=0x19A6F800, disc_size=0x800, size=0x800, flags=4, lookback_bits=11, repeat_bits=4,
+                 refs=["scan:AdGCForm"], kind="container", tag="mirror", twin=2)
+    by_id = {e.id: e for e in (src, shipped, copy)}
+    assert catalog.display_name(src, by_id) == "Mario - batting animation source (names animations 1)"
+    assert catalog.display_name(copy, by_id).startswith("copy of Mario - animations 1")
+    cat = catalog.build_catalog([src, shipped, copy])
+    groups = {(c["id"], g["id"]): g for c in cat["categories"] for g in c["groups"]}
+    assert 1 in groups[("characters", "mario")]["items"]
+    assert 3 in groups[("unused", "mirror")]["items"]

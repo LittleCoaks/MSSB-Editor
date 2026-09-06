@@ -12,7 +12,7 @@ def entry_summary(e) -> dict:
             "compressed": e.compressed, "lookback_bits": e.lookback_bits, "repeat_bits": e.repeat_bits,
             "kind": e.kind, "ntex": e.ntex, "nsec": e.nsec, "naud": e.naud, "thumb": e.thumb,
             "module": e.module, "symbol": e.symbol, "archive": e.archive, "name": e.name, "refs": e.refs,
-            "label": e.label, "names": e.names, "known": e.known}
+            "label": e.label, "names": e.names, "known": e.known, "twin": e.twin, "tag": e.tag}
 
 
 def entry_detail(store, e) -> dict:

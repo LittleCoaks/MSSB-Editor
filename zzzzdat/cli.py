@@ -23,6 +23,32 @@ def cmd_index(a):
     store.rebuild_index(verify=not a.no_verify, classify=not a.no_classify, scan=not a.no_scan)
 
 
+def cmd_annotate(a):
+    """Re-run the unreferenced-file analysis on the existing index."""
+    from .descriptors import load_index, save_index
+    from .twins import annotate
+    import json
+    store = Store()
+    from .descriptors import load_known_names
+    from .store import KNOWN_NAMES_PATH
+    from . import formats
+    ents = load_index(store.index_path)  # the shipped index, without clone adjustments
+    known = load_known_names(KNOWN_NAMES_PATH)
+    for e in ents:
+        if e.archive == "ZZZZ.dat":
+            e.known = known.get(e.offset, "")
+            if e.kind == "unknown":  # cheap re-check for formats learnt since the index was built
+                try:
+                    fi = formats.identify(store.data(e))
+                    e.kind, e.label = fi.kind, fi.label or e.label
+                except Exception:
+                    pass
+    annotate(store, ents, print)
+    meta = json.loads(store.index_path.read_text(encoding="utf-8")).get("meta", {})
+    save_index(ents, store.index_path, meta)
+    print(f"wrote {store.index_path}")
+
+
 def cmd_thumbs(a):
     from .thumbs import build_all
     store = Store()
@@ -319,6 +345,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="zzzzdat", description="Browse, view and extract MSSB's ZZZZ.dat")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
+    s = sub.add_parser("annotate", help="re-run the unreferenced-file analysis (twins, animation sources) on the index")
+    s.set_defaults(fn=cmd_annotate)
     s = sub.add_parser("index", help="(re)build index/GYQE01.json by scanning the game executables")
     s.add_argument("--no-verify", action="store_true", help="skip decode verification (faster, noisier)")
     s.add_argument("--no-classify", action="store_true", help="skip content classification")

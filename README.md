@@ -25,7 +25,7 @@ It is organised for people who are not reverse engineers:
 - **Home** - game status in plain words and the three things people come for:
   browse assets, change the music, movies & sounds.
 - **Browse assets** - a catalog by *Characters*, *Stadiums*, *Menus & UI*,
-  *Props*, *Movies*, *Music*, *Sounds* and *Everything else*, built from the
+  *Props*, *Movies*, *Music*, *Sounds*, *Everything else* and *Unused data*, built from the
   community names, the model names inside the files and the executable tables
   they are loaded from. Cards show a representative texture; the detail panel
   has a 3D model tab, texture gallery (with *Replace with PNG* on an extracted
@@ -280,6 +280,34 @@ archive (the rest is 0x800 padding). Where they come from:
 | `dol`, `menus`, `game`, `debug` | 1226 | 16-byte descriptors in the executables, each test-decoded |
 | `scan:AdGCForm` | 345 | files tagged with an `AdGCForm` fingerprint: one 5 MB stored DSP-ADPCM bank at 0x8F2E800, plus 344 compressed texture containers packed back to back at 0x19C86800-0x1A15E800 |
 | `scan:lzss-probe` | 641 | every 0x800 boundary in the remaining gaps that decodes as LZSS; a stream is assumed to run to the next hit. Their decompressed sizes are approximate (a little trailing junk decoded from padding is possible). |
+
+### What the unreferenced files are
+
+About 40% of the archive is never named by a descriptor. `zzzzdat/twins.py`
+works out what it is when the index is built (or with `python -m zzzzdat
+annotate`), and the catalog names and groups it accordingly:
+
+* **Animation sources** (0x0F12C800-0x186A1800, 157 MB, 540 banks): one bank
+  per character and category with the sequence names still in them
+  (`b00_wa_000`: category letter, base roster slot, action, take). The 17
+  shipped banks per character hold the same animations with the names
+  stripped; each source is matched to its shipped twin by sequence count,
+  track count and durations, and the viewer then shows the real names on the
+  shipped bank (417 of the shipped banks get names this way). They are listed
+  under their character as "batting/running/pitching/fielding/catching/
+  reaction animation source".
+* **Prototype library** (0x0CE16800-0x0E581000, 25 MB): the same categories
+  for a placeholder rig (`f_k_01`) plus test packs (`hitomi.gpc`, `s16.gpc`,
+  `taiki.gpc`, a Koopa skin test), each stored twice.
+* **Earlier copy of the character data** (0x19A6F800-0x1A15E800, 7 MB): the
+  chunk the master table addresses at 0x1A15E800, mostly byte-identical.
+* **Leftovers**: small records next to those blocks.
+
+Entries whose content is identical to a referenced file are shown as "copy
+of ..." with a link to the original (`twin`). The remaining DOL-table entries
+(title screen, team logos, help screens, loading tips, debug graphics, ...)
+are named by hand in `index/editor_names.json`, which is loaded alongside the
+community names.
 
 Index entries are classified by content:
 
