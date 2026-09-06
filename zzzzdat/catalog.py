@@ -72,7 +72,7 @@ def display_name(e: Entry, by_id: dict[int, Entry] | None = None) -> str:
         return "copy of " + (display_name(by_id[e.twin], by_id) or f"file {e.twin}")
     tbl = table_of(e)
     if tbl == "lbl_800F71D8":
-        return f"shared item {(int(e.refs[0].split(':')[2].split(' ')[0], 16) - 0x800F71D8) // 16} (copy outside ARAM)"
+        return f"hand-pose event set {(int(e.refs[0].split(':')[2].split(' ')[0], 16) - 0x800F71D8) // 16} (copy outside ARAM)"
     if e.known:
         return e.known.replace("First Found ", "")
     if e.kind == "musyx":
@@ -189,7 +189,7 @@ def build_catalog(entries: list[Entry]) -> dict:
             if ch:
                 g = group("characters", "Characters", re.sub(r"\W+", "_", ch.lower()), ch)
             elif cc or tbl == "lbl_800F71D8":
-                g = group("characters", "Characters", "_shared", "Shared item records")
+                g = group("characters", "Characters", "_shared", "Hand-pose event sets")
             elif e.known and ("Stadium" in e.known or "Park" in e.known) or tbl in ("StadiumFiles", "marioStadiumCDR"):
                 name = e.known or ({"StadiumFiles": "Stadium files", "marioStadiumCDR": "Mario Stadium props"}.get(tbl, tbl))
                 g = group("stadiums", "Stadiums", re.sub(r"\W+", "_", name.lower()), name)

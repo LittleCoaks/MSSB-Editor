@@ -7,12 +7,16 @@ back to the default browser so the tool still works.
 """
 from __future__ import annotations
 
+import sys
 import threading
 import webbrowser
 
+from .paths import UI_DIR
 from .server import start_server
 
 TITLE = "MSSB Editor"
+# Window icon (drawn by tools/make_icon.py). WinForms wants an .ico; GTK, Qt and Cocoa take a .png.
+ICON = UI_DIR / ("icon.ico" if sys.platform == "win32" else "icon.png")
 
 
 class Api:
@@ -54,5 +58,5 @@ def run(port: int | None = None, width: int = 1400, height: int = 900) -> None:
     else:
         api = Api()
         api._window = webview.create_window(TITLE, url, width=width, height=height, min_size=(900, 600), js_api=api, text_select=True)
-        webview.start()
+        webview.start(icon=str(ICON) if ICON.is_file() else None)
     httpd.shutdown()

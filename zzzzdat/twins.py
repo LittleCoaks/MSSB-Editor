@@ -139,7 +139,37 @@ def annotate(store, entries: list[Entry], log=lambda *a: None) -> None:
             if not t.tag:
                 t.tag = f"names:{e.id}"
                 named += 1
-    log(f"  animation sources name {named} shipped banks")
+    # 2b. sources whose sequence names carry no slot: bank 13 (motrtoy) calls
+    # all sixteen sequences "other01", so the bank belongs to whichever
+    # character's run of sources it sits in; anything else without a slot in
+    # the run (the Kuppa_B Bowser batting set, the test banks) is a prototype
+    last_slot = None
+    placed = 0
+    for e in sorted(loose, key=lambda x: x.offset):
+        if not _in(SOURCE_RUN, e) or e.kind != "anim":
+            continue
+        parts = e.tag.split(":")
+        if parts[0] == "animsrc" and parts[1] != "-":
+            last_slot = int(parts[1])
+            continue
+        if parts[0] != "animsrc":
+            continue
+        try:
+            b = anim.parse_bank(store.data(e), 0)
+        except Exception:
+            continue
+        t = shipped[last_slot].get(_sig(b)) if (b and last_slot is not None) else None
+        if t is not None:
+            e.tag = f"animsrc:{last_slot}:{parts[2]}"
+            placed += 1
+            e.twin = t.id   # every character's bank 13 has the same signature, so the run decides, not step 2
+            if not t.tag:
+                named += 1
+            if not t.tag or t.tag.startswith("names:"):
+                t.tag = f"names:{e.id}"
+        else:
+            e.tag = "proto"
+    log(f"  animation sources name {named} shipped banks ({placed} placed by their run)")
 
     # 3. the blocks
     for e in loose:

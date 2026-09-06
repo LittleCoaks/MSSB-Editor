@@ -5,13 +5,13 @@
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
   import { urls, type BankInfo, type ModelInfo } from './api'
 
-  let { entry, models, banks = [], parts = [], variants = [] }: { entry: number; models: ModelInfo[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[] } = $props()
+  let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean } = $props()
   let part = $state('')          // '', 'hands' or 'gloves'
   let variant = $state<number | undefined>(undefined)  // colour variant slot
   let canvas: HTMLCanvasElement
   let section = $state(models[0]?.section ?? 0)
   let wire = $state(false)
-  let bank = $state('')          // animation bank key, '' = static export
+  // `bank`: animation bank key, '' = static export (bindable so a page can drive it)
   let clips = $state<THREE.AnimationClip[]>([])
   let clip = $state('')
   let playing = $state(true)
@@ -50,18 +50,19 @@
     return () => { alive = false; renderer.dispose() }
   })
 
-  $effect(() => { const s = section, e = entry, b = bank, p = part, v = variant; if (renderer) load(e, s, b, p, v) })
+  $effect(() => { const s = section, e = entry, b = bank, p = part, v = variant, k = pose; if (renderer) load(e, s, b, p, v, k) })
   $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshStandardMaterial).wireframe = w }) })
   $effect(() => { const c = clip; if (mixer) play(c) })
-  $effect(() => { entry; bank = ''; part = ''; variant = undefined })
+  let lastEntry = entry
+  $effect(() => { if (entry !== lastEntry) { lastEntry = entry; bank = ''; part = ''; variant = undefined } })
 
-  function load(e: number, s: number, b: string, p: string, v?: number) {
+  function load(e: number, s: number, b: string, p: string, v?: number, k?: number) {
     msg = 'loading…'
-    new GLTFLoader().load(urls.glb(e, s, b || undefined, p || undefined, v), g => {
+    new GLTFLoader().load(whole ? urls.scene(e) : urls.glb(e, s, b || undefined, p || undefined, v, k), g => {
       if (root) scene.remove(root)
       root = g.scene; scene.add(root)
       let tris = 0
-      root.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { tris += m.geometry.index ? m.geometry.index.count / 3 : 0; (m.material as THREE.Material).side = THREE.DoubleSide; (m.material as THREE.MeshStandardMaterial).wireframe = wire; m.frustumCulled = false } })
+      root.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { tris += m.geometry.index ? m.geometry.index.count / 3 : 0; const mat = m.material as THREE.MeshStandardMaterial; mat.side = isSky(m) ? THREE.BackSide : THREE.DoubleSide; if (isGlare(m)) { m.visible = false }  /* the sun-glare billboard is a screen effect, not scenery */ mat.wireframe = wire; m.frustumCulled = false } })
       mixer = g.animations.length ? new THREE.AnimationMixer(root) : null
       action = null
       clips = g.animations
@@ -71,6 +72,9 @@
       msg = `${Math.round(tris).toLocaleString()} triangles` + (g.animations.length ? ` · ${g.animations.length} animations` : '') + ' · drag to orbit, wheel to zoom, right-drag to pan'
     }, undefined, err => (msg = 'could not load model: ' + err))
   }
+  // a stadium's sky dome encloses the park: draw it inside-out so the orbit camera looks through it
+  const isSky = (m: THREE.Object3D) => /sky|cloud|enkei/i.test(m.name) || /sky|cloud/i.test(m.parent?.name ?? '')
+  const isGlare = (m: THREE.Object3D) => /glare/.test(m.name) || /glare/.test(m.parent?.name ?? '')
   function play(name: string) {
     if (!mixer) return
     const c = clips.find(x => x.name === name)
@@ -89,7 +93,7 @@
     const box = new THREE.Box3()
     root.traverse(o => {
       const m = o as THREE.Mesh
-      if (m.isMesh && !(m as THREE.SkinnedMesh).isSkinnedMesh) box.expandByObject(m)
+      if (m.isMesh && !(m as THREE.SkinnedMesh).isSkinnedMesh && !isSky(m)) box.expandByObject(m)
       if (o.name.startsWith('bone')) box.expandByPoint(o.getWorldPosition(new THREE.Vector3()))
     })
     if (box.isEmpty()) box.setFromObject(root)
@@ -104,8 +108,8 @@
   $effect(() => { if (action) action.paused = !playing })
 </script>
 
-<div class="bar">
-  {#if models.length > 1}
+<div class="tools">
+  {#if models.length > 1 && !whole}
     <select bind:value={section}>
       {#each models as m}<option value={m.section}>{m.meshes.join(', ')} ({m.triangles.toLocaleString()} tris)</option>{/each}
     </select>
@@ -132,12 +136,12 @@
   {/if}
   <label><input type="checkbox" bind:checked={wire}> wireframe</label>
   <button onclick={reset}>Reset view</button>
-  <a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined, variant)}>Download .glb</a>
-  <a class="btn" href={urls.obj(entry, section)}>Download .obj</a>
+  {#if whole}<a class="btn" href={urls.scene(entry)}>Download .glb (whole scene)</a>{:else}<a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined, variant, pose)}>Download .glb</a>
+  <a class="btn" href={urls.obj(entry, section, pose)}>Download .obj</a>{/if}
   <span class="dim">{msg}</span>
 </div>
 {#if clips.length}
-  <div class="bar anim">
+  <div class="tools anim">
     <select bind:value={clip}>
       {#each clips as c}<option value={c.name}>{c.name} ({Math.round(c.duration * 60)} frames)</option>{/each}
     </select>
@@ -149,10 +153,10 @@
     </select>
   </div>
 {/if}
-<canvas bind:this={canvas}></canvas>
+<canvas bind:this={canvas} style="height:{height}"></canvas>
 
 <style>
-  .bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }  /* not .bar: app.css uses that for progress bars */
   .mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
   canvas { width: 100%; height: 65vh; min-height: 320px; display: block; border: 1px solid var(--line); border-radius: 6px; background: #101216; }
 </style>

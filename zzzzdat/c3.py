@@ -152,7 +152,8 @@ def parse_geopalette(data: bytes, base: int) -> Model | None:
     if base + 20 > len(data):
         return None
     version, _uds, _pud, ndesc, pdesc = struct.unpack_from(">IIIII", data, base)
-    if version != GEOPALETTE_VERSION or ndesc == 0 or ndesc > 512:
+    # the stadium field packs of Wario Palace and Toy Field carry a version word of 0
+    if version not in (GEOPALETTE_VERSION, 0) or ndesc == 0 or ndesc > 512 or pdesc != 0x14:
         return None
     meshes = []
     for i in range(ndesc):

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { api, urls, kb, hex, friendlyName, KIND_LABEL, type EntryDetail } from './api'
+  import { api, urls, kb, hex, friendlyName, KIND_LABEL, type EntryDetail, type EntrySummary } from './api'
   import { app } from './state.svelte'
   import ModelViewer from './ModelViewer.svelte'
   import MoviePlayer from './MoviePlayer.svelte'
@@ -97,6 +97,13 @@
     try { await api.restoreEntry(d.id); editMsg = 'Original restored.'; await app.refresh(); d = await api.entry(d.id) } catch (e: any) { editMsg = e.message }
   }
   const modified = $derived(app.modified.includes(id))
+  // neighbours in the archive, for walking ZZZZ.dat in order
+  const neighbours = $derived.by(() => {
+    if (!d || d.archive !== 'ZZZZ.dat') return { prev: null as EntrySummary | null, next: null as EntrySummary | null }
+    const list = [...app.entries.values()].filter(e => e.archive === 'ZZZZ.dat').sort((a, b) => a.offset - b.offset)
+    const i = list.findIndex(e => e.id === d!.id)
+    return { prev: list[i - 1] ?? null, next: list[i + 1] ?? null }
+  })
 </script>
 
 <div class="wrap">
@@ -214,7 +221,12 @@
       {:else if tab === 'details'}
         <table>
           <tbody>
-            <tr><th>Location</th><td>{d.archive} at {hex(d.offset)}</td></tr>
+            <tr><th>Location</th><td>{d.archive} at {hex(d.offset)}
+              {#if neighbours.prev || neighbours.next}<span class="dim"> · next to</span>
+                {#if neighbours.prev}<a href="#entry/{neighbours.prev.id}" onclick={() => app.open(neighbours.prev!.id)} title={hex(neighbours.prev.offset)}>← {app.nameOf(neighbours.prev)}</a>{/if}
+                {#if neighbours.prev && neighbours.next}<span class="dim"> · </span>{/if}
+                {#if neighbours.next}<a href="#entry/{neighbours.next.id}" onclick={() => app.open(neighbours.next!.id)} title={hex(neighbours.next.offset)}>{app.nameOf(neighbours.next)} →</a>{/if}
+              {/if}</td></tr>
             <tr><th>Size</th><td>{kb(d.size)} ({hex(d.size)}), {d.compressed ? `LZSS compressed to ${kb(d.disc_size)}` : 'stored uncompressed'}</td></tr>
             <tr><th>Loaded by</th><td>{d.refs.join(', ')}</td></tr>
             {#if d.known}<tr><th>Name</th><td>{d.known}</td></tr>{/if}

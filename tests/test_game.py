@@ -194,3 +194,58 @@ def test_movie_decode(store):
     assert m.ready and m.info["frames"] == 300 and m.info["width"] == 640
     assert m.frame(0)[:2] == bytes((0xFF, 0xD8)) and m.frame(299)[-2:] == bytes((0xFF, 0xD9))
     assert m.audio().stat().st_size > 300 * 32028 * 2 // 30
+
+
+def test_static_model_is_upright_when_actor_follows_geometry(store):
+    # the prototype packs store the skeleton after the geometry; the static
+    # export used to skip the upright flip for them and draw them upside down
+    e = store.get(841)  # prototype mario00.gpc
+    secs = store.info(e).sections
+    geo = next(s.index for s in secs if s.kind == "geopalette")
+    from zzzzdat import c3
+    assert not any(s.magic == c3.ACT_VERSION for s in secs[:geo])
+    m = store.model(e, geo, posed=True)
+    ys = [p[1] for mm in m.meshes for p in mm.positions]
+    assert min(ys) > -0.1 and max(ys) > 1.0  # feet on the ground, head above
+
+
+def test_roster(store):
+    from zzzzdat import roster
+    s = roster.summary(store)
+    assert [c["name"] for c in s[:3]] == ["Mario", "Luigi", "Donkey Kong"] and len(s) == 32
+    d = roster.detail(store, 0)
+    assert [m["role"] for m in d["models"]] == ["model", "low-detail model", "body model (ARAM copy)"]
+    assert [p["role"] for p in d["parts"]] == ["left hand", "right hand", "left glove", "right glove"]
+    assert len(d["banks"]) == 17 and d["banks"][0]["category"] == "batting" and d["banks"][0]["sequences"][0] == "b00_wa_000"
+    assert d["sounds"]["group"] == 27 and len(d["sounds"]["samples"]) == 10
+    toad = roster.detail(store, 13)
+    assert [v["name"] for v in toad["variants"]] == ["Toad (red)", "Toad (blue)", "Toad (yellow)", "Toad (green)", "Toad (purple)"]
+    assert toad["variants"][1]["texture_entry"] is not None
+    goomba = roster.detail(store, 29)
+    assert goomba["parts"][0]["role"] == "left bat" and goomba["viewer_parts"] == ["bat", "glove", "hand"]
+    assert d["parts"][0]["bat_pose"] == 2 and "bat" in d["viewer_parts"]
+    assert roster.detail(store, 0) is d  # cached
+
+
+def test_hand_poses_hold_the_bat(store):
+    e = store.get(2222)  # Mario's left hand (master sub-item 0)
+    hp = store.poses(e)
+    assert hp and hp.count == 12 and hp.vertices == 284
+    assert hp.extents[0] < 0.5 and hp.bat_pose() == 2 and hp.extents[2] > 1.7
+    m = store.model(e, 1, pose=2)
+    ys = [p[1] for p in m.meshes[0].positions]
+    assert max(ys) - min(ys) > 1.5  # the bat, pulled out of the palm
+    glb = store.glb(store.get(91), 2, rig=True, parts="bat")
+    assert len(glb) > 150000
+
+
+def test_stadiums(store):
+    from zzzzdat import stadiums
+    s = stadiums.summary(store)
+    assert [x["name"] for x in s][:3] == ["Mario Stadium", "Bowser Castle", "Wario Palace"] and len(s) == 7
+    d = stadiums.detail(store, 0)
+    assert len(d["files"]) == 3 and len(d["props"]) == 7
+    wario = stadiums.detail(store, 2)
+    assert wario["files"][0]["triangles"] > 12000   # the version-0 GeoPalette field pack parses
+    glb = store.scene_glb(store.get(wario["files"][0]["entry"]))
+    assert len(glb) > 1000000

@@ -5,6 +5,7 @@
   import { app } from './state.svelte'
   import { hex, kb, KIND_LABEL, type EntrySummary } from './api'
   import AssetDetail from './AssetDetail.svelte'
+  import ArchiveMap from './ArchiveMap.svelte'
 
   type Col = { key: keyof EntrySummary | 'name'; label: string; num?: boolean; width?: string }
   const cols: Col[] = [
@@ -19,6 +20,7 @@
   let archive = $state('')
   let onlyModified = $state(false)
   let shown = $state(300)
+  let byPlace = $state(false)   // archive order: ZZZZ.dat by offset, gaps shown as rows
 
   const all = $derived([...app.entries.values()])
   const kinds = $derived([...new Set(all.map(e => e.kind))].sort())
@@ -35,6 +37,7 @@
         || e.known.toLowerCase().includes(q) || e.label.toLowerCase().includes(q) || e.symbol.toLowerCase().includes(q)
         || e.names.some(n => n.toLowerCase().includes(q)) || e.refs.some(r => r.toLowerCase().includes(q)))
     }
+    if (byPlace) return list.filter(e => e.archive === 'ZZZZ.dat').sort((a, b) => a.offset - b.offset)
     const key = sortKey
     const val = (e: EntrySummary) => key === 'name' ? app.nameOf(e).toLowerCase() : (e as any)[key]
     list = [...list].sort((a, b) => {
@@ -44,8 +47,23 @@
     })
     return list
   })
-  $effect(() => { q; kind; archive; onlyModified; sortKey; sortDesc; shown = 300 })
-  const visible = $derived(rows.slice(0, shown))
+  $effect(() => { q; kind; archive; onlyModified; sortKey; sortDesc; byPlace; shown = 300 })
+  // in archive order, a gap between consecutive entries becomes a row of its own
+  type Row = { e: EntrySummary } | { gap: [number, number] }
+  const placed = $derived.by((): Row[] => {
+    if (!byPlace) return rows.map(e => ({ e }))
+    const out: Row[] = []
+    let cur = 0
+    for (const e of rows) {
+      if (!q && !kind && !onlyModified && e.offset > cur) out.push({ gap: [cur, e.offset - cur] })
+      out.push({ e }); cur = Math.max(cur, e.offset + e.disc_size)
+    }
+    return out
+  })
+  const visible = $derived(placed.slice(0, shown))
+  function jumpTo(id: number) { app.selected = id; byPlace = true; filter = ''; kind = ''; onlyModified = false
+    const i = placed.findIndex(r => 'e' in r && r.e.id === id); if (i >= shown) shown = i + 200
+    queueMicrotask(() => document.getElementById('file-' + id)?.scrollIntoView({ block: 'center' })) }
   function sortBy(k: Col['key']) { if (sortKey === k) sortDesc = !sortDesc; else { sortKey = k; sortDesc = false } }
   const kindLabel = (e: EntrySummary) => e.archive === 'disc' ? 'music' : (KIND_LABEL[e.kind] ?? e.kind)
 </script>
@@ -57,16 +75,22 @@
       <select bind:value={kind}><option value="">all kinds</option>{#each kinds as k}<option value={k}>{k}</option>{/each}</select>
       <select bind:value={archive}><option value="">all archives</option>{#each archives as a}<option value={a}>{a}</option>{/each}</select>
       <label><input type="checkbox" bind:checked={onlyModified}> replaced only</label>
+      <label title="ZZZZ.dat in the order the files sit in it, gaps included"><input type="checkbox" bind:checked={byPlace}> archive order</label>
       <span class="dim">{rows.length} of {all.length} files</span>
     </div>
+    <ArchiveMap onpick={jumpTo} />
     <div class="tablewrap">
       <table>
         <thead><tr>
           {#each cols as c}<th class:num={c.num} onclick={() => sortBy(c.key)} class:on={sortKey === c.key}>{c.label}{#if sortKey === c.key}{sortDesc ? ' ▼' : ' ▲'}{/if}</th>{/each}
         </tr></thead>
         <tbody>
-          {#each visible as e (e.id)}
-            <tr class:on={app.selected === e.id} class:mod={app.modified.includes(e.id)} onclick={() => (app.selected = e.id)} title={e.refs.join('\n')}>
+          {#each visible as r ('e' in r ? r.e.id : 'gap' + r.gap[0])}
+            {#if 'gap' in r}
+              <tr class="gap"><td></td><td class="num mono">{hex(r.gap[0])}</td><td class="num">{kb(r.gap[1])}</td><td colspan="7" class="dim">gap, not indexed</td></tr>
+            {:else}
+            {@const e = r.e}
+            <tr id="file-{e.id}" class:on={app.selected === e.id} class:mod={app.modified.includes(e.id)} onclick={() => (app.selected = e.id)} title={e.refs.join('\n')}>
               <td class="num">{e.id}</td>
               <td class="num mono">{hex(e.offset)}</td>
               <td class="num" title={hex(e.size)}>{kb(e.size)}</td>
@@ -78,11 +102,12 @@
               <td class="dim">{e.module}</td>
               <td class="mono dim">{e.symbol}</td>
             </tr>
+            {/if}
           {/each}
         </tbody>
       </table>
-      {#if shown < rows.length}
-        <div style="text-align:center;margin:14px 0"><button onclick={() => (shown += 600)}>Show more ({rows.length - shown} left)</button></div>
+      {#if shown < placed.length}
+        <div style="text-align:center;margin:14px 0"><button onclick={() => (shown += 600)}>Show more ({placed.length - shown} left)</button></div>
       {/if}
     </div>
   </section>
@@ -105,6 +130,7 @@
   .mono { font-family: ui-monospace, Consolas, monospace; }
   tr { cursor: pointer; }
   tbody tr:hover { background: var(--panel2); }
+  tr.gap { cursor: default; color: var(--dim); background: #0f1115; }
   tbody tr.on { background: var(--panel2); outline: 1px solid var(--acc); }
   .detail { flex: 1; min-width: 0; overflow: auto; border-left: 1px solid var(--line); }
   .list.narrow { flex: 0 0 46%; } .list.narrow td { max-width: 160px; }

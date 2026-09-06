@@ -41,6 +41,20 @@ export interface SlotInfo { slot: number; name: string; clone_of: number | null;
 export interface CloneResult { source: number; target: number; copy: boolean; copied: number; inplace: string[]; shared: number; appended_bytes: number; source_name: string; target_name: string }
 export interface MovieInfo { ready: boolean; helper: boolean; job: string | null; width?: number; height?: number; frames?: number; fps?: number; sample_rate?: number }
 export interface FsListing { path: string; parent: string | null; dirs: string[]; files: { name: string; size: number }[]; layout: string }
+export interface RosterSlot { slot: number; name: string }
+export interface RosterEntry { id: number; name: string; slot: number; slots: RosterSlot[]; thumb: number | null; model_entry: number | null; sound_entry: number | null; variants: number }
+export interface RosterModel { role: string; entry: number; section: number; meshes: string[]; triangles: number; textures: number; size: number; models: ModelInfo[]; poses?: number; bat_pose?: number | null }
+export interface RosterVariant { slot: number; name: string; texture_entry: number | null; own: boolean }
+export interface RosterBank { key: string; entry: number; track: number; category: string; label: string; sequences: string[]; named: boolean }
+export interface RosterSounds { entry: number; group: number | null; samples: { n: number; seconds: number; rate: number; label: string }[]; sfx: SfxInfo[] }
+export interface RosterFile { entry: number; role: string; kind: string; size: number; slot: number | null; textures: number; audio: number }
+export interface StadiumFile { entry: number; textures: number; size: number; slots?: number[]; models?: { section: number; meshes: string[]; triangles: number; textures: number }[]; triangles?: number; sections?: number }
+export interface StadiumProp { entry: number; name: string; triangles: number; textures: number; models: { section: number; meshes: string[]; triangles: number; textures: number }[] }
+export interface StadiumEntry { id: number; name: string; files: StadiumFile[]; thumb: number | null }
+export interface StadiumDetail extends StadiumEntry { props: StadiumProp[] }
+export interface RosterDetail extends Omit<RosterEntry, 'variants'> {
+  models: RosterModel[]; variants: RosterVariant[]; parts: RosterModel[]; banks: RosterBank[]; sounds: RosterSounds | null; files: RosterFile[]; viewer_parts: string[]
+}
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, init)
@@ -78,6 +92,11 @@ export const api = {
   cloneCharacter: (source: number, target: number, copy: boolean) => j<CloneResult>(`/api/characters/clone?source=${source}&target=${target}&copy=${copy ? 1 : 0}`, { method: 'POST' }),
   restoreCharacter: (target: number) => j<{ ok: boolean }>(`/api/characters/restore?target=${target}`, { method: 'POST' }),
   restoreEntry: (id: number) => j<{ ok: boolean }>(`/api/entry/${id}/restore`, { method: 'POST' }),
+  roster: () => j<{ characters: RosterEntry[] }>('/api/roster'),
+  character: (id: number) => j<RosterDetail>('/api/roster/' + id),
+  exportCharacter: (id: number, what: string) => j<{ written: string[]; dest: string }>(`/api/roster/${id}/export?what=${what}`),
+  stadiums: () => j<{ stadiums: StadiumEntry[] }>('/api/stadiums'),
+  stadium: (id: number) => j<StadiumDetail>('/api/stadiums/' + id),
 }
 
 export const urls = {
@@ -90,8 +109,9 @@ export const urls = {
   songMix: (id: number, ns: number[], loops = 1) => `/api/entry/${id}/song/mix.wav?songs=${ns.join(',')}&loops=${loops}`,
   movieFrame: (id: number, n: number) => `/api/entry/${id}/movie/frame/${n}.jpg`,
   movieAudio: (id: number) => `/api/entry/${id}/movie/audio.wav`,
-  glb: (id: number, sec: number, anim?: string, parts?: string, variant?: number) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}`,
-  obj: (id: number, sec: number) => `/api/entry/${id}/model/${sec}.obj`,
+  glb: (id: number, sec: number, anim?: string, parts?: string, variant?: number, pose?: number) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}${pose !== undefined ? '&pose=' + pose : ''}`,
+  scene: (id: number) => `/api/entry/${id}/model/all.glb`,
+  obj: (id: number, sec: number, pose?: number) => `/api/entry/${id}/model/${sec}.obj${pose !== undefined ? '?pose=' + pose : ''}`,
   data: (id: number) => `/api/entry/${id}/data`,
   raw: (id: number) => `/api/entry/${id}/raw`,
 }

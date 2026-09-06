@@ -20,6 +20,13 @@ def get_texture(req: Request, eid: str, n: str):
     req.bytes(st.texture_png(st.get(eid), int(n)), "image/png", cache="max-age=3600")
 
 
+@router.get(r"/api/entry/(?P<eid>\d+)/model/all\.glb")
+def get_scene(req: Request, eid: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    req.bytes(st.scene_glb(e), "model/gltf-binary", f"{st.file_name(e).rsplit('.', 1)[0]}_scene.glb")
+
+
 @router.get(r"/api/entry/(?P<eid>\d+)/model/(?P<sec>\d+)\.(?P<ext>glb|obj)")
 def get_model(req: Request, eid: str, sec: str, ext: str):
     st = req.ctx.require_store()
@@ -29,10 +36,12 @@ def get_model(req: Request, eid: str, sec: str, ext: str):
         banks = tuple(k for k in (req.q("anim") or "").split(",") if k)
         parts = req.q("parts") or ""
         variant = int(req.q("variant")) if (req.q("variant") or "").isdigit() else None
+        pose = int(req.q("pose")) if (req.q("pose") or "").isdigit() else None
         req.bytes(st.glb(e, int(sec), rig=bool(banks) or bool(parts) or req.flag("rig"), bank_keys=banks, parts=parts,
-                         variant=variant), "model/gltf-binary", stem + ".glb")
+                         variant=variant, pose=pose), "model/gltf-binary", stem + ".glb")
     else:
-        req.bytes(c3.to_obj(st.model(e, int(sec))).encode(), "text/plain", stem + ".obj")
+        pose = int(req.q("pose")) if (req.q("pose") or "").isdigit() else None
+        req.bytes(c3.to_obj(st.model(e, int(sec), pose=pose)).encode(), "text/plain", stem + ".obj")
 
 
 @router.get(r"/api/entry/(?P<eid>\d+)/song/mix\.wav")

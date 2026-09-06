@@ -11,7 +11,7 @@ def test_character_table_classification():
     c = chars.classify(chars.SUBFILES_VA + (27 * 19 + 0) * 16)
     assert c["character"] == "Hammer Bro" and c["role"] == "model"
     c = chars.classify(chars.MASTER_VA + (54 + 9 * 7 + 5) * 16)
-    assert c["character"] == "Bowser" and c["role"] == "item data 2"
+    assert c["character"] == "Bowser" and c["role"] == "pitching hand-pose track"
     c = chars.classify(chars.MASTER_VA + (432 + 53) * 16)
     assert c["character"] == "Boomerang Bro" and c["role"] == "skeleton rig"
     assert chars.classify(chars.MASTER_VA - 16) is None
@@ -33,7 +33,7 @@ def test_display_name_and_grouping():
     e_movie = mk(5, ["dol:.data:0x801092c8 lbl_801092C8"], kind="hvqm4", known="movie1.HVQM4")
     cat = catalog.build_catalog([e_slot, e_known, e_gpc, e_hand, e_movie, e_var])
     names = cat["names"]
-    assert names[1] == "Mario - equipment"
+    assert names[1] == "Mario - low-detail model"
     assert names[2] == "Baby Luigi"
     assert names[3] == "Toad"
     assert names[4] == "Left hand"

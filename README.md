@@ -46,6 +46,13 @@ npm run build      # writes zzzzdat/ui/dist (commit the result)
 npm run check      # svelte-check / tsc
 ```
 
+**All files** also carries an archive map: a strip of ZZZZ.dat with every
+file drawn to scale and coloured by kind, gaps dark. Hovering names a block,
+clicking opens it, and the "archive order" tick lists the files in the order
+they sit in the archive with the unindexed gaps as rows, which is how a
+leftover such as the Utada song shows up next to the files it was packed
+with. A file's Details tab links to its neighbours in the archive.
+
 ## Setup: choosing the game
 
 The editor needs your copy of the game, chosen once on the **Game** page (or
@@ -157,7 +164,7 @@ with no code patches.
 
 `zzzzdat/chars.py` names the two DOL tables that define the 54 playable
 character slots: the **sub-files table** at `0x800F1D78` (54 slots x 19
-tracks: model, equipment, 17 animation banks; colour variants point at the
+tracks: model, low-detail model, 17 animation banks; colour variants point at the
 same files as their base slot) and the **master descriptors** at
 `0x800EFD38` (516 entries, offsets relative to the 0x1A15E800 ARAM chunk:
 the 33 distinct body models, 21 texture sets for the colour-variant slots,
@@ -167,15 +174,69 @@ textureSet`, 0xFF = the model's own textures), which is what makes a colour
 variant: the same body model drawn with another texture set. The slot order
 is the game's roster order, confirmed from the model names inside each
 slot's pack and the community's "First Found" names. DrSeil's guide first
-documented the tables but lists the slots in another order. The catalog
+documented the tables but lists the slots in another order. The **hand table** at `0x800F5D98` holds six descriptors per slot (hands with
+the batting event track, gloves, hands with the pitching track), reached
+through the per-slot u16 table at `0x800EEAAC` (slot x 6); the u16 table at
+`0x800EEB18` gives each character one of the 29 **hand-pose event sets**
+(master items 486+, mirrored at `0x800F71D8`), -1 for Boo, King Boo, Shy Guy
+and Petey. Both those tables were once thought to be sound. The per-slot
+sub-items 4..6 and the shared sets share one record layout: a count, then
+entries of (total frames, key count, flags, (frame, code) pairs); code 0x64xx
+selects a hand pose. debug.rel keeps the development file names of every
+sub-file (`char/ninNN/model0.dat`, `model1.dat`, `motb.dat` ... `motpm.dat`),
+which is where the bank names in the UI come from. game.rel's two data
+tables are the preset team rosters (12 x 1440 bytes, copied to
+`inMemRoster`) and 18 camera keyframe sets loaded into `g_Camera`. The catalog
 uses these tables to name assets ("Toad (blue) - textures (ARAM)", "Bowser -
-pitching grip") and groups every slot, variants included. A character
+pitching hand-pose track") and groups every slot, variants included. A character
 model's viewer has a colour-variant selector that draws it with a variant
 slot's texture set (the `variant=` query of the `.glb` route).
 
+### The Characters page
+
+The **Characters** page lists the game's 32 characters (`zzzzdat/roster.py`,
+`/api/roster`): the 54 slots folded onto the 32 character ids the game itself
+uses, so the five Toads are one entry with five colours. Each character shows
+its model (the slot's pack, the low-detail copy and the ARAM body), a colour
+dropdown that redraws it with a variant slot's texture set, its hands and
+gloves, the bat (see below), the 17 animation banks labelled by their
+development file names and what they animate (click one to play its
+animations on the model), the voice group with a play button and WAV download
+per clip, and every file the tables tie to the character. "Export everything"
+writes the model as glTF with all animations, OBJ, textures per colour and
+the voice clips under `extracted/characters/<name>/`.
+
+**Where the bat is.** There is no bat file. Every hand container carries,
+after its GeoPalette, a section with version word 0x40001 holding complete
+vertex sets for the hand (`zzzzdat/handpose.py`): the batting hands
+(`L/R_hand07`, 556 triangles) model the bat as triangles collapsed onto the
+palm, and two of their twelve poses pull it out into a 1.8-unit bat gripped
+in the fist; the simpler `L/R_hand00` hands have three poses (open, holding
+the bat, hidden). The animation event tracks (sub-items 4..6 of each slot,
+codes 0x64xx) choose the pose per frame. Goomba, Paragoomba and Petey, who
+have no hands, have the bat itself in their hand slots. The viewer's "with
+bat" attachment and the "with bat" equipment chips on the Characters page
+apply the bat pose (`pose=` on the `.glb`/`.obj` routes).
+
+### The Stadiums page
+
+The **Stadiums** page (`zzzzdat/stadiums.py`, `/api/stadiums`) lists the seven
+parks from the DOL's `StadiumFiles` table (21 descriptors, three per stadium
+in table order: Mario Stadium, Bowser Castle, Wario Palace, Yoshi Park,
+Peach's Garden, DK Jungle, Toy Field; a stadium with fewer files repeats one
+file across its slots). The viewer draws every model section of a file
+together (`/api/entry/<id>/model/all.glb`): the park, its sky dome drawn
+inside-out so the camera can look through it, and the sun-glare billboard
+(a mesh named 加算光, "additive light") blended additively. Mario Stadium's
+props from game.rel's `marioStadiumCDR` table are listed beside the file
+variants. Two field packs (Wario Palace, Toy Field) are GeoPalettes with a
+version word of 0, which the parser now accepts; before that they rendered
+as an empty sky.
+
 ### Character cloning
 
-The **Characters** page (and `clone-character SOURCE TARGET`) makes one
+The **Characters** page (folded away under "Slot cloning") and
+`clone-character SOURCE TARGET` make one
 roster slot play as another character, following DrSeil's verified recipe:
 the slot's 19 sub-file descriptors, seven sub-items and rig in the master
 table, its glove index and its slot-table entry (body model and texture
@@ -243,10 +304,13 @@ Two ADPCM flavours are decoded to WAV on the fly (`zzzzdat/dsp.py`):
   archive `disc`, read straight from the ISO.
 - **DSP-ADPCM** - any standard 0x60-byte DSPADPCM header found inside an
   entry becomes an audio stream. So far exactly one exists: the 288 s, 32 kHz
-  mono bank inside the `AdGCForm` file at 0x8F2E808 (entry 89), which is
-  presumably every voice clip and sound effect back to back; the cue table that
-  splits it has not been located yet. The remaining sound effects, if any,
-  are in the MusyX groups of the `lbl_800EF508` series (see below).
+  mono stream inside the `AdGCForm` file at 0x8F2E808 (entry 89). It is not a
+  sound bank: it is a complete, unlooped, fade-out master of **"Letters" by
+  Hikaru Utada** (Deep River, 2002), identified by ear. Nothing in the game
+  references it; it sits between two referenced files (`p_machine00.gpc` and
+  `chain.gpc`), so it was packed by the build like any other asset, presumably
+  a placeholder or test stream someone forgot to remove. The sound effects and
+  voice lines are in the MusyX groups of the `lbl_800EF508` series (see below).
 
 ## Desktop window and packaging
 
@@ -266,7 +330,11 @@ python build.py            # -> dist/MSSB Editor/MSSB Editor.exe
 
 The bundle carries the UI, three.js and the shipped index; the executable
 opens the window when double-clicked and behaves like the CLI when given
-arguments (`"MSSB Editor.exe" list --kind hvqm4`). Users pick their
+arguments (`"MSSB Editor.exe" list --kind hvqm4`). The icon (a black-and-white
+baseball) is drawn by `tools/make_icon.py`, which writes the browser favicon
+(`frontend/public/favicon.svg`) and the window/executable icon
+(`zzzzdat/ui/icon.ico`, `icon.png`); re-run it and rebuild the frontend after
+changing the drawing. Users pick their
 own ISO or extracted folder on the Game page the first time; `config.json`,
 `extracted/` and `index/` are written next to the executable.
 
@@ -301,6 +369,11 @@ annotate`), and the catalog names and groups it accordingly:
   `taiki.gpc`, a Koopa skin test), each stored twice.
 * **Earlier copy of the character data** (0x19A6F800-0x1A15E800, 7 MB): the
   chunk the master table addresses at 0x1A15E800, mostly byte-identical.
+  Bank 13 (`motrtoy`) names all sixteen of its sequences "other01", so
+  those 32 sources carry no slot digits; they are placed by the character
+  run they sit in. Three banks at the end of the run are a prototype Bowser
+  batting set (`Kuppa_B_bant`, `_swing`, `_takeback`, ...) and two are test
+  banks (`test`, `f_h_01`).
 * **Leftovers**: small records next to those blocks.
 
 Entries whose content is identical to a referenced file are shown as "copy

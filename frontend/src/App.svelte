@@ -6,14 +6,17 @@
   import Music from './lib/Music.svelte'
   import Files from './lib/Files.svelte'
   import Characters from './lib/Characters.svelte'
+  import Stadiums from './lib/Stadiums.svelte'
 
   const pages: { id: Page; label: string }[] = [
-    { id: 'browse', label: 'Browse assets' }, { id: 'files', label: 'All files' }, { id: 'characters', label: 'Characters' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
+    { id: 'browse', label: 'Browse assets' }, { id: 'files', label: 'All files' }, { id: 'characters', label: 'Characters' }, { id: 'stadiums', label: 'Stadiums' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
   ]
 
   onMount(() => {
     const h = location.hash.replace('#', '')
     if (h.startsWith('entry/')) { app.selected = +h.slice(6); app.page = 'browse' }
+    else if (h.startsWith('characters/')) app.page = 'characters'
+    else if (h.startsWith('stadiums/')) app.page = 'stadiums'
     else if (pages.some(p => p.id === h)) app.page = h as Page
     app.refresh()
   })
@@ -51,6 +54,8 @@
     <Files />
   {:else if app.page === 'characters'}
     <Characters />
+  {:else if app.page === 'stadiums'}
+    <Stadiums />
   {:else if app.page === 'music'}
     <Music />
   {/if}

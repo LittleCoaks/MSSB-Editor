@@ -16,6 +16,7 @@ cmd = [
     sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
     "--name", "MSSB Editor",
     "--windowed" if "--console" not in sys.argv else "--console",
+    *(["--icon", str(ROOT / "zzzzdat" / "ui" / "icon.ico")] if sys.platform == "win32" else []),  # drawn by tools/make_icon.py
     "--add-data", f"{ROOT / 'zzzzdat' / 'ui'}{sep}zzzzdat/ui",
     "--add-data", f"{ROOT / 'index'}{sep}index",
     *(["--add-binary", f"{ROOT / 'native' / 'bin' / helper}{sep}."] if (ROOT / "native" / "bin" / helper).exists() else []),

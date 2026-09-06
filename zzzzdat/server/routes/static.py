@@ -18,9 +18,15 @@ def index(req: Request):
     req.bytes(page.read_bytes(), "text/html; charset=utf-8")
 
 
+@router.get(r"/(?P<name>favicon\.svg|icons\.svg)")
+def top_level(req: Request, name: str):
+    """Files Vite copies from frontend/public into the bundle root."""
+    asset(req, name, DIST_DIR)
+
+
 @router.get(r"/assets/(?P<name>[A-Za-z0-9_.-]+)")
-def asset(req: Request, name: str):
-    p = DIST_DIR / "assets" / name
+def asset(req: Request, name: str, folder=DIST_DIR / "assets"):
+    p = folder / name
     if not p.is_file():
         raise HttpError(404, "not found")
     req.bytes(p.read_bytes(), MIME.get(p.suffix, "application/octet-stream"), cache="max-age=86400")

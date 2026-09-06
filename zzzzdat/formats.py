@@ -197,6 +197,11 @@ def classify_blob(data: bytes) -> str:
     magic = struct.unpack_from(">I", data, 0)[0] if len(data) >= 4 else 0
     if magic in SECTION_KINDS and magic != 0x007B7960:
         return SECTION_KINDS[magic]
+    if magic == 0 and len(data) >= 0x18:
+        # a GeoPalette whose version word is 0 (the Wario Palace and Toy Field field packs)
+        _u, _p, ndesc, pdesc = struct.unpack_from(">IIII", data, 4)
+        if 0 < ndesc <= 512 and pdesc == 0x14:
+            return "geopalette"
     if data[:4] == b"\x00\x7b\x79\x60":
         return "anim"
     if parse_texture_table(data):

@@ -7,7 +7,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import anim, c3, chars, dsp, formats, musyx, song
+from . import anim, c3, chars, dsp, formats, handpose, musyx, song
 from .paths import EXTRACT_DIR as _EXTRACT_DIR  # noqa: F401
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
@@ -293,18 +293,38 @@ class Store:
                         "textures": sorted({d.texture for mm in m.meshes for d in mm.draws if d.texture is not None})})
         return out
 
-    def model(self, e: Entry, section: int, posed: bool = True) -> c3.Model:
+    def poses(self, e: Entry, section: int | None = None) -> handpose.Poses | None:
+        """The hand-pose vertex sets of a hand container (its 0x40001 section)."""
+        data = self.data(e)
+        secs = self.info(e).sections
+        geo = next((s for s in secs if s.kind == "geopalette" and (section is None or s.index == section)), None)
+        ps = next((s for s in secs if s.magic == handpose.POSE_VERSION), None)
+        if geo is None or ps is None:
+            return None
+        m = c3.parse_geopalette(data, geo.offset)
+        rest = m.meshes[0].positions if m and m.meshes else None
+        return handpose.parse_poses(data, ps.offset, rest)
+
+    def model(self, e: Entry, section: int, posed: bool = True, pose: int | None = None) -> c3.Model:
         data = self.data(e)
         secs = self.info(e).sections
         s = secs[section]
         m = c3.parse_geopalette(data, s.offset)
         if not m:
             raise KeyError(f"section {section} of entry {e.id} is not a GeoPalette")
+        if pose is not None and m.meshes:
+            hp = self.poses(e, section)
+            if hp and 0 <= pose < hp.count and hp.vertices == len(m.meshes[0].positions):
+                m.meshes[0].positions = list(hp.blocks[pose])
         if posed:
-            # the actor (skeleton) is the nearest preceding ACT section
-            for prev in reversed(secs[:section]):
-                if prev.magic == c3.ACT_VERSION:
-                    bones = c3.parse_actor(data, prev.offset)
+            # the actor (skeleton) is normally the nearest preceding ACT section;
+            # the prototype packs put it after the geometry instead, so fall
+            # back to any ACT section in the file (without one the model would
+            # stay in actor space, upside down)
+            order = list(reversed(secs[:section])) + secs[section + 1:]
+            for other in order:
+                if other.magic == c3.ACT_VERSION and c3.is_actor(data, other.offset):
+                    bones = c3.parse_actor(data, other.offset)
                     if bones:
                         c3.apply_actor(m, bones)
                     break
@@ -469,8 +489,9 @@ class Store:
     # modelled from the wrist along +X)
     PART_BONES = {"L_hand": 25, "R_hand": 19, "L_glove": 25, "R_glove": 19,
                   "L_bat": 25, "R_bat": 19, "L_hand_bat": 25, "R_hand_bat": 19}
+    # 'bat' = the hands in their bat pose (handless characters' hand slots hold the bat itself)
     PART_SETS = {"hands": ("L_hand", "R_hand"), "gloves": ("L_glove", "R_glove"),
-                 "bat": ("L_bat", "R_bat", "L_hand_bat", "R_hand_bat")}
+                 "bat": ("L_hand", "R_hand", "L_bat", "R_bat", "L_hand_bat", "R_hand_bat")}
 
     def parts(self, e: Entry) -> list[dict]:
         """Attachable parts for a character model: hand/glove containers in the
@@ -497,7 +518,7 @@ class Store:
                                 out.append({"entry": x.id, "section": None, "name": name})
         return out
 
-    def _part_meshes(self, part: dict) -> tuple[list[c3.Mesh], list, bytes]:
+    def _part_meshes(self, part: dict, bat: bool = False) -> tuple[list[c3.Mesh], list, bytes]:
         x = self.get(part["entry"])
         data = self.data(x)
         fi = self.info(x)
@@ -506,15 +527,20 @@ class Store:
         else:
             sec = next(s for s in fi.sections if s.kind == "geopalette")
         m = c3.parse_geopalette(data, sec.offset)
+        if m and bat:
+            hp = self.poses(x, sec.index)
+            k = hp.bat_pose() if hp else None
+            if k is not None and m.meshes and hp.vertices == len(m.meshes[0].positions):
+                m.meshes[0].positions = list(hp.blocks[k])
         return (m.meshes if m else []), fi.all_textures(), data
 
     def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = (),
-            parts: str = "", variant: int | None = None) -> bytes:
-        key = (e.id, section, rig, bank_keys, parts, variant)
+            parts: str = "", variant: int | None = None, pose: int | None = None) -> bytes:
+        key = (e.id, section, rig, bank_keys, parts, variant, pose)
         if key in self._glb:
             return self._glb[key]
         bones = self.actor(e) if rig else None
-        m = self.model(e, section, posed=not bones)
+        m = self.model(e, section, posed=not bones, pose=pose)
         data = self.data(e)
         texs = self.info(e).all_textures()
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
@@ -536,7 +562,7 @@ class Store:
             for p in self.parts(e):
                 if p["name"] not in want:
                     continue
-                meshes, ptexs, pdata = self._part_meshes(p)
+                meshes, ptexs, pdata = self._part_meshes(p, bat=(parts == "bat"))
                 for mm in meshes:
                     mm = c3.Mesh(mm.name, mm.positions, mm.normals, mm.uvs,
                                  [c3.Draw(None if d.texture is None else d.texture + next_tex, d.tris, d.matrix) for d in mm.draws],
@@ -551,6 +577,41 @@ class Store:
             g = c3.to_glb(m, pngs, bones=bones, skin_weights=sk.weights if sk else None, banks=banks)
         else:
             g = c3.to_glb(m, pngs)
+        self._glb[key] = g
+        while len(self._glb) > 8:
+            self._glb.popitem(last=False)
+        return g
+
+    def scene_glb(self, e: Entry) -> bytes:
+        """Every GeoPalette section of a pack in one glTF, each posed by its own
+        actor: a stadium is its field, sky and extras together."""
+        key = (e.id, "scene")
+        if key in self._glb:
+            return self._glb[key]
+        data = self.data(e)
+        texs = self.info(e).all_textures()
+        meshes: list[c3.Mesh] = []
+        posed = [(md, self.model(e, md["section"], posed=True)) for md in self.models(e)]
+        # the sky dome is the section that spans far more than the park itself; name it so
+        # the viewer can draw it inside-out
+        def extent(m):
+            ps = [p for mm in m.meshes for p in mm.positions]
+            return max(max(p[i] for p in ps) - min(p[i] for p in ps) for i in range(3)) if ps else 0.0
+        main_md, main = max(posed, key=lambda x: x[0]["triangles"]) if posed else (None, None)
+        main_ext = extent(main) if main else 0.0
+        for md, m in posed:
+            # a dome: spans more than the park with a tiny fraction of its triangles
+            sky = m is not main and main_ext and extent(m) > main_ext and md["triangles"] < main_md["triangles"] * 0.1
+            for mm in m.meshes:
+                # Japanese names arrive with replacement characters; the one in the sky
+                # sections is 加算光, "additive light": a sun-glare billboard
+                glare = sky and "�" in mm.name
+                mm.name = f"s{md['section']} {'glare ' if glare else 'sky ' if sky else ''}{mm.name}"
+                meshes.append(mm)
+        m = c3.Model(meshes)
+        used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
+        pngs = {i: t.decode_png(data) for i, (_sec, t) in enumerate(texs) if i in used}
+        g = c3.to_glb(m, pngs)
         self._glb[key] = g
         while len(self._glb) > 8:
             self._glb.popitem(last=False)

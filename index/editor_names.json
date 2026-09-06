@@ -81,8 +81,8 @@
   "0xeae1800": "Debug menu icons 5",
   "0x6c7b000": "Boot screens (health warning, Nintendo logo)",
   "0x0": "Hand and glove textures (vsSituations)",
-  "0x6cf8800": "Game data table (game.rel, 18 KB)",
-  "0x18ac7000": "Game data table (game.rel, 472 KB)",
+  "0x6cf8800": "Preset team rosters (12 x 1440-byte team records, 6 used; copied to inMemRoster by game.rel)",
+  "0x18ac7000": "Camera data sets (18 keyframe records + float tables, loaded into g_Camera by game.rel when its mode flag is set)",
   "0x18e3f000": "Challenge mode map and speech bubbles",
   "0x18e92800": "Challenge mode backgrounds (stadium, Bowser flag)",
   "0x18fe7000": "Captain artwork - Mario",
@@ -91,6 +91,12 @@
   "0x19073000": "Captain artwork - Donkey Kong",
   "0x190bc000": "Captain artwork - Yoshi",
   "0x190e7800": "Captain artwork - Bowser",
-  "0x19135800": "Menu font, Nintendo logo and frames"
+  "0x19135800": "Menu font, Nintendo logo and frames",
+  "0x8f2e808": "Letters (Hikaru Utada) - leftover song, not used by the game",
+  "0x17fc4000": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
+  "0x183a9800": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
+  "0x18682000": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
+  "0x1801e000": "Prototype test animations (test, f_h_01)",
+  "0x180bf800": "Prototype test animations (test, f_h_01)"
  }
 }

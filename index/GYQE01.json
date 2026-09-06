@@ -210,7 +210,7 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "Game data table (game.rel, 18 KB)",
+   "known": "Preset team rosters (12 x 1440-byte team records, 6 used; copied to inMemRoster by game.rel)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
@@ -2645,7 +2645,7 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "",
+   "known": "Letters (Hikaru Utada) - leftover song, not used by the game",
    "naud": 1,
    "thumb": 0,
    "twin": -1,
@@ -3041,7 +3041,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:958"
   },
   {
    "id": 106,
@@ -3503,7 +3503,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:975"
   },
   {
    "id": 125,
@@ -3965,7 +3965,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:991"
   },
   {
    "id": 144,
@@ -4427,7 +4427,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1007"
   },
   {
    "id": 163,
@@ -4889,7 +4889,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1023"
   },
   {
    "id": 182,
@@ -5351,7 +5351,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1039"
   },
   {
    "id": 201,
@@ -5813,7 +5813,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1056"
   },
   {
    "id": 220,
@@ -6276,7 +6276,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1073"
   },
   {
    "id": 239,
@@ -6738,7 +6738,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1089"
   },
   {
    "id": 258,
@@ -7201,7 +7201,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1105"
   },
   {
    "id": 277,
@@ -7663,7 +7663,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1122"
   },
   {
    "id": 296,
@@ -8125,7 +8125,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1139"
   },
   {
    "id": 315,
@@ -8600,7 +8600,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1155"
   },
   {
    "id": 334,
@@ -9118,7 +9118,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1171"
   },
   {
    "id": 353,
@@ -10058,7 +10058,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1203"
   },
   {
    "id": 391,
@@ -10572,7 +10572,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1219"
   },
   {
    "id": 410,
@@ -11050,7 +11050,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1235"
   },
   {
    "id": 429,
@@ -11512,7 +11512,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1252"
   },
   {
    "id": 448,
@@ -11974,7 +11974,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1268"
   },
   {
    "id": 467,
@@ -12449,7 +12449,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1284"
   },
   {
    "id": 486,
@@ -12941,7 +12941,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1301"
   },
   {
    "id": 505,
@@ -13545,7 +13545,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1317"
   },
   {
    "id": 528,
@@ -14149,7 +14149,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1333"
   },
   {
    "id": 551,
@@ -14619,7 +14619,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1349"
   },
   {
    "id": 570,
@@ -15336,7 +15336,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1365"
   },
   {
    "id": 597,
@@ -15972,7 +15972,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1381"
   },
   {
    "id": 622,
@@ -16434,7 +16434,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1397"
   },
   {
    "id": 641,
@@ -16896,7 +16896,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1413"
   },
   {
    "id": 660,
@@ -17358,7 +17358,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1429"
   },
   {
    "id": 679,
@@ -17820,7 +17820,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": ""
+   "tag": "names:1446"
   },
   {
    "id": 698,
@@ -18645,7 +18645,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": "names:958"
+   "tag": "names:1462"
   },
   {
    "id": 729,
@@ -25062,8 +25062,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 105,
+   "tag": "animsrc:0:o"
   },
   {
    "id": 959,
@@ -25470,8 +25470,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 124,
+   "tag": "animsrc:1:o"
   },
   {
    "id": 976,
@@ -25854,8 +25854,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 143,
+   "tag": "animsrc:2:o"
   },
   {
    "id": 992,
@@ -26238,8 +26238,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 162,
+   "tag": "animsrc:3:o"
   },
   {
    "id": 1008,
@@ -26622,8 +26622,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 181,
+   "tag": "animsrc:4:o"
   },
   {
    "id": 1024,
@@ -27006,8 +27006,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 200,
+   "tag": "animsrc:5:o"
   },
   {
    "id": 1040,
@@ -27414,8 +27414,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 219,
+   "tag": "animsrc:6:o"
   },
   {
    "id": 1057,
@@ -27822,8 +27822,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 238,
+   "tag": "animsrc:7:o"
   },
   {
    "id": 1074,
@@ -28206,8 +28206,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 257,
+   "tag": "animsrc:8:o"
   },
   {
    "id": 1090,
@@ -28590,8 +28590,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 276,
+   "tag": "animsrc:9:o"
   },
   {
    "id": 1106,
@@ -28998,8 +28998,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 295,
+   "tag": "animsrc:10:o"
   },
   {
    "id": 1123,
@@ -29406,8 +29406,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 314,
+   "tag": "animsrc:11:o"
   },
   {
    "id": 1140,
@@ -29790,8 +29790,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 333,
+   "tag": "animsrc:12:o"
   },
   {
    "id": 1156,
@@ -30174,8 +30174,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 352,
+   "tag": "animsrc:13:o"
   },
   {
    "id": 1172,
@@ -30558,8 +30558,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 621,
+   "tag": "animsrc:37:o"
   },
   {
    "id": 1188,
@@ -30942,8 +30942,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 390,
+   "tag": "animsrc:15:o"
   },
   {
    "id": 1204,
@@ -31326,8 +31326,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 409,
+   "tag": "animsrc:16:o"
   },
   {
    "id": 1220,
@@ -31710,8 +31710,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 428,
+   "tag": "animsrc:17:o"
   },
   {
    "id": 1236,
@@ -32118,8 +32118,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 447,
+   "tag": "animsrc:18:o"
   },
   {
    "id": 1253,
@@ -32502,8 +32502,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 466,
+   "tag": "animsrc:19:o"
   },
   {
    "id": 1269,
@@ -32886,8 +32886,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 485,
+   "tag": "animsrc:20:o"
   },
   {
    "id": 1285,
@@ -33294,8 +33294,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 504,
+   "tag": "animsrc:21:o"
   },
   {
    "id": 1302,
@@ -33678,8 +33678,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 527,
+   "tag": "animsrc:24:o"
   },
   {
    "id": 1318,
@@ -34062,8 +34062,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 550,
+   "tag": "animsrc:27:o"
   },
   {
    "id": 1334,
@@ -34446,8 +34446,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 569,
+   "tag": "animsrc:28:o"
   },
   {
    "id": 1350,
@@ -34830,8 +34830,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 596,
+   "tag": "animsrc:33:o"
   },
   {
    "id": 1366,
@@ -35214,8 +35214,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 621,
+   "tag": "animsrc:37:o"
   },
   {
    "id": 1382,
@@ -35598,8 +35598,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 640,
+   "tag": "animsrc:38:o"
   },
   {
    "id": 1398,
@@ -35982,8 +35982,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 659,
+   "tag": "animsrc:39:o"
   },
   {
    "id": 1414,
@@ -36366,8 +36366,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 678,
+   "tag": "animsrc:40:o"
   },
   {
    "id": 1430,
@@ -36774,8 +36774,8 @@
    "known": "",
    "naud": 0,
    "thumb": 0,
-   "twin": 728,
-   "tag": "animsrc:-:o"
+   "twin": 697,
+   "tag": "animsrc:41:o"
   },
   {
    "id": 1447,
@@ -37159,7 +37159,7 @@
    "naud": 0,
    "thumb": 0,
    "twin": 728,
-   "tag": "animsrc:-:o"
+   "tag": "animsrc:48:o"
   },
   {
    "id": 1463,
@@ -37454,11 +37454,11 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "",
+   "known": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": "animsrc:-:o"
+   "tag": "proto"
   },
   {
    "id": 1475,
@@ -37580,11 +37580,11 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "",
+   "known": "Prototype test animations (test, f_h_01)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": "animsrc:-:o"
+   "tag": "proto"
   },
   {
    "id": 1480,
@@ -37754,11 +37754,11 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "",
+   "known": "Prototype test animations (test, f_h_01)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": "animsrc:-:o"
+   "tag": "proto"
   },
   {
    "id": 1487,
@@ -38004,11 +38004,11 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "",
+   "known": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": "animsrc:-:o"
+   "tag": "proto"
   },
   {
    "id": 1497,
@@ -38202,11 +38202,11 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "",
+   "known": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
-   "tag": "animsrc:-:o"
+   "tag": "proto"
   },
   {
    "id": 1505,
@@ -44856,7 +44856,7 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "Game data table (game.rel, 472 KB)",
+   "known": "Camera data sets (18 keyframe records + float tables, loaded into g_Camera by game.rel when its mode flag is set)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,

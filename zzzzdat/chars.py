@@ -4,8 +4,8 @@ Two 16-byte descriptor tables describe every playable character:
 
 * **Sub-files table** at 0x800F1D78 (DOL file offset 0xEED78): 54 slots x 19
   tracks, index = slot * 19 + track. Track 0 is the character's model pack
-  (`<name>00.gpc`), track 1 the equipment/knuckles pack, tracks 2..18 the
-  animation banks. Every slot has its own copies. Offsets are absolute in
+  (`<name>00.gpc`), track 1 a low-detail copy of the same model (about half
+  the triangles, for distant cameras), tracks 2..18 the animation banks. Every slot has its own copies. Offsets are absolute in
   ZZZZ.dat.
 * **Master descriptors** at 0x800EFD38 (DOL file offset 0xECD38): 516 entries
   whose offsets are relative to the ARAM chunk at 0x1A15E800:
@@ -19,6 +19,31 @@ Two 16-byte descriptor tables describe every playable character:
   where model indexes the 33 body models (master entries 0..32) and
   textureSet the 21 recolour sets (master entries 33..53, 0xFF = none). This
   is what makes a colour variant: the same model with another texture set.
+* **Hand table** at 0x800F5D98: 320 descriptors, six per slot, indexed
+  through the u16 table at 0x800EEAAC (`GLOVE_VA`, value = slot * 6):
+  left hand, right hand, left glove, right glove, then the same two hands
+  again. The two hand copies differ only in their last section, the
+  hand-pose event track (21 entries = batting for the first pair, 28 =
+  pitching for the second), so `animateModelArmsGlovesBats` picks the pair
+  for the situation. Goomba, Paragoomba and Petey have bat models in the
+  hand slots. The per-slot sub-items 4..6 in the master table are the same
+  event-track sections on their own (batting, pitching, catching).
+* **Event-track sets** at 0x800EEB18: one s16 per slot, an id 0..28 into
+  the 29 shared master items 486+ (also mirrored outside ARAM in the table
+  at 0x800F71D8), colour variants sharing one; -1 for Boo, King Boo, Shy Guy
+  and Petey. `fn_80021ADC` loads the set for a player from either copy, in
+  the model setup path that also calls `animateModelArmsGlovesBats`.
+  Every record (sub-items and shared) has the same layout: u32 count, 0x28,
+  end of the offset table, 6, 30, 16, then `count` u32 offsets to entries
+  of u16 (total frames, key count, flags, then (frame, code) pairs; codes
+  0x64xx select a hand pose, 0x40xx/0x50xx/0x80xx are other cues).
+* **Sub-file names**: debug.rel keeps the development paths: each base
+  character was `char/ninNN/` (NN = base slot) holding `model0.dat`,
+  `model1.dat` and the 17 banks `motb, motr, motf, motp, motc, mote, moto,
+  motbs, motbt, motrt, motrm, motfm, motrtoy, motes, motem, motec, motpm`
+  in track order (the debug menu labels the categories Batter, Runner,
+  Fielder, Pitcher, Catcher, Dir, Other); colour-variant slots only had the
+  two model files.
 * **Character ids**: the game numbers the 32 base characters separately from
   the roster; `findCharacterID` (0x800698F8) maps a slot to its id through
   the table at 0x80108DB8 (id -> base slot) and folds colour variants onto
@@ -103,8 +128,17 @@ def variants_of(slot: int) -> list[int]:
     """Slots that share this slot's body model (itself first)."""
     return [slot] + [s for s in MODEL_SLOTS[SLOT_MODEL[slot]] if s != slot]
 
-TRACK_NAMES = {0: "model", 1: "equipment", **{t: f"animations {t - 1}" for t in range(2, TRACKS)}}
-SUB_ITEM_NAMES = ["left hand", "right hand", "left glove", "right glove", "item data 1", "item data 2", "item data 3"]
+TRACK_NAMES = {0: "model", 1: "low-detail model", **{t: f"animations {t - 1}" for t in range(2, TRACKS)}}
+# the development file name of each sub-file track (from debug.rel's path list, char/ninNN/<name>.dat)
+TRACK_FILES = ["model0", "model1", "motb", "motr", "motf", "motp", "motc", "mote", "moto", "motbs", "motbt", "motrt",
+               "motrm", "motfm", "motrtoy", "motes", "motem", "motec", "motpm"]
+assert len(TRACK_FILES) == TRACKS
+SUB_ITEM_NAMES = ["left hand", "right hand", "left glove", "right glove", "batting hand-pose track",
+                  "pitching hand-pose track", "catching hand-pose track"]
+HAND_TABLE_VA = 0x800F5D98
+HAND_TABLE_ROLES = ["left hand (batting)", "right hand (batting)", "left glove", "right glove",
+                    "left hand (pitching)", "right hand (pitching)"]
+EVENT_SET_VA = 0x800EEB18
 
 
 def base_name(slot_name: str) -> str:
@@ -135,7 +169,12 @@ def classify(va: int) -> dict | None:
         if i < SHARED_BASE:
             slot = i - RIGS_BASE
             return {"table": "master", "slot": slot, "character": SLOT_NAMES[slot], "role": "skeleton rig", "index": i}
-        return {"table": "master", "slot": None, "character": None, "role": f"shared item {i - SHARED_BASE}", "index": i}
+        return {"table": "master", "slot": None, "character": None, "role": f"hand-pose event set {i - SHARED_BASE}", "index": i}
+    if HAND_TABLE_VA <= va < HAND_TABLE_VA + SLOTS * 6 * 16 and (va - HAND_TABLE_VA) % 16 == 0:
+        i = (va - HAND_TABLE_VA) // 16
+        slot, k = divmod(i, 6)
+        if slot < SLOTS:
+            return {"table": "hands", "slot": slot, "character": SLOT_NAMES[slot], "role": HAND_TABLE_ROLES[k], "index": i}
     return None
 
 

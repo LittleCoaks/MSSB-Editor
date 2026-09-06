@@ -1,11 +1,12 @@
 import { api, friendlyName, setCatalogNames, type Catalog, type EntrySummary, type GameInfo } from './api'
 
-export type Page = 'browse' | 'files' | 'characters' | 'music' | 'game'
+export type Page = 'browse' | 'files' | 'characters' | 'stadiums' | 'music' | 'game'
 
 class AppState {
   page = $state<Page>('browse')
   game = $state<GameInfo | null>(null)
   entries = $state<Map<number, EntrySummary>>(new Map())
+  archiveSize = $state(0)   // bytes in ZZZZ.dat, for the archive map
   catalog = $state<Catalog | null>(null)
   loading = $state(false)
   error = $state('')
@@ -34,6 +35,7 @@ class AppState {
       if (this.game.ok) {
         const [idx, cat] = await Promise.all([api.index(), api.catalog()])
         this.entries = new Map(idx.entries.map(e => [e.id, e]))
+        this.archiveSize = idx.archive_size
         this.catalog = cat
         setCatalogNames(cat.names ?? {})
         this.modified = (await api.modified()).ids
