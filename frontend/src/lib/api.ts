@@ -34,6 +34,8 @@ export interface MusicInfo { root: string | null; tracks: Track[]; numpy: boolea
 export interface Job { id: string; state: 'running' | 'done' | 'error'; progress: number; error?: string; result?: any; dest?: string; track?: string }
 export interface ReplaceResult { offset: number; disc_size: number; size: number; in_place: boolean; descriptors: number }
 export interface ReplacedTexture { n: number; width: number; height: number; fmt: string; levels: number; source_width: number; source_height: number; resized: boolean; palette: number; truncated: number }
+export interface SlotInfo { slot: number; name: string; clone_of: number | null; clone_of_name: string | null; copy: boolean | null; inplace: number }
+export interface CloneResult { source: number; target: number; copy: boolean; copied: number; inplace: string[]; shared: number; appended_bytes: number; source_name: string; target_name: string }
 export interface FsListing { path: string; parent: string | null; dirs: string[]; files: { name: string; size: number }[]; layout: string }
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
@@ -65,6 +67,9 @@ export const api = {
   replace: (id: number, fd: FormData) => j<ReplaceResult>(`/api/entry/${id}/replace`, { method: 'POST', body: fd }),
   replaceTexture: (id: number, n: number, fd: FormData) =>
     j<ReplaceResult & { texture: ReplacedTexture }>(`/api/entry/${id}/tex/${n}/replace`, { method: 'POST', body: fd }),
+  characters: () => j<{ slots: SlotInfo[]; editable: boolean }>('/api/characters'),
+  cloneCharacter: (source: number, target: number, copy: boolean) => j<CloneResult>(`/api/characters/clone?source=${source}&target=${target}&copy=${copy ? 1 : 0}`, { method: 'POST' }),
+  restoreCharacter: (target: number) => j<{ ok: boolean }>(`/api/characters/restore?target=${target}`, { method: 'POST' }),
   restoreEntry: (id: number) => j<{ ok: boolean }>(`/api/entry/${id}/restore`, { method: 'POST' }),
 }
 

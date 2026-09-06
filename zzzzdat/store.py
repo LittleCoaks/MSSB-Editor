@@ -19,6 +19,7 @@ KNOWN_NAMES_PATH = INDEX_DIR / "known_names.json"
 EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin",
                "anim": "anm", "adgc": "adgc", "geopalette": "geo", "dtk-adpcm": "adp", "unknown": "bin", "": "bin"}
 DISC_ID_BASE = 10000
+CLONE_ID_BASE = 20000
 
 
 def safe_name(s: str) -> str:
@@ -64,19 +65,67 @@ class Store:
 
     def apply_overrides(self) -> None:
         """Entries replaced by the editor live somewhere else in this game's
-        ZZZZ.dat than the shipped index says."""
+        ZZZZ.dat than the shipped index says; cloned character slots have
+        descriptors pointing at other characters' files (see clone.py)."""
         from .edit import load_overrides
         ov = load_overrides(self.game)
-        if not ov:
-            return
         for e in self.entries:
             cur = ov.get(str(e.id))
             if cur:
                 e.offset, e.disc_size, e.size = cur["offset"], cur["disc_size"], cur["size"]
+        self._clone_ids: set[int] = set()
+        self.apply_clones()
+
+    def apply_clones(self) -> None:
+        """Reflect cloned slots in the index: the slot's own files lose their
+        references, shared files gain the slot's references, copied files
+        become new entries (ids from CLONE_ID_BASE) and in-place copies take
+        the source's description."""
+        import copy as _copy
+        from .clone import _ref
+        from .edit import load_journal
+        clones = load_journal(self.game).get("_clones", {})
+        if not clones:
+            return
+        by_off = {e.offset: e for e in self.entries if e.archive == "ZZZZ.dat"}
+        by_ref = {}
+        for e in self.entries:
+            for r in e.refs:
+                by_ref[r.split(" ")[0]] = e
+        new_entries = []
+        for tgt, rec in clones.items():
+            tgt = int(tgt)
+            for x in rec["copied"] + rec["shared"]:
+                key = f"dol:.data:{int(x['va'], 16):#x}"
+                e = by_ref.get(key)
+                if e:
+                    e.refs = [r for r in e.refs if not r.startswith(key)]
+            for x in rec["shared"]:
+                src = by_off.get(x["src"])
+                if src:
+                    src.refs.append(_ref(int(x["va"], 16)))
+            for n, x in enumerate(rec["copied"]):
+                src = by_off.get(x["src"])
+                e = _copy.copy(src) if src else Entry(0, x["offset"], x["disc_size"], x["size"], 4, 11, 4)
+                e.id = CLONE_ID_BASE + tgt * 64 + n
+                e.offset, e.disc_size, e.size = x["offset"], x["disc_size"], x["size"]
+                e.refs = [_ref(int(x["va"], 16))]
+                e.name = f"{e.offset:08x}"
+                new_entries.append(e)
+                self._clone_ids.add(e.id)
+            for x in rec["inplace"]:
+                e = by_ref.get(f"dol:.data:{int(x['va'], 16):#x}")
+                src = by_off.get(x["src"])
+                if e:
+                    if src:
+                        e.kind, e.ntex, e.nsec, e.naud, e.label, e.names, e.thumb = src.kind, src.ntex, src.nsec, src.naud, src.label, src.names, src.thumb
+                    e.disc_size, e.size = x["disc_size"], x["size"]
+                    self._clone_ids.add(e.id)
+        self.entries += new_entries
 
     def modified_ids(self) -> list[int]:
         from .edit import load_overrides
-        return [int(k) for k in load_overrides(self.game)]
+        return [int(k) for k in load_overrides(self.game)] + sorted(getattr(self, "_clone_ids", ()))
 
     def forget(self, e: Entry) -> None:
         """Drop cached data/info for an entry after it changed on disk."""

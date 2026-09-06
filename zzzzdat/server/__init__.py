@@ -181,13 +181,26 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.flush()
 
 
+class Server(ThreadingHTTPServer):
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        """Browsers (WebView2 especially) drop idle keep-alive connections; that
+        is not worth a traceback on the console."""
+        import sys
+        ex = sys.exc_info()[1]
+        if isinstance(ex, (ConnectionAbortedError, ConnectionResetError, BrokenPipeError, TimeoutError)):
+            return
+        super().handle_error(request, client_address)
+
+
 def start_server(port: int | None = None) -> tuple[ThreadingHTTPServer, str, AppContext]:
     """Start serving on a background thread. Returns (server, url, context)."""
     from . import routes  # noqa: F401  (registers the routes)
     ctx = AppContext()
     ctx.load_store()
     Handler.ctx = ctx
-    httpd = ThreadingHTTPServer(("127.0.0.1", port or 0), Handler)
+    httpd = Server(("127.0.0.1", port or 0), Handler)
     threading.Thread(target=httpd.serve_forever, daemon=True, name="http").start()
     return httpd, f"http://127.0.0.1:{httpd.server_address[1]}/", ctx
 

@@ -5,9 +5,10 @@
   import Browse from './lib/Browse.svelte'
   import Music from './lib/Music.svelte'
   import Files from './lib/Files.svelte'
+  import Characters from './lib/Characters.svelte'
 
   const pages: { id: Page; label: string }[] = [
-    { id: 'browse', label: 'Browse assets' }, { id: 'files', label: 'All files' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
+    { id: 'browse', label: 'Browse assets' }, { id: 'files', label: 'All files' }, { id: 'characters', label: 'Characters' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
   ]
 
   onMount(() => {
@@ -48,6 +49,8 @@
     <Browse />
   {:else if app.page === 'files'}
     <Files />
+  {:else if app.page === 'characters'}
+    <Characters />
   {:else if app.page === 'music'}
     <Music />
   {/if}

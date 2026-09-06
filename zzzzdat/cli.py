@@ -239,6 +239,38 @@ def cmd_replace_texture(a):
           + f"; entry written {'in place' if r['in_place'] else 'appended to ZZZZ.dat'}, {r['descriptors']} descriptor(s) updated")
 
 
+def cmd_characters(a):
+    from .clone import slot_table
+    from .edit import Editor, EditError
+    store = Store()
+    try:
+        ed = Editor(store.game)
+    except EditError:
+        ed = None
+    for row in slot_table(ed):
+        note = ""
+        if row["clone_of"] is not None:
+            note = f"  <- clone of {row['clone_of']} {row['clone_of_name']} ({'copied' if row['copy'] else 'shared'})"
+        print(f"{row['slot']:2d} {row['name']}{note}")
+
+
+def cmd_clone_character(a):
+    from .clone import Cloner
+    from .edit import Editor
+    store = Store()
+    r = Cloner(Editor(store.game)).clone(a.source, a.target, copy=not a.share)
+    print(f"slot {a.target} now plays as slot {a.source}: {r['copied']} files copied ({r['appended_bytes']:,} bytes appended), "
+          f"{len(r['inplace'])} ARAM entries copied in place, {r['shared']} descriptors shared")
+
+
+def cmd_restore_character(a):
+    from .clone import Cloner
+    from .edit import Editor
+    store = Store()
+    Cloner(Editor(store.game)).restore(a.target)
+    print(f"slot {a.target} restored")
+
+
 def cmd_restore_entry(a):
     from .edit import Editor
     store = Store()
@@ -388,6 +420,19 @@ def main(argv=None):
     s.add_argument("texture", type=int, help="texture number as shown by `info`")
     s.add_argument("png")
     s.set_defaults(fn=cmd_replace_texture)
+
+    s = sub.add_parser("characters", help="list the 54 character slots and their clone state")
+    s.set_defaults(fn=cmd_characters)
+
+    s = sub.add_parser("clone-character", help="make a slot play as another character (DOL tables; files copied unless --share)")
+    s.add_argument("source", type=int, help="source slot 0..53")
+    s.add_argument("target", type=int, help="target slot 0..53")
+    s.add_argument("--share", action="store_true", help="point at the source files instead of copying them")
+    s.set_defaults(fn=cmd_clone_character)
+
+    s = sub.add_parser("restore-character", help="undo a character clone")
+    s.add_argument("target", type=int)
+    s.set_defaults(fn=cmd_restore_character)
 
     s = sub.add_parser("restore-entry", help="undo a replacement")
     s.add_argument("entry")

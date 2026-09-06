@@ -165,6 +165,20 @@ master table's entries, and the catalog uses both tables to name assets
 ("Toad (red) - model", "Bowser - pitching grip") and to group them by
 character.
 
+### Character cloning
+
+The **Characters** page (and `clone-character SOURCE TARGET`) makes one
+roster slot play as another character, following DrSeil's verified recipe:
+the slot's 19 sub-file descriptors, its body model, seven sub-items and rig
+in the master table, and its glove index are rewritten to describe the
+source. By default the 19 sub-files are copied to the end of ZZZZ.dat so
+the clone can be retextured on its own, and the body model and rig are
+copied in place inside the ARAM chunk when the source fits the target's
+span (the chunk is packed tightly and loaded whole, so it cannot grow);
+sub-items are shared. `--share` writes no data at all. The index shows the
+copies under the target character; `restore-character` puts every table and
+in-place byte back exactly. See `zzzzdat/clone.py`.
+
 ## Custom music
 
 The [MSSB-Custom-Music](https://github.com/LittleCoaks/MSSB-Custom-Music)
@@ -406,6 +420,7 @@ pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
   catalog.py      groups entries into characters / stadiums / menus / ... for the UI
   chars.py        the DOL character tables (54 slots x 19 sub-files, master descriptors)
   edit.py         replace / restore entries: LZSS encode, write, repoint descriptors, backups
+  clone.py        character cloning on top of edit.py
 index/GYQE01.json the generated index (checked in; rebuild with `index`)
 extracted/        output folder (ignored)
 ```

@@ -56,6 +56,13 @@ def overrides_path(game: Game) -> Path:
     return game.files_dir / BACKUP_DIRNAME / "overrides.json"
 
 
+def load_journal(game: Game) -> dict:
+    p = (game.files_dir / BACKUP_DIRNAME / "journal.json") if game.files_dir else None
+    if p and p.exists():
+        return json.loads(p.read_text(encoding="utf-8"))
+    return {}
+
+
 def load_overrides(game: Game) -> dict:
     p = overrides_path(game) if game.files_dir else None
     if p and p.exists():

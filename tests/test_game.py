@@ -109,3 +109,26 @@ def test_rigged_glb_with_animations(store):
     assert len(doc["skins"]) == 1 and len(doc["skins"][0]["joints"]) == 37
     assert [a["name"] for a in doc["animations"]] == ["section 4 / sequence 1", "section 4 / sequence 2", "section 4 / sequence 3"]
     assert sum(len(a["channels"]) for a in doc["animations"]) == 75
+
+
+def test_clone_character_and_restore(store):
+    import hashlib
+    from zzzzdat.clone import Cloner
+    from zzzzdat.edit import Editor, EditError
+    from zzzzdat.store import CLONE_ID_BASE, Store
+    try:
+        ed = Editor(store.game)
+    except EditError:
+        pytest.skip("game folder not prepared for editing")
+    sha = hashlib.sha1(ed.dol.read_bytes()).hexdigest()
+    r = Cloner(ed).clone(2, 1, copy=True)  # Donkey Kong onto Luigi
+    assert r["copied"] == 19 and r["shared"] == 7 and len(r["inplace"]) == 2
+    st2 = Store()
+    e = st2.get(CLONE_ID_BASE + 64)  # Luigi track 0 now holds a copy of donkey00.gpc
+    assert e.label == "donkey00.gpc" and len(st2.data(e)) == 119736
+    with pytest.raises(EditError):
+        Cloner(Editor(st2.game)).clone(0, 1)
+    Cloner(Editor(st2.game)).restore(1)
+    assert hashlib.sha1(ed.dol.read_bytes()).hexdigest() == sha
+    assert not Editor(store.game).journal.get("_clones")
+    assert len(Store().entries) == len(store.entries)
