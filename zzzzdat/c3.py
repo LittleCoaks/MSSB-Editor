@@ -50,6 +50,7 @@ class Mesh:
     draws: list[Draw]
     tpl_names: list[str] = field(default_factory=list)
     attach: int | None = None   # bone id this mesh hangs from (attached parts such as hands)
+    colors: list[tuple] = field(default_factory=list)   # per-vertex RGBA 0..1 (baked lighting, shadows)
 
     @property
     def triangle_count(self) -> int:
@@ -99,7 +100,37 @@ def _vertex_layout(setting: int) -> dict:
         v = (setting >> (j * 2)) & 3
         sizes.append({0: 0, 1: 0, 2: 1, 3: 2}[v])
     offs = [sum(sizes[:k]) for k in range(13)]
-    return {"stride": sum(sizes), "pos": (offs[1], sizes[1]), "norm": (offs[2], sizes[2]), "uv": (offs[5], sizes[5])}
+    return {"stride": sum(sizes), "pos": (offs[1], sizes[1]), "norm": (offs[2], sizes[2]), "uv": (offs[5], sizes[5]),
+            "col": (offs[3], sizes[3])}
+
+
+# GX colour formats, in the order of GXCompType for colours
+_COLOR_FMT = {0: ("565", 2), 1: ("rgb8", 3), 2: ("rgbx8", 4), 3: ("rgba4", 2), 4: ("rgba6", 3), 5: ("rgba8", 4)}
+
+
+def _colors(data: bytes, off: int, count: int, quant: int) -> list[tuple]:
+    fmt, size = _COLOR_FMT.get(quant >> 4, ("rgba8", 4))
+    out = []
+    for i in range(count):
+        b = data[off + i * size:off + i * size + size]
+        if len(b) < size:
+            break
+        if fmt == "565":
+            v = int.from_bytes(b, "big")
+            out.append(((v >> 11) / 31, ((v >> 5) & 63) / 63, (v & 31) / 31, 1.0))
+        elif fmt == "rgb8":
+            out.append((b[0] / 255, b[1] / 255, b[2] / 255, 1.0))
+        elif fmt == "rgbx8":
+            out.append((b[0] / 255, b[1] / 255, b[2] / 255, 1.0))
+        elif fmt == "rgba4":
+            v = int.from_bytes(b, "big")
+            out.append(((v >> 12) / 15, ((v >> 8) & 15) / 15, ((v >> 4) & 15) / 15, (v & 15) / 15))
+        elif fmt == "rgba6":
+            v = int.from_bytes(b, "big")
+            out.append(((v >> 18) / 63, ((v >> 12) & 63) / 63, ((v >> 6) & 63) / 63, (v & 63) / 63))
+        else:
+            out.append((b[0] / 255, b[1] / 255, b[2] / 255, b[3] / 255))
+    return out
 
 
 def _read_idx(v: bytes, spec: tuple) -> int | None:
@@ -129,7 +160,8 @@ def _primitives(data: bytes, off: int, length: int, layout: dict) -> list[tuple]
         for _ in range(n):
             v = data[p:p + stride]
             p += stride
-            verts.append((_read_idx(v, layout["pos"]), _read_idx(v, layout["norm"]), _read_idx(v, layout["uv"])))
+            verts.append((_read_idx(v, layout["pos"]), _read_idx(v, layout["norm"]), _read_idx(v, layout["uv"]),
+                          _read_idx(v, layout.get("col", (0, 0)))))
         if kind == 0x10:
             for i in range(0, len(verts) - 3, 4):
                 a, b, c, d = verts[i:i + 4]
@@ -161,8 +193,11 @@ def parse_geopalette(data: bytes, base: int) -> Model | None:
         name = _cstr(data, base + pname) if pname else f"mesh{i}"
         dol = base + pobj
         ppos, pcol, ptex, plight, pdisp, ntex = struct.unpack_from(">IIIIIB", data, dol)
-        positions = normals = uvs = []
+        positions = normals = uvs = colors = []
         tpl_names = []
+        if pcol:
+            a, cnt, q, nc = struct.unpack_from(">IHBB", data, dol + pcol)
+            colors = _colors(data, dol + a, cnt, q)
         if ppos:
             a, cnt, q, nc = struct.unpack_from(">IHBB", data, dol + ppos)
             positions = _array(data, dol + a, cnt, q, nc, 3)
@@ -197,7 +232,7 @@ def parse_geopalette(data: bytes, base: int) -> Model | None:
                     tris = _primitives(data, dol + plist, blen, layout)
                     if tris:
                         draws.append(Draw(tex, tris, mtx))
-        meshes.append(Mesh(name, positions, normals, uvs, draws, tpl_names))
+        meshes.append(Mesh(name, positions, normals, uvs, draws, tpl_names, colors=colors))
     return Model(meshes)
 
 
@@ -301,10 +336,12 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
         prims = []
         for d in m.draws:
             vmap: dict[tuple, int] = {}
-            pos, nrm, uv, idx = [], [], [], []
+            pos, nrm, uv, col, idx = [], [], [], [], []
             joints, weights = [], []
             has_n = any(v[1] is not None for tri in d.tris for v in tri) and m.normals
             has_t = any(v[2] is not None for tri in d.tris for v in tri) and m.uvs
+            # vertex colours carry the baked lighting; a single colour for the whole mesh is left out
+            has_c = any(len(v) > 3 and v[3] is not None for tri in d.tris for v in tri) and len(m.colors) > 1
             for tri in d.tris:
                 for key in tri:
                     if key[0] is None or key[0] >= len(m.positions):
@@ -324,6 +361,9 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
                         if has_t:
                             t = m.uvs[key[2]] if key[2] is not None and key[2] < len(m.uvs) else (0.0, 0.0)
                             uv.append(t)
+                        if has_c:
+                            c = m.colors[key[3]] if key[3] is not None and key[3] < len(m.colors) else (1.0, 1.0, 1.0, 1.0)
+                            col.append(c)
                     idx.append(vmap[key])
             if not pos:
                 continue
@@ -335,6 +375,8 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
                 attrs["NORMAL"] = add_accessor(add_view(b"".join(struct.pack("<fff", *_unit(n)) for n in nrm), 34962), len(nrm), 5126, "VEC3")
             if has_t:
                 attrs["TEXCOORD_0"] = add_accessor(add_view(b"".join(struct.pack("<ff", *t) for t in uv), 34962), len(uv), 5126, "VEC2")
+            if has_c:
+                attrs["COLOR_0"] = add_accessor(add_view(b"".join(struct.pack("<4f", *c) for c in col), 34962), len(col), 5126, "VEC4")
             if mi == skinned_mesh:
                 attrs["JOINTS_0"] = add_accessor(add_view(b"".join(struct.pack("<4H", *j) for j in joints), 34962), len(joints), 5123, "VEC4")
                 attrs["WEIGHTS_0"] = add_accessor(add_view(b"".join(struct.pack("<4f", *w) for w in weights), 34962), len(weights), 5126, "VEC4")

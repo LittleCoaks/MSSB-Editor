@@ -28,7 +28,13 @@
   const shownFile = $derived(d ? d.files.find(f => f.entry === entry) ?? null : null)
   const shownProp = $derived(d ? d.props.find(p => p.entry === entry) ?? null : null)
   const shown = $derived(shownFile ?? shownProp)
-  const variantLabel = (f: { slots?: number[] }, i: number) => d && d.files.length === 1 ? 'stadium' : `variant ${String.fromCharCode(65 + i)}`
+  // day/night from the sky dome's texture; the same letter keeps files apart when two are alike
+  const variantLabel = (f: { slots?: number[]; sky?: { night: boolean } | null }, i: number) => {
+    if (!d) return ''
+    const kind = f.sky ? (f.sky.night ? 'night' : 'day') : 'stadium'
+    const twins = d.files.filter(x => (x.sky ? (x.sky.night ? 'night' : 'day') : 'stadium') === kind)
+    return twins.length > 1 ? `${kind} ${String.fromCharCode(65 + twins.indexOf(f as any))}` : kind
+  }
   async function exportAll() {
     if (!entry) return
     msg = 'exporting…'
@@ -77,7 +83,7 @@
         <div class="pick">
           <div class="group">
             <span class="lbl">File</span>
-            {#each d.files as f, i}<button class="chip" class:on={entry === f.entry} onclick={() => (entry = f.entry)} title={`${(f.triangles ?? 0).toLocaleString()} triangles · ${f.textures} textures · ${kb(f.size)} · table slots ${(f.slots ?? []).join(', ')}`}>{variantLabel(f, i)}</button>{/each}
+            {#each d.files as f, i}<button class="chip" class:on={entry === f.entry} onclick={() => (entry = f.entry)} title={`${(f.triangles ?? 0).toLocaleString()} triangles · ${f.textures} textures · ${kb(f.size)} · table slots ${(f.slots ?? []).join(', ')}`}>{#if f.sky}<i class="sky" style="background:rgb({f.sky.rgb.join(',')})"></i>{/if}{variantLabel(f, i)}</button>{/each}
           </div>
           {#if d.props.length}
             <div class="group">
@@ -151,6 +157,7 @@
   .lbl { color: var(--dim); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; margin-right: 4px; }
   .chip { padding: 4px 10px; border-radius: 14px; font-size: 13px; }
   .chip.on { border-color: var(--acc); background: var(--sel); }
+  .sky { display: inline-block; width: 10px; height: 10px; border-radius: 5px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(255,255,255,.25); }
   .small { font-size: 12px; }
   .texgrid { display: flex; flex-wrap: wrap; gap: 8px; }
   .tex { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }

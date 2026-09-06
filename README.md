@@ -229,7 +229,16 @@ together (`/api/entry/<id>/model/all.glb`): the park, its sky dome drawn
 inside-out so the camera can look through it, and the sun-glare billboard
 (a mesh named 加算光, "additive light") blended additively. Mario Stadium's
 props from game.rel's `marioStadiumCDR` table are listed beside the file
-variants. Two field packs (Wario Palace, Toy Field) are GeoPalettes with a
+variants. The variants are labelled day or night from the sky dome's
+texture (Mario Stadium: two day files and a night one; Bowser Castle: two
+dark files and a daylight practice field); what separates two day files is
+still unknown. The night look is baked into the geometry: every stadium mesh
+carries per-vertex colours (GX RGB565/RGB8/RGBA4 arrays, now exported as
+glTF COLOR_0), and the night file's average about half the day file's, which
+is where the shadows and lighting live; the skeleton sections only differ in
+object positions. Each pack also has 0x..4300 tables of records of
+(x, y, z, flags) points at field height (fence and wall lines, bases), read
+far enough to say what they are but not yet drawn. Two field packs (Wario Palace, Toy Field) are GeoPalettes with a
 version word of 0, which the parser now accepts; before that they rendered
 as an empty sky.
 

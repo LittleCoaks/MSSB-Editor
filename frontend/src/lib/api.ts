@@ -48,7 +48,7 @@ export interface RosterVariant { slot: number; name: string; texture_entry: numb
 export interface RosterBank { key: string; entry: number; track: number; category: string; label: string; sequences: string[]; named: boolean }
 export interface RosterSounds { entry: number; group: number | null; samples: { n: number; seconds: number; rate: number; label: string }[]; sfx: SfxInfo[] }
 export interface RosterFile { entry: number; role: string; kind: string; size: number; slot: number | null; textures: number; audio: number }
-export interface StadiumFile { entry: number; textures: number; size: number; slots?: number[]; models?: { section: number; meshes: string[]; triangles: number; textures: number }[]; triangles?: number; sections?: number }
+export interface StadiumFile { entry: number; textures: number; size: number; slots?: number[]; sky?: { rgb: number[]; night: boolean } | null; models?: { section: number; meshes: string[]; triangles: number; textures: number }[]; triangles?: number; sections?: number }
 export interface StadiumProp { entry: number; name: string; triangles: number; textures: number; models: { section: number; meshes: string[]; triangles: number; textures: number }[] }
 export interface StadiumEntry { id: number; name: string; files: StadiumFile[]; thumb: number | null }
 export interface StadiumDetail extends StadiumEntry { props: StadiumProp[] }

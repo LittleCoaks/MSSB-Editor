@@ -249,3 +249,19 @@ def test_stadiums(store):
     assert wario["files"][0]["triangles"] > 12000   # the version-0 GeoPalette field pack parses
     glb = store.scene_glb(store.get(wario["files"][0]["entry"]))
     assert len(glb) > 1000000
+
+
+def test_stadium_vertex_colours(store):
+    import json
+    import struct
+    day = store.model(store.get(8), 3)
+    night = store.model(store.get(9), 3)
+    d = day.meshes[1].colors
+    n = night.meshes[1].colors
+    assert len(d) > 100 and len(n) > 100
+    assert sum(c[0] for c in n) / len(n) < 0.6 * sum(c[0] for c in d) / len(d)  # night is baked darker
+    glb = store.scene_glb(store.get(9))
+    doc = json.loads(glb[20:20 + struct.unpack_from("<I", glb, 12)[0]])
+    assert any("COLOR_0" in p["attributes"] for m in doc["meshes"] for p in m["primitives"])
+    body = store.model(store.get(91), 2)
+    assert len(body.meshes[0].colors) == 1  # characters: one white colour, not exported

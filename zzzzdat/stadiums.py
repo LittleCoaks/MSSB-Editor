@@ -46,6 +46,32 @@ def summary(store) -> list[dict]:
     return out
 
 
+def _sky(store, e: Entry) -> dict | None:
+    """Mean colour of the sky dome's textures and whether it reads as night."""
+    import io
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    data = store.data(e)
+    sky = next((s for s in store.info(e).sections if s.kind == "geopalette" and s.index == 4), None)
+    if sky is None:
+        return None
+    from . import c3
+    m = c3.parse_geopalette(data, sky.offset)
+    used = sorted({d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}) if m else []
+    if not used:
+        return None
+    rgb = [0, 0, 0]
+    for n in used:
+        im = Image.open(io.BytesIO(store.texture_png(e, n))).convert("RGB").resize((4, 4))
+        px = list(im.getdata())
+        for i in range(3):
+            rgb[i] += sum(p[i] for p in px) / 16 / len(used)
+    lum = 0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]
+    return {"rgb": [int(x) for x in rgb], "night": lum < 60}
+
+
 def _model_rows(store, e: Entry) -> list[dict]:
     rows = []
     for m in store.models(e):
@@ -69,7 +95,7 @@ def detail(store, sid: int) -> dict:
         if f:
             f["slots"].append(k)
             continue
-        files.append({"entry": e.id, "slots": [k], "textures": e.ntex, "size": e.size,
+        files.append({"entry": e.id, "slots": [k], "textures": e.ntex, "size": e.size, "sky": _sky(store, e),
                       "models": _model_rows(store, e), "triangles": sum(m["triangles"] for m in store.models(e)),
                       "sections": len(store.info(e).sections)})
     props = []
