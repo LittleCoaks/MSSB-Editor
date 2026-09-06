@@ -30,6 +30,7 @@ from .paths import CONFIG_PATH, DATA_DIR, EXE_DIR, PACKAGE_DATA
 VIEWER_ROOT = DATA_DIR  # kept for older imports: the per-user data folder
 ARCHIVE_NAME = "ZZZZ.dat"
 ISO_SUFFIXES = (".iso", ".gcm")
+GAME_ID = "GYQE01"
 
 
 # ------------------------------------------------------------------ config --
@@ -106,9 +107,15 @@ class Game:
             g.layout, g.files_dir, g.sys_dir = "gcr", p, p
         else:
             return Game(p, problem="folder has neither files/+sys/ nor the game's files")
-        isos = sorted(p.glob("*.iso")) + sorted(p.glob("*.gcm"))
-        if isos:
-            g.iso = isos[0]
+        # an image beside the folder is only used if it is this game
+        for cand in sorted(p.glob("*.iso")) + sorted(p.glob("*.gcm")):
+            try:
+                with open(cand, "rb") as f:
+                    if f.read(6) == GAME_ID.encode():
+                        g.iso = cand
+                        break
+            except OSError:
+                pass
         if not g.archive_path():
             g.problem = f"no {ARCHIVE_NAME} in the folder and no ISO beside it"
         return g
@@ -216,6 +223,8 @@ def read_fst(iso) -> dict[str, tuple[int, int]]:
     fst_off, fst_size = struct.unpack(">II", iso.read(8))
     iso.seek(fst_off)
     fst = iso.read(fst_size)
+    if len(fst) < 12 or fst_size > 64 << 20:
+        return {}  # not a plain GameCube image (e.g. an NKit-compressed one)
     count = struct.unpack(">I", fst[8:12])[0]
     strings = count * 12
 
