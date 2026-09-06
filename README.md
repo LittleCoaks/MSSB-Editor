@@ -53,6 +53,8 @@ they sit in the archive with the unindexed gaps as rows, which is how a
 leftover such as the Utada song shows up next to the files it was packed
 with. A file's Details tab links to its neighbours in the archive.
 
+What is still to do is kept in [TODO.md](TODO.md).
+
 ## Setup: choosing the game
 
 The editor needs your copy of the game, chosen once on the **Game** page (or
