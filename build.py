@@ -11,12 +11,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 sep = ";" if sys.platform == "win32" else ":"
+helper = "hvqm4dec.exe" if sys.platform == "win32" else "hvqm4dec"  # built by native/build_hvqm4.py, shipped next to the exe
 cmd = [
     sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
     "--name", "MSSB Editor",
     "--windowed" if "--console" not in sys.argv else "--console",
     "--add-data", f"{ROOT / 'zzzzdat' / 'ui'}{sep}zzzzdat/ui",
     "--add-data", f"{ROOT / 'index'}{sep}index",
+    *(["--add-binary", f"{ROOT / 'native' / 'bin' / helper}{sep}."] if (ROOT / "native" / "bin" / helper).exists() else []),
     "--collect-all", "webview",
     "--collect-submodules", "zzzzdat",
     "--collect-all", "miniaudio",

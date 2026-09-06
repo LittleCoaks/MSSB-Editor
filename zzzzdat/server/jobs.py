@@ -53,3 +53,10 @@ class Jobs:
 
     def get(self, job_id: str) -> Job | None:
         return self._jobs.get(job_id)
+
+    def find(self, kind: str) -> Job | None:
+        """The most recent job of a kind, if any."""
+        for job in reversed(list(self._jobs.values())):
+            if job.kind == kind:
+                return job
+        return None

@@ -2,6 +2,7 @@
   import { api, urls, kb, hex, friendlyName, KIND_LABEL, type EntryDetail } from './api'
   import { app } from './state.svelte'
   import ModelViewer from './ModelViewer.svelte'
+  import MoviePlayer from './MoviePlayer.svelte'
 
   let { id, onclose }: { id: number; onclose: () => void } = $props()
   let d = $state<EntryDetail | null>(null)
@@ -28,7 +29,7 @@
   $effect(() => {
     const cur = id
     d = null; msg = ''; bigTex = null; playing = null; songPlaying = null
-    api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : x.songs.length ? 'songs' : 'details' } })
+    api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : x.songs.length ? 'songs' : x.hvqm4 ? 'movie' : 'details' } })
   })
   $effect(() => { if (tab === 'hex' && d) loadHex() })
 
@@ -101,6 +102,7 @@
       {#if d.textures.length}<button class:on={tab === 'textures'} onclick={() => (tab = 'textures')}>Textures</button>{/if}
       {#if d.audio.length}<button class:on={tab === 'audio'} onclick={() => (tab = 'audio')}>Audio</button>{/if}
       {#if d.songs.length}<button class:on={tab === 'songs'} onclick={() => (tab = 'songs')}>Songs</button>{/if}
+      {#if d.hvqm4}<button class:on={tab === 'movie'} onclick={() => (tab = 'movie')}>Movie</button>{/if}
       <button class:on={tab === 'details'} onclick={() => (tab = 'details')}>Details</button>
       <button class:on={tab === 'hex'} onclick={() => (tab = 'hex')}>Hex</button>
       <span style="flex:1"></span>
@@ -164,6 +166,8 @@
             <audio controls preload={s.kind === 'musyx' ? 'none' : 'metadata'} src={urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
           </div>
         {/each}
+      {:else if tab === 'movie'}
+        <MoviePlayer entry={d.id} />
       {:else if tab === 'songs'}
         <p class="dim" style="margin-top:0">Sequenced music played by the game's synthesizer on the instrument bank (sound group 31): jingles, results and menu themes. Play renders the song with the bank's own samples (a preview without the game's envelopes and effects); the MIDI download keeps the notes, with instrument numbers as the bank's program slots.</p>
         <table>

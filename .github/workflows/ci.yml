@@ -19,6 +19,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: pip install pytest
+      - name: Build the HVQM4 movie helper
+        run: python native/build_hvqm4.py
       - name: Unit tests (game-backed tests skip without a game)
         run: pytest -q
         env:
@@ -55,6 +57,8 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install ".[build]"
+      - name: Build the HVQM4 movie helper
+        run: python native/build_hvqm4.py
       - run: python build.py
       - name: Smoke test the executable
         shell: pwsh

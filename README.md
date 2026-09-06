@@ -384,6 +384,27 @@ groups are character voice sets (13 lines each); which character each
 belongs to is not yet known. Sequenced music (the instrument bank plus
 `.song` data elsewhere) is not rendered.
 
+### Movies
+
+The three cutscenes are HVQM4 1.3 (Hudson's codec, 640x448 at 30 fps with
+32 kHz ADPCM audio). Decoding uses Tilka's bit-accurate reverse-engineered
+decoder (LGPL v2+, vendored under `native/hvqm4/` with the changes listed in
+its header and re-applied by `vendor.py`), built into a small helper:
+
+```
+python native/build_hvqm4.py     # needs clang or gcc; on Windows the LLVM
+                                 # component of Visual Studio is enough
+```
+
+The helper (`native/bin/hvqm4dec`) decodes a movie once into the cache as
+back-to-back JPEG frames (TinyJPEG, public domain) with an index, plus the
+audio as WAV; the Movie tab then plays it with the audio element as the
+clock and frames drawn on a canvas, and *Export frames + WAV* writes
+numbered JPEGs for ffmpeg (`ffmpeg -framerate 30 -i frame_%05d.jpg -i
+audio.wav movie.mp4`). Without the helper the movies are still listed and
+their raw `.h4m` can be exported. The Windows build ships the helper beside
+the exe.
+
 ### Sequenced songs
 
 The menu themes, jingles and results music are not recordings: they are
@@ -459,6 +480,7 @@ zzzzdat/
   png.py          PNG reader (stdlib only) and resampling
   texedit.py      in-place texture replacement inside an entry
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
+  hvqm.py         HVQM4 movies through the native helper and the movie cache
   musyx.py        MusyX sound groups: sfx -> macro -> sample, sample decoding
   song.py         MusyX sequenced songs -> MIDI
   render.py       plays songs with the instrument bank's samples (numpy)
@@ -466,6 +488,7 @@ zzzzdat/
   anim.py         ANIM banks and skin files
   app.py          desktop window (pywebview) around the server
 build.py          PyInstaller one-folder build
+native/hvqm4/     vendored HVQM4 decoder (LGPL) + TinyJPEG + the hvqm4dec driver; native/build_hvqm4.py builds it
 pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
   store.py        index + archive + cache + extraction
   cli.py          command line

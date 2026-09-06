@@ -39,6 +39,7 @@ export interface ReplaceResult { offset: number; disc_size: number; size: number
 export interface ReplacedTexture { n: number; width: number; height: number; fmt: string; levels: number; source_width: number; source_height: number; resized: boolean; palette: number; truncated: number }
 export interface SlotInfo { slot: number; name: string; clone_of: number | null; clone_of_name: string | null; copy: boolean | null; inplace: number }
 export interface CloneResult { source: number; target: number; copy: boolean; copied: number; inplace: string[]; shared: number; appended_bytes: number; source_name: string; target_name: string }
+export interface MovieInfo { ready: boolean; helper: boolean; job: string | null; width?: number; height?: number; frames?: number; fps?: number; sample_rate?: number }
 export interface FsListing { path: string; parent: string | null; dirs: string[]; files: { name: string; size: number }[]; layout: string }
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
@@ -70,6 +71,9 @@ export const api = {
   replace: (id: number, fd: FormData) => j<ReplaceResult>(`/api/entry/${id}/replace`, { method: 'POST', body: fd }),
   replaceTexture: (id: number, n: number, fd: FormData) =>
     j<ReplaceResult & { texture: ReplacedTexture }>(`/api/entry/${id}/tex/${n}/replace`, { method: 'POST', body: fd }),
+  movie: (id: number) => j<MovieInfo>(`/api/entry/${id}/movie`),
+  prepareMovie: (id: number) => j<{ ready?: boolean; job?: string }>(`/api/entry/${id}/movie/prepare`, { method: 'POST' }),
+  exportMovie: (id: number) => j<{ written: string[]; dest: string }>(`/api/entry/${id}/movie/export`),
   characters: () => j<{ slots: SlotInfo[]; editable: boolean }>('/api/characters'),
   cloneCharacter: (source: number, target: number, copy: boolean) => j<CloneResult>(`/api/characters/clone?source=${source}&target=${target}&copy=${copy ? 1 : 0}`, { method: 'POST' }),
   restoreCharacter: (target: number) => j<{ ok: boolean }>(`/api/characters/restore?target=${target}`, { method: 'POST' }),
@@ -83,6 +87,8 @@ export const urls = {
   audioDownload: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav?download=1`,
   midi: (id: number, n: number) => `/api/entry/${id}/song/${n}.mid`,
   songWav: (id: number, n: number) => `/api/entry/${id}/song/${n}.wav`,
+  movieFrame: (id: number, n: number) => `/api/entry/${id}/movie/frame/${n}.jpg`,
+  movieAudio: (id: number) => `/api/entry/${id}/movie/audio.wav`,
   glb: (id: number, sec: number, anim?: string, parts?: string) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}`,
   obj: (id: number, sec: number) => `/api/entry/${id}/model/${sec}.obj`,
   data: (id: number) => `/api/entry/${id}/data`,

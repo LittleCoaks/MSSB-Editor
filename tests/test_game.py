@@ -182,3 +182,15 @@ def test_render_song(store):
     assert bank.voices(0, 60, False) and bank.voices(0, 36, True)
     w = store.song_wav(e, 2)  # the 2 s jingle
     assert w[:4] == b"RIFF" and 2.0 * 32000 * 4 < len(w) < 4.0 * 32000 * 4
+
+
+def test_movie_decode(store):
+    from zzzzdat import hvqm
+    from zzzzdat.thumbs import game_key
+    if hvqm.helper_path() is None:
+        pytest.skip("hvqm4dec helper not built")
+    e = store.get(2)  # the 300-frame movie
+    m = hvqm.decode(game_key(store.game), e.id, store.data(e))
+    assert m.ready and m.info["frames"] == 300 and m.info["width"] == 640
+    assert m.frame(0)[:2] == b"ÿØ" and m.frame(299)[-2:] == b"ÿÙ"
+    assert m.audio().stat().st_size > 300 * 32028 * 2 // 30
