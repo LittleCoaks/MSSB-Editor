@@ -4,7 +4,15 @@ Produces dist/MSSB Editor/ (one-folder build, starts fastest). The
 executable opens the desktop window; run it with arguments for the CLI, e.g.
 `"MSSB Editor.exe" list --kind hvqm4`. Put the game files next to it
 (see README "Setup") or set MSSB_DECOMP.
+
+`python build.py --installer` also packs that folder into
+dist/MSSB Editor Setup <version>.exe with NSIS (installer/installer.nsi):
+Program Files, Start menu and optional desktop shortcut, an uninstaller that
+leaves the user's settings, cache and exports alone. Needs makensis
+(https://nsis.sourceforge.io) on PATH or in its default folder.
 """
+import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -26,5 +34,16 @@ cmd = [
     "--hidden-import", "numpy",
     str(ROOT / "run.py"),
 ]
+print(" ".join(cmd))
+rc = subprocess.call(cmd, cwd=ROOT)
+if rc or "--installer" not in sys.argv:
+    sys.exit(rc)
+
+version = re.search(r'^version\s*=\s*"([^"]+)"', (ROOT / "pyproject.toml").read_text(encoding="utf-8"), re.M).group(1)
+candidates = [r"C:\Program Files (x86)\NSIS\makensis.exe", r"C:\Program Files\NSIS\makensis.exe"]
+makensis = shutil.which("makensis") or next((c for c in candidates if Path(c).exists()), None)
+if not makensis:
+    sys.exit("makensis not found: install NSIS (https://nsis.sourceforge.io) to build the installer")
+cmd = [makensis, f"/DVERSION={version}", str(ROOT / "installer" / "installer.nsi")]
 print(" ".join(cmd))
 sys.exit(subprocess.call(cmd, cwd=ROOT))

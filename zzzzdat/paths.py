@@ -48,10 +48,33 @@ def _user_data_dir() -> Path:
     return Path(base) / "mssb-editor"
 
 
+def _documents_dir() -> Path | None:
+    """The user's Documents folder on Windows (asked of the shell, so a redirected
+    folder is honoured), else None."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import ctypes
+        buf = ctypes.c_wchar_p()
+        # FOLDERID_Documents {FDD39AD0-238F-46AF-ADB4-6C85480369C7}
+        fid = (ctypes.c_ubyte * 16)(0xD0, 0x9A, 0xD3, 0xFD, 0x8F, 0x23, 0xAF, 0x46, 0xAD, 0xB4, 0x6C, 0x85, 0x48, 0x03, 0x69, 0xC7)
+        if ctypes.windll.shell32.SHGetKnownFolderPath(fid, 0, None, ctypes.byref(buf)) == 0 and buf.value:
+            path = Path(buf.value)
+            ctypes.windll.ole32.CoTaskMemFree(buf)
+            return path
+    except Exception:
+        pass
+    home = Path.home() / "Documents"
+    return home if home.is_dir() else None
+
+
 DATA_DIR = _user_data_dir()
 CONFIG_PATH = DATA_DIR / "config.json"
 CACHE_DIR = DATA_DIR / "cache"
-EXTRACT_DIR = DATA_DIR / "extracted"
+# exports go where a person will find them: Documents/MSSB Editor when installed; the data
+# folder in development, on macOS/Linux, or when MSSB_EDITOR_HOME is set
+_docs = _documents_dir() if FROZEN and not os.environ.get("MSSB_EDITOR_HOME") else None
+EXTRACT_DIR = (_docs / APP_NAME / "extracted") if _docs else DATA_DIR / "extracted"
 INDEX_DIR = PACKAGE_DATA / "index"
 UI_DIR = Path(__file__).resolve().parent / "ui"
 

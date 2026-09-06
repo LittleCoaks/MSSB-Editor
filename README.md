@@ -328,6 +328,14 @@ pip install pywebview pyinstaller
 python build.py            # -> dist/MSSB Editor/MSSB Editor.exe
 ```
 
+`python build.py --installer` goes on to pack that folder into
+`dist/MSSB Editor Setup <version>.exe` with NSIS (`installer/installer.nsi`):
+Program Files, a Start menu entry, an optional desktop shortcut and an
+uninstaller. The installed program keeps its settings and cache in
+`%APPDATA%\MSSB Editor` and writes exports to `Documents\MSSB Editor\extracted`,
+so uninstalling never touches your work. CI builds the folder and the
+installer on every push.
+
 The bundle carries the UI, three.js and the shipped index; the executable
 opens the window when double-clicked and behaves like the CLI when given
 arguments (`"MSSB Editor.exe" list --kind hvqm4`). The icon (a black-and-white
@@ -335,8 +343,9 @@ baseball) is drawn by `tools/make_icon.py`, which writes the browser favicon
 (`frontend/public/favicon.svg`) and the window/executable icon
 (`zzzzdat/ui/icon.ico`, `icon.png`); re-run it and rebuild the frontend after
 changing the drawing. Users pick their
-own ISO or extracted folder on the Game page the first time; `config.json`,
-`extracted/` and `index/` are written next to the executable.
+own ISO or extracted folder on the Game page the first time; `config.json`
+and the cache go to `%APPDATA%\MSSB Editor`, exports to
+`Documents\MSSB Editor\extracted`.
 
 ## What is indexed
 

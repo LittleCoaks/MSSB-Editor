@@ -59,7 +59,7 @@ jobs:
       - run: pip install ".[build]"
       - name: Build the HVQM4 movie helper
         run: python native/build_hvqm4.py
-      - run: python build.py
+      - run: python build.py --installer   # NSIS is preinstalled on the Windows runners
       - name: Smoke test the executable
         shell: pwsh
         run: |
@@ -75,3 +75,7 @@ jobs:
         with:
           name: MSSB-Editor-windows
           path: dist/MSSB Editor
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MSSB-Editor-installer
+          path: dist/MSSB Editor Setup *.exe
