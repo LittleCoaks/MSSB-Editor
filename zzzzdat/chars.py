@@ -15,10 +15,12 @@ Two 16-byte descriptor tables describe every playable character:
                 batting grip, pitching grip, catching grip
     432..485    per-slot rig / animation set
     486..515    shared items
-* **Voice group table** at 0x800EEB18: one u16 per slot, the MusyX sound
-  group that holds the character's voice lines (0xFFFF = none; colour
-  variants share their base's group). The table at 0x800EEAAC (u16 per
-  slot, value = slot * 6) indexes something else, not yet identified.
+* **Character ids**: the game numbers the 32 base characters separately from
+  the roster; `findCharacterID` (0x800698F8) maps a slot to its id through
+  the table at 0x80108DB8 (id -> base slot) and folds colour variants onto
+  their base. game.rel then loads the voice group `gid_by_id[id]` from its
+  own byte table (.data + 0x8148) when a character enters play. The u16
+  tables at 0x800EEAAC and 0x800EEB18 are something else (not sound).
 
 The slot order below is the game's roster order, confirmed from the model
 names embedded in each slot's track-0 pack and from the community's
@@ -34,12 +36,20 @@ from __future__ import annotations
 SUBFILES_VA = 0x800F1D78
 MASTER_VA = 0x800EFD38
 GLOVE_VA = 0x800EEAAC
-VOICE_GROUP_VA = 0x800EEB18
-# slot -> MusyX group id (from the table above; None = no group)
-VOICE_GROUP = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, None, 14, None, 15, 16, 17, 18, 19, 19, 19, 20, 20, 20,
-               21, 22, 13, 13, 13, 13, 23, 23, 23, 23, None, None, 25, 26, 27, 12, 18, None, None, None, None,
-               28, 28, 28, 28, 21, 21]
-assert len(VOICE_GROUP) == 54
+CHARACTER_ID_VA = 0x80108DB8
+# character id -> base slot (the DOL table findCharacterID walks)
+ID_BASE_SLOT = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 24, 27, 28, 33, 37, 38,
+                39, 40, 41, 48]
+# character id -> MusyX voice group (game.rel .data + 0x8148)
+ID_VOICE_GROUP = [27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 35, 7, 9, 33, 34, 8, 48, 46,
+                  39, 47, 50, 37, 36, 38]
+_SLOT_ID = {slot: cid for cid, slot in enumerate(ID_BASE_SLOT)}
+for _m, _slots in {12: [12, 42], 13: [13, 29, 30, 31, 32], 16: [16, 44, 45, 46, 47], 20: [20, 43], 21: [21, 22, 23],
+                   22: [24, 25, 26], 24: [33, 34, 35, 36], 30: [48, 49, 50, 51], 32: [27, 52, 53]}.items():
+    for _s in _slots[1:]:
+        _SLOT_ID.setdefault(_s, _SLOT_ID[_slots[0]])
+CHARACTER_ID = [_SLOT_ID[s] for s in range(54)]
+VOICE_GROUP = [ID_VOICE_GROUP[cid] for cid in CHARACTER_ID]
 VOICE_SLOTS: dict[int, list[int]] = {}
 for _s, _g in enumerate(VOICE_GROUP):
     if _g is not None:
