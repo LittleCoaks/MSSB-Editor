@@ -395,9 +395,13 @@ layout (an older MusyX version: track table at 0x18, no loop-point table),
 decodes the 4- and 6-byte pattern events and writes standard MIDI files
 with the tempo track and one track per channel at 384 ticks per quarter.
 Program numbers are the bank's instrument slots, so a General MIDI player
-substitutes its own sounds; rendering with the bank's samples is future
-work. The Songs tab lists each song's tempo, length and channels with a
-MIDI download; *Export MIDI* writes them all.
+substitutes its own sounds. The Songs tab can also *play* a song:
+`zzzzdat/render.py` resolves each note through the bank's pages, layers,
+keymaps and macros to a sample, pitch-shifts it against the sample's base
+note, loops it while the note is held and mixes with velocity, channel
+volume and pan (numpy required). Envelopes and effects are not modelled,
+so it is a faithful-enough preview rather than the game's mixer. Each song
+also downloads as MIDI or WAV; *Export MIDI* writes them all.
 
 The two small tables from menus.rel and game.rel that an earlier heuristic
 called ADPCM are the games text string tables (u16 count, version 0x131,
@@ -457,6 +461,7 @@ zzzzdat/
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
   musyx.py        MusyX sound groups: sfx -> macro -> sample, sample decoding
   song.py         MusyX sequenced songs -> MIDI
+  render.py       plays songs with the instrument bank's samples (numpy)
   c3.py           C3 GeoPalette model parsing, actors, OBJ and glTF export (rigged)
   anim.py         ANIM banks and skin files
   app.py          desktop window (pywebview) around the server

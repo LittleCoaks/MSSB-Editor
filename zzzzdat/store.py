@@ -8,6 +8,7 @@ from collections import OrderedDict
 from pathlib import Path
 
 from . import anim, c3, chars, dsp, formats, musyx, song
+from .paths import EXTRACT_DIR as _EXTRACT_DIR  # noqa: F401
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
 from .disc import Archive, Game, current_game, find_archive
@@ -315,6 +316,38 @@ class Store:
         if n >= len(songs):
             raise KeyError(f"entry {e.id} has no song {n}")
         return song.to_midi(songs[n], f"{self.file_name(e).rsplit('.', 1)[0]} song {n + 1}")
+
+    def instrument_bank(self):
+        """The MusyX song group (type 0) that sequenced songs play on, parsed once."""
+        if getattr(self, "_bank", None) is None:
+            from .render import Bank
+            self._bank = False
+            for x in self.zzzz_entries():
+                if x.kind == "musyx" and x.label.startswith("Instrument bank"):
+                    self._bank = Bank(self.data(x))
+                    break
+        return self._bank or None
+
+    def song_wav(self, e: Entry, n: int) -> bytes:
+        """A song rendered with the instrument bank's samples (cached)."""
+        key = (e.id, "song", n)
+        if key in self._wav:
+            return self._wav[key]
+        try:
+            import numpy  # noqa: F401
+        except ImportError:
+            raise RuntimeError("rendering songs needs numpy (pip install numpy)")
+        bank = self.instrument_bank()
+        if bank is None:
+            raise RuntimeError("the instrument bank (MusyX song group) was not found in this game")
+        from .render import render
+        songs = song.parse_songs(self.data(e))
+        w = render(songs[n], bank)
+        with self._cache_lock:
+            self._wav[key] = w
+            while len(self._wav) > 8:
+                self._wav.popitem(last=False)
+        return w
 
     def extract_midi(self, e: Entry, dest: Path) -> list[Path]:
         songs = song.parse_songs(self.data(e))

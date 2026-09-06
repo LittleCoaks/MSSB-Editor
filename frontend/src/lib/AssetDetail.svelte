@@ -12,6 +12,14 @@
   let bigTex = $state<number | null>(null)
   let playing = $state<number | null>(null)
   let player: HTMLAudioElement | undefined = $state()
+  let songPlayer: HTMLAudioElement | undefined = $state()
+  let songPlaying = $state<number | null>(null)
+  let songMsg = $state('')
+  function playSong(n: number) {
+    if (songPlaying === n) { songPlayer?.pause(); songPlaying = null; return }
+    songPlaying = n; songMsg = 'rendering…'
+    queueMicrotask(() => { if (songPlayer) { songPlayer.src = urls.songWav(d!.id, n); songPlayer.load(); songPlayer.play().catch(() => (songMsg = 'could not play')) } })
+  }
   function playStream(n: number) {
     playing = n
     queueMicrotask(() => { if (player) { player.src = urls.audio(d!.id, n); player.load(); player.play().catch(() => {}) } })
@@ -19,7 +27,7 @@
 
   $effect(() => {
     const cur = id
-    d = null; msg = ''; bigTex = null; playing = null
+    d = null; msg = ''; bigTex = null; playing = null; songPlaying = null
     api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : x.songs.length ? 'songs' : 'details' } })
   })
   $effect(() => { if (tab === 'hex' && d) loadHex() })
@@ -157,15 +165,21 @@
           </div>
         {/each}
       {:else if tab === 'songs'}
-        <p class="dim" style="margin-top:0">Sequenced music played by the game's synthesizer on the instrument bank (sound group 31): jingles, results and menu themes. Each song downloads as a standard MIDI file; instrument numbers are the bank's program slots, so a General MIDI player will pick different sounds.</p>
+        <p class="dim" style="margin-top:0">Sequenced music played by the game's synthesizer on the instrument bank (sound group 31): jingles, results and menu themes. Play renders the song with the bank's own samples (a preview without the game's envelopes and effects); the MIDI download keeps the notes, with instrument numbers as the bank's program slots.</p>
         <table>
-          <thead><tr><th>#</th><th>tempo</th><th>length</th><th>tracks</th><th>notes</th><th>channels</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>tempo</th><th>length</th><th>tracks</th><th>notes</th><th>channels</th><th></th><th></th></tr></thead>
           <tbody>
             {#each d.songs as s}
-              <tr><td>{s.n + 1}</td><td>{s.bpm} bpm{s.tempo > 1 ? ` (${s.tempo} changes)` : ''}</td><td>{s.seconds} s</td><td>{s.tracks}</td><td>{s.notes}</td><td class="dim">{s.channels.map(c => c + 1).join(', ')}</td><td><a href={urls.midi(d.id, s.n)}>download MIDI</a></td></tr>
+              <tr><td>{s.n + 1}</td><td>{s.bpm} bpm{s.tempo > 1 ? ` (${s.tempo} changes)` : ''}</td><td>{s.seconds} s</td><td>{s.tracks}</td><td>{s.notes}</td><td class="dim">{s.channels.map(c => c + 1).join(', ')}</td>
+                <td><button onclick={() => playSong(s.n)} title="render and play">{songPlaying === s.n ? '⏹' : '▶'}</button></td>
+                <td><a href={urls.midi(d.id, s.n)}>MIDI</a> · <a href={urls.songWav(d.id, s.n) + '?download=1'}>WAV</a></td></tr>
             {/each}
           </tbody>
         </table>
+        {#if songPlaying !== null}
+          <div class="card" style="margin-top:8px"><div class="row"><b>Song {songPlaying + 1}</b> <span class="dim">{songMsg}</span></div>
+            <audio controls bind:this={songPlayer} style="width:100%;margin-top:6px" onended={() => (songPlaying = null)} oncanplay={() => (songMsg = '')}></audio></div>
+        {/if}
       {:else if tab === 'details'}
         <table>
           <tbody>

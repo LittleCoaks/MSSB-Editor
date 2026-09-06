@@ -172,3 +172,13 @@ def test_sequenced_songs(store):
     mid = store.midi(e, 0)
     assert mid[:4] == b"MThd" and mid.count(b"MTrk") == 6
     assert store.info(store.get(82)).kind == "text"
+
+
+def test_render_song(store):
+    pytest.importorskip("numpy")
+    e = store.get(28)
+    bank = store.instrument_bank()
+    assert bank is not None and bank.pages and bank.drum_pages
+    assert bank.voices(0, 60, False) and bank.voices(0, 36, True)
+    w = store.song_wav(e, 2)  # the 2 s jingle
+    assert w[:4] == b"RIFF" and 2.0 * 32000 * 4 < len(w) < 4.0 * 32000 * 4

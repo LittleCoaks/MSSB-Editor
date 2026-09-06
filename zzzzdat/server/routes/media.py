@@ -34,6 +34,21 @@ def get_model(req: Request, eid: str, sec: str, ext: str):
         req.bytes(c3.to_obj(st.model(e, int(sec))).encode(), "text/plain", stem + ".obj")
 
 
+@router.get(r"/api/entry/(?P<eid>\d+)/song/(?P<n>\d+)\.wav")
+def get_song_wav(req: Request, eid: str, n: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    try:
+        w = st.song_wav(e, int(n))
+    except RuntimeError as ex:
+        raise HttpError(501, str(ex))
+    stem = st.file_name(e).rsplit(".", 1)[0]
+    if req.flag("download"):
+        req.bytes(w, "audio/wav", f"{stem}_song{int(n) + 1}.wav")
+    else:
+        req.bytes(w, "audio/wav")
+
+
 @router.get(r"/api/entry/(?P<eid>\d+)/song/(?P<n>\d+)(?:\.mid)?")
 def get_midi(req: Request, eid: str, n: str):
     st = req.ctx.require_store()
