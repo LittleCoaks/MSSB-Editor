@@ -57,8 +57,8 @@ program. Either of these works:
   Everything can be viewed straight out of the image; nothing is extracted.
 - an **extracted folder** - Dolphin's *Extract Files* layout (`files/` and
   `sys/` side by side, or the `files/` folder itself) or a GameCube Rebuilder
-  root (`&&systemdata/`). This is the writable form: custom music and, later,
-  asset replacement write into it.
+  root (`&&systemdata/`). This is the writable form: custom music, file and
+  texture replacement and character cloning write into it.
 
 Viewing works from both; editing needs the folder. When an ISO is selected the
 Game page offers to extract it (all 1.4 GB, or just `sys/` + `snd/` for music)
