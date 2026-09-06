@@ -15,8 +15,10 @@ Two 16-byte descriptor tables describe every playable character:
                 batting grip, pitching grip, catching grip
     432..485    per-slot rig / animation set
     486..515    shared items
-* **Glove attachment table** at 0x800EEAAC: one u16 per slot, an offset into
-  the bone-id sub-table at 0x800EEB18 (6 u16 per slot).
+* **Voice group table** at 0x800EEB18: one u16 per slot, the MusyX sound
+  group that holds the character's voice lines (0xFFFF = none; colour
+  variants share their base's group). The table at 0x800EEAAC (u16 per
+  slot, value = slot * 6) indexes something else, not yet identified.
 
 The slot order below is the game's roster order, confirmed from the model
 names embedded in each slot's track-0 pack and from the community's
@@ -32,7 +34,16 @@ from __future__ import annotations
 SUBFILES_VA = 0x800F1D78
 MASTER_VA = 0x800EFD38
 GLOVE_VA = 0x800EEAAC
-GLOVE_BONES_VA = 0x800EEB18
+VOICE_GROUP_VA = 0x800EEB18
+# slot -> MusyX group id (from the table above; None = no group)
+VOICE_GROUP = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, None, 14, None, 15, 16, 17, 18, 19, 19, 19, 20, 20, 20,
+               21, 22, 13, 13, 13, 13, 23, 23, 23, 23, None, None, 25, 26, 27, 12, 18, None, None, None, None,
+               28, 28, 28, 28, 21, 21]
+assert len(VOICE_GROUP) == 54
+VOICE_SLOTS: dict[int, list[int]] = {}
+for _s, _g in enumerate(VOICE_GROUP):
+    if _g is not None:
+        VOICE_SLOTS.setdefault(_g, []).append(_s)
 ARAM_CHUNK = 0x1A15E800
 SLOTS = 54
 TRACKS = 19
@@ -69,7 +80,7 @@ TEXTURE_SET_SLOT = {33: 42, 34: 29, 35: 30, 36: 31, 37: 32, 38: 44, 39: 45, 40: 
 SLOT_TEXTURE_SET = {s: i for i, s in TEXTURE_SET_SLOT.items()}
 
 TRACK_NAMES = {0: "model", 1: "equipment", **{t: f"animations {t - 1}" for t in range(2, TRACKS)}}
-SUB_ITEM_NAMES = ["right hand", "left hand", "bat", "alternate bat", "batting grip", "pitching grip", "catching grip"]
+SUB_ITEM_NAMES = ["left hand", "right hand", "left glove", "right glove", "item data 1", "item data 2", "item data 3"]
 
 
 def base_name(slot_name: str) -> str:

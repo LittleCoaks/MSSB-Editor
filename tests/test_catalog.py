@@ -11,7 +11,7 @@ def test_character_table_classification():
     c = chars.classify(chars.SUBFILES_VA + (27 * 19 + 0) * 16)
     assert c["character"] == "Hammer Bro" and c["role"] == "model"
     c = chars.classify(chars.MASTER_VA + (54 + 9 * 7 + 5) * 16)
-    assert c["character"] == "Bowser" and c["role"] == "pitching grip"
+    assert c["character"] == "Bowser" and c["role"] == "item data 2"
     c = chars.classify(chars.MASTER_VA + (432 + 53) * 16)
     assert c["character"] == "Boomerang Bro" and c["role"] == "skeleton rig"
     assert chars.classify(chars.MASTER_VA - 16) is None

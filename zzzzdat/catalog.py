@@ -40,6 +40,11 @@ def canonical(name: str) -> str:
     return {"Koopa": "Koopa Troopa", "Paratroopa": "Paratroopa"}.get(base, CANONICAL.get(base, base))
 
 
+def musyx_group_id(e: Entry) -> int | None:
+    m = re.search(r"group (\d+)$", e.label or "")
+    return int(m.group(1)) if m else None
+
+
 def display_name(e: Entry) -> str:
     """A name a person would use: the character table's slot and role, else the
     community name, else the character/part behind the embedded model name."""
@@ -50,6 +55,14 @@ def display_name(e: Entry) -> str:
         return c["role"]
     if e.known:
         return e.known.replace("First Found ", "")
+    if e.kind == "musyx":
+        gid = musyx_group_id(e)
+        slots = chars.VOICE_SLOTS.get(gid, []) if gid is not None else []
+        if slots and e.naud <= 40:
+            names = [chars.SLOT_NAMES[s] for s in slots]
+            return f"{names[0]} - sounds" + (f" (also {', '.join(names[1:])})" if len(names) > 1 else "")
+        if slots:
+            return f"Sound effects group {gid} (shared: {', '.join(chars.SLOT_NAMES[s] for s in slots)})"
     lab = e.label or next((n for n in e.names if n.endswith(".gpc")), "")
     if lab:
         s = _stem(lab)
@@ -121,8 +134,14 @@ def build_catalog(entries: list[Entry]) -> dict:
         elif e.kind == "hvqm4":
             g = group("movies", "Movies", "movies", "Movies")
         elif e.kind == "musyx":
-            g = group("sounds", "Sounds", "sfx" if "effects" in e.label else "instruments",
-                      "Sound effects" if "effects" in e.label else "Instrument banks")
+            gid = musyx_group_id(e)
+            slots = chars.VOICE_SLOTS.get(gid, []) if gid is not None else []
+            if slots and e.naud <= 40:  # a character's own sound group (big shared groups excluded)
+                ch = chars.SLOT_NAMES[slots[0]]
+                g = group("characters", "Characters", re.sub(r"\W+", "_", ch.lower()), ch)
+            else:
+                g = group("sounds", "Sounds", "sfx" if "effects" in e.label else "instruments",
+                          "Sound effects" if "effects" in e.label else "Instrument banks")
         elif e.kind in ("adgc", "dsp-adpcm") or e.naud:
             g = group("sounds", "Sounds", "banks", "Sound banks")
         else:
