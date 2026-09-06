@@ -157,6 +157,35 @@ class Editor:
             f.write(comp + bytes(capacity - len(comp)))
         self._update_aaaa_descriptor(ref.module, off, len(comp))
 
+    def write_descriptors(self, writes: list[tuple["Ref", bytes]]) -> None:
+        """Like write_descriptor for many records, repacking each REL once."""
+        by_mod: dict[str, list] = {}
+        for ref, rec in writes:
+            by_mod.setdefault(ref.module, []).append((ref, rec))
+        for module, items in by_mod.items():
+            if module == "dol":
+                d = bytearray(self.dol.read_bytes())
+                for ref, rec in items:
+                    o = self._dol_offset(ref.addr)
+                    d[o:o + 16] = rec
+                self.dol.write_bytes(bytes(d))
+                continue
+            self._backup_rel(module)
+            rel, (off, _cs) = self._rel_bytes(module)
+            rel = bytearray(rel)
+            for ref, rec in items:
+                o = self._rel_section_offset(rel, ref.section, ref.addr)
+                rel[o:o + 16] = rec
+            comp = lzss.compress(bytes(rel), 0xB, 4)
+            capacity = self._rel_capacity(off)
+            if len(comp) > capacity:
+                raise EditError(f"{REL_MODULES[module]} no longer fits its slot in aaaa.dat after patching "
+                                f"({len(comp)} > {capacity} bytes)")
+            with open(self.aaaa, "r+b") as f:
+                f.seek(off)
+                f.write(comp + bytes(capacity - len(comp)))
+            self._update_aaaa_descriptor(module, off, len(comp))
+
     def _backup_rel(self, module: str) -> None:
         """Keep the untouched aaaa.dat slot and DOL descriptor of a REL the first
         time it is repacked, so restoring the last edit makes both files exact."""

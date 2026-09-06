@@ -95,21 +95,23 @@ class Store:
         new_entries = []
         for tgt, rec in clones.items():
             tgt = int(tgt)
+            def ref_of(x):
+                return x["ref"] if "ref" in x else _ref(int(x["va"], 16))
             for x in rec["copied"] + rec["shared"]:
-                key = f"dol:.data:{int(x['va'], 16):#x}"
+                key = ref_of(x).split(" ")[0]
                 e = by_ref.get(key)
                 if e:
                     e.refs = [r for r in e.refs if not r.startswith(key)]
             for x in rec["shared"]:
                 src = by_off.get(x["src"])
                 if src:
-                    src.refs.append(_ref(int(x["va"], 16)))
+                    src.refs.append(ref_of(x))
             for n, x in enumerate(rec["copied"]):
                 src = by_off.get(x["src"])
                 e = _copy.copy(src) if src else Entry(0, x["offset"], x["disc_size"], x["size"], 4, 11, 4)
                 e.id = CLONE_ID_BASE + tgt * 64 + n
                 e.offset, e.disc_size, e.size = x["offset"], x["disc_size"], x["size"]
-                e.refs = [_ref(int(x["va"], 16))]
+                e.refs = [ref_of(x)]
                 e.name = f"{e.offset:08x}"
                 new_entries.append(e)
                 self._clone_ids.add(e.id)

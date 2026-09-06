@@ -121,8 +121,9 @@ def test_clone_character_and_restore(store):
     except EditError:
         pytest.skip("game folder not prepared for editing")
     sha = hashlib.sha1(ed.dol.read_bytes()).hexdigest()
+    sha_aaaa = hashlib.sha1(ed.aaaa.read_bytes()).hexdigest()
     r = Cloner(ed).clone(2, 1, copy=True)  # Donkey Kong onto Luigi
-    assert r["copied"] == 19 and r["shared"] == 7 and len(r["inplace"]) == 2
+    assert r["copied"] == 22 and r["shared"] == 7 and len(r["inplace"]) == 2  # 19 sub-files + 3 menu packs
     st2 = Store()
     e = st2.get(CLONE_ID_BASE + 64)  # Luigi track 0 now holds a copy of donkey00.gpc
     assert e.label == "donkey00.gpc" and len(st2.data(e)) == 119736
@@ -130,6 +131,7 @@ def test_clone_character_and_restore(store):
         Cloner(Editor(st2.game)).clone(0, 1)
     Cloner(Editor(st2.game)).restore(1)
     assert hashlib.sha1(ed.dol.read_bytes()).hexdigest() == sha
+    assert hashlib.sha1(ed.aaaa.read_bytes()).hexdigest() == sha_aaaa
     assert not Editor(store.game).journal.get("_clones")
     assert len(Store().entries) == len(store.entries)
 

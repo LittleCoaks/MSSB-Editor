@@ -34,9 +34,23 @@ from __future__ import annotations
 import struct
 
 from . import chars
-from .edit import SECTOR, EditError, Editor
+from .edit import SECTOR, EditError, Editor, Ref
 
 REC = struct.Struct(">IIII")
+
+# 54-entry descriptor tables in menus.rel, one record per slot in roster order:
+# the captain-select packs (two tables point at the same files) and a second
+# pack set used by the other menus. Offsets are absolute in ZZZZ.dat.
+MENU_TABLES = [("menus", ".data", 0x12EC0), ("menus", ".data", 0x241C), ("menus", ".data", 0x2FA60)]
+
+
+def menu_ref(base: int, slot: int) -> Ref:
+    return Ref("menus", ".data", base + slot * 16)
+
+
+def menu_ref_string(base: int, slot: int) -> str:
+    sym = f"lbl_2_data_{base:X}"
+    return f"menus:.data:{base + slot * 16:#x} {sym}" + (f"+{slot * 16:#x}" if slot else "")
 
 
 def _ref(va: int) -> str:
@@ -155,10 +169,33 @@ class Cloner:
             p, fs, off, cs = self._rec(sva)
             self._put(tva, REC.pack(p, fs, off, cs))
             rec["shared"].append({"va": f"{tva:#x}", "src": aram + off})
+        # menu packs (captain select and the other menus) in menus.rel
+        menu_writes = []
+        copied_by_src: dict[int, int] = {}
+        for mod, sec, base in MENU_TABLES:
+            sref, tref = menu_ref(base, source), menu_ref(base, target)
+            srec = self.ed.read_descriptor(sref)
+            trec = self.ed.read_descriptor(tref)
+            p, fs, off, cs = REC.unpack(srec)
+            entry = {"ref": menu_ref_string(base, target), "module": mod, "section": sec, "addr": tref.addr,
+                     "backup": trec.hex(), "src": off}
+            if copy:
+                if off not in copied_by_src:
+                    copied_by_src[off] = self._append(self._read(off, cs))
+                new_off = copied_by_src[off]
+                menu_writes.append((tref, REC.pack(p, fs, new_off, cs)))
+                entry.update({"offset": new_off, "disc_size": cs, "size": fs & 0x0FFFFFFF})
+                rec["copied"].append(entry)
+            else:
+                menu_writes.append((tref, srec))
+                rec["shared"].append(entry)
+        rec["menu_writes"] = len(menu_writes)
         # glove attachment
         g = self._u16(s["glove"])
         struct.pack_into(">H", self.dol, self.ed._dol_offset(t["glove"]), g)
         self.ed.dol.write_bytes(bytes(self.dol))
+        self.ed.write_descriptors(menu_writes)
+        self.dol = bytearray(self.ed.dol.read_bytes())  # the REL repack updates the DOL's aaaa.dat descriptor
         self.ed.journal.setdefault("_clones", {})[str(target)] = rec
         self.ed._save()
         return {"source": source, "target": target, "copy": copy, "copied": len(rec["copied"]), "notes": rec["notes"],
@@ -171,6 +208,8 @@ class Cloner:
             raise EditError(f"slot {target} is not a clone")
         for va, hx in rec["backup"].items():
             self._put(int(va, 16), bytes.fromhex(hx))
+        menu_writes = [(Ref(x["module"], x["section"], x["addr"]), bytes.fromhex(x["backup"]))
+                       for x in rec["copied"] + rec["shared"] if "module" in x]
         struct.pack_into(">H", self.dol, self.ed._dol_offset(chars.GLOVE_VA + target * 2), int(rec["glove"], 16))
         for x in rec["inplace"]:
             bak = self.ed.backup_dir / x["backup"]
@@ -179,7 +218,11 @@ class Cloner:
                 f.write(bak.read_bytes())
             bak.unlink(missing_ok=True)
         self.ed.dol.write_bytes(bytes(self.dol))
+        self.ed.write_descriptors(menu_writes)
+        self.dol = bytearray(self.ed.dol.read_bytes())
         del self.ed.journal["_clones"][str(target)]
+        if not any(x.get("module") == "menus" for c in self.clones().values() for x in c["copied"] + c["shared"]):
+            self.ed._maybe_unbackup_rel("menus")
         self.ed._save()
 
 
