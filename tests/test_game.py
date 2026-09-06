@@ -278,3 +278,13 @@ def test_stadium_collision_mesh(store):
     park = store.model(e, 3, posed=True)
     assert max(p[1] for mm in sky.meshes for p in mm.positions) > 200
     assert max(p[1] for mm in park.meshes for p in mm.positions) < 100
+
+
+def test_dolphin_names_match_a_real_dump(store):
+    # names Dolphin itself wrote for this game (User/Dump/Textures/GYQE01), one CMPR, one C8 with a palette
+    names = store.dolphin_names(store.get(91))
+    assert names[1] == "tex1_256x256_73cf10117377eebd_14"
+    assert names[2] == "tex1_128x128_7b9e68138cf799c0_14"
+    assert store.dolphin_names(store.get(80))[1] == "tex1_27x22_405ff10cc5290cd1_e31b88d4f5478fa7_8"
+    z = store.textures_zip(store.get(91))
+    assert z[:2] == b"PK" and len(z) > 10000

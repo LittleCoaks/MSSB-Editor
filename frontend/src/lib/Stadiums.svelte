@@ -35,6 +35,11 @@
     const twins = d.files.filter(x => (x.sky ? (x.sky.night ? 'night' : 'day') : 'stadium') === kind)
     return twins.length > 1 ? `${kind} ${String.fromCharCode(65 + twins.indexOf(f as any))}` : kind
   }
+  async function exportDolphin() {
+    if (!entry) return
+    msg = 'exporting…'
+    try { const r = await api.extract(entry, { dolphin: true }); msg = `saved ${r.written.length} texture(s) to ${r.dolphin_pack}; copy the GYQE01 folder into Dolphin's Load/Textures` } catch (e: any) { msg = e.message }
+  }
   async function exportAll() {
     if (!entry) return
     msg = 'exporting…'
@@ -69,6 +74,7 @@
         </div>
         <div class="row">
           <button onclick={exportAll} disabled={!entry} title="Writes the shown file's models (glTF and OBJ) and its textures as PNG into the extracted folder">Export this file</button>
+          <button onclick={exportDolphin} disabled={!entry} title="Writes the shown file's textures with Dolphin's dump names into extracted/dolphin/GYQE01, a folder you can drop into Dolphin's Load/Textures">Dolphin texture pack</button>
           {#if msg}<span class="dim small">{msg}</span>{/if}
         </div>
       </header>

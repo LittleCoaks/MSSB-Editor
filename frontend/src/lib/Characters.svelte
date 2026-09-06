@@ -114,6 +114,7 @@
         </div>
         <div class="row">
           <button onclick={() => exportAll('models,textures,sounds')} disabled={exporting} title="Writes the model (glb with every animation, obj), textures, colour variants and voice clips into the extracted folder">Export everything</button>
+          <button onclick={() => exportAll('dolphin')} disabled={exporting} title="Writes every texture of this character with Dolphin's dump names into extracted/dolphin/GYQE01, a folder you can drop into Dolphin's Load/Textures">Dolphin texture pack</button>
           {#if exportMsg}<span class="dim small">{exportMsg}</span>{/if}
         </div>
       </header>

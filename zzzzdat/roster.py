@@ -241,6 +241,12 @@ def export(store, cid: int, dest, what: set[str]) -> list:
             if v["texture_entry"] is not None:
                 out += store.extract_textures(store.get(v["texture_entry"]),
                                               folder / f"textures_{re.sub(r'[^A-Za-z0-9_.-]+', '_', v['name'])}")
+    if "dolphin" in what:
+        # every texture the character's files carry, named for a Dolphin custom-texture pack
+        pack = Path(dest) / "dolphin" / "GYQE01"
+        for f in d["files"]:
+            if f["textures"]:
+                out += store.extract_textures(store.get(f["entry"]), pack, dolphin_names=True)
     if "sounds" in what and d["sounds"]:
         out += store.extract_audio(store.get(d["sounds"]["entry"]), folder / "sounds")
     if "files" in what:

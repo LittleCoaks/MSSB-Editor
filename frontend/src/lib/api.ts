@@ -17,6 +17,7 @@ export interface BankInfo { key: string; entry: number; section: number; label: 
 export interface EntryDetail extends EntrySummary {
   file_kind: string; hvqm4: Record<string, string | number> | null; sections: Section[]; textures: Texture[];
   audio: AudioStream[]; sfx: SfxInfo[]; songs: SongInfo[]; group: GroupInfo | null; models: ModelInfo[]; banks: BankInfo[]; parts: string[]; variants: { slot: number; name: string; entry: number }[]; file_name: string;
+  dolphin_names: string[];
 }
 export interface IndexDoc { meta: Record<string, any>; archive: string | null; archive_size: number; entries: EntrySummary[]; error?: string }
 export interface GameInfo {
@@ -75,8 +76,8 @@ export const api = {
   catalog: () => j<Catalog>('/api/catalog'),
   entry: (id: number) => j<EntryDetail>('/api/entry/' + id),
   hex: (id: number, offset: number, length = 4096) => j<{ offset: number; total: number; hex: string }>(`/api/entry/${id}/hex?offset=${offset}&length=${length}`),
-  extract: (id: number, opts: { png?: boolean; wav?: boolean; model?: string }) =>
-    j<{ written: string[] }>(`/api/entry/${id}/extract?${opts.png ? 'png=1' : ''}${opts.wav ? '&wav=1' : ''}${opts.model ? '&model=' + opts.model : ''}`),
+  extract: (id: number, opts: { png?: boolean; wav?: boolean; model?: string; dolphin?: boolean }) =>
+    j<{ written: string[]; dolphin_pack: string }>(`/api/entry/${id}/extract?${opts.png ? 'png=1' : ''}${opts.wav ? '&wav=1' : ''}${opts.model ? '&model=' + opts.model : ''}${opts.dolphin ? '&dolphin=1' : ''}`),
   music: () => j<MusicInfo>('/api/music'),
   musicJob: (id: string) => j<Job>('/api/music/job/' + id),
   musicRestore: (track: string) => j<{ ok: boolean }>('/api/music/restore?track=' + encodeURIComponent(track), { method: 'POST' }),
@@ -119,6 +120,7 @@ export const urls = {
   collision: (id: number) => `/api/entry/${id}/collision.json`,
   obj: (id: number, sec: number, pose?: number) => `/api/entry/${id}/model/${sec}.obj${pose !== undefined ? '?pose=' + pose : ''}`,
   data: (id: number) => `/api/entry/${id}/data`,
+  texturesZip: (id: number, dolphin = true) => `/api/entry/${id}/textures.zip${dolphin ? '' : '?plain=1'}`,
   raw: (id: number) => `/api/entry/${id}/raw`,
 }
 

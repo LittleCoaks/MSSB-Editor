@@ -35,6 +35,7 @@ def entry_detail(store, e) -> dict:
     d["parts"] = sorted({p["name"] for p in store.parts(e)}) if d["models"] else []
     d["variants"] = store.variants(e) if d["models"] else []
     d["file_name"] = store.file_name(e)
+    d["dolphin_names"] = store.dolphin_names(e) if d["textures"] else []
     return d
 
 
@@ -104,5 +105,14 @@ def get_extract(req: Request, eid: str):
     st = req.ctx.require_store()
     e = st.get(eid)
     paths = st.extract(e, EXTRACT_DIR, raw=req.flag("raw"), png=req.flag("png"), wav=req.flag("wav"),
-                       model=req.q("model") or None)
-    req.json({"written": [str(p) for p in paths]})
+                       model=req.q("model") or None, dolphin_pack=req.flag("dolphin"))
+    req.json({"written": [str(p) for p in paths], "dolphin_pack": str(EXTRACT_DIR / "dolphin" / "GYQE01")})
+
+
+@router.get(r"/api/entry/(?P<eid>\d+)/textures\.zip")
+def get_textures_zip(req: Request, eid: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    dolphin_names = not req.flag("plain")
+    stem = st.file_name(e).rsplit(".", 1)[0]
+    req.bytes(st.textures_zip(e, dolphin_names), "application/zip", f"{stem}_{'dolphin' if dolphin_names else 'textures'}.zip")

@@ -590,6 +590,21 @@ with `mip levels = n` owns `n + 1` levels. A few tables reserve fewer bytes
 than the block-rounded size (the last block row of an odd-sized C8 image runs
 into the next texture) and some records share pixel data.
 
+### Dolphin texture packs
+
+Every texture can be exported under the name Dolphin gives it when dumping
+(`zzzzdat/dolphin.py`): `tex1_<w>x<h>[_m]_<hash>[_<palette hash>]_<format>.png`,
+the hashes being XXH64 of the base level's raw GX bytes and of the palette,
+`_m` when the mip chain is loaded, and the GX format number at the end.
+Checked against a real Dolphin dump of this game: 100 of 104 dumped names
+reproduce exactly (the rest are textures the game composes at run time).
+"Export for Dolphin" on a file, "Dolphin texture pack" on a character or a
+stadium, and the "Zip (Dolphin names)" download all use these names, and the
+folder exports go to `extracted/dolphin/GYQE01/`, which drops straight into
+Dolphin's `Load/Textures/` as a custom-texture pack; a single texture's
+Download PNG also saves under its Dolphin name. Edit the PNGs (same or larger
+size) and Dolphin loads them in place of the originals, no ISO change needed.
+
 ### Replacing a texture
 
 `replace-texture` (and *Replace with PNG* in the gallery) re-encodes a PNG in

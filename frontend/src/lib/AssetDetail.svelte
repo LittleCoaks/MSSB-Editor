@@ -61,9 +61,9 @@
     }
     hexText = out || '(end of file)'
   }
-  async function extract(opts: { png?: boolean; wav?: boolean; model?: string }) {
+  async function extract(opts: { png?: boolean; wav?: boolean; model?: string; dolphin?: boolean }) {
     msg = 'exporting…'
-    try { const r = await api.extract(d!.id, opts); msg = `saved ${r.written.length} file(s) to ${r.written[0].replace(/[\\/][^\\/]*$/, '')}` } catch (e: any) { msg = e.message }
+    try { const r = await api.extract(d!.id, opts); msg = opts.dolphin ? `saved ${r.written.length} texture(s) to ${r.dolphin_pack}; copy the GYQE01 folder into Dolphin's Load/Textures` : `saved ${r.written.length} file(s) to ${r.written[0].replace(/[\/][^\/]*$/, '')}` } catch (e: any) { msg = e.message }
   }
   const kindLabel = (k: string) => KIND_LABEL[k] ?? k
   let replacing = $state(false)
@@ -133,7 +133,7 @@
       <button class:on={tab === 'hex'} onclick={() => (tab = 'hex')}>Hex</button>
       <span style="flex:1"></span>
       <div class="row">
-        {#if d.textures.length}<button onclick={() => extract({ png: true })}>Export PNGs</button>{/if}
+        {#if d.textures.length}<button onclick={() => extract({ png: true })}>Export PNGs</button><button onclick={() => extract({ dolphin: true })} title="Writes the textures with Dolphin's dump names into extracted/dolphin/GYQE01, a folder you can drop into Dolphin's Load/Textures as a custom-texture pack">Export for Dolphin</button><a class="btn" href={urls.texturesZip(d.id)} title="All textures as PNG with Dolphin's dump names, zipped">Zip (Dolphin names)</a>{/if}
         {#if d.models.length}<button onclick={() => extract({ model: 'both' })}>Export model</button>{/if}
         {#if d.audio.length}<button onclick={() => extract({ wav: true })}>Export WAV</button>{/if}
         {#if d.songs.length}<button onclick={() => extract({ wav: true })}>Export MIDI</button>{/if}
@@ -150,7 +150,8 @@
           <div class="big">
             <button onclick={() => (bigTex = null)}>← back</button>
             <span class="dim">#{bigTex} · {d.textures[bigTex].width}×{d.textures[bigTex].height} {d.textures[bigTex].fmt}</span>
-            <a class="btn" href={urls.tex(d.id, bigTex)} download>Download PNG</a>
+            <a class="btn" href={urls.tex(d.id, bigTex)} download={(d.dolphin_names[bigTex] ?? `texture_${bigTex}`) + '.png'} title="saved under Dolphin's dump name, ready for a custom-texture pack">Download PNG</a>
+            <code class="dim" style="font-size:11px">{d.dolphin_names[bigTex]}.png</code>
             {#if app.game?.edit_ready && d.archive === 'ZZZZ.dat'}
               <label class="btn">Replace with PNG… <input type="file" accept="image/png,.png" hidden disabled={texBusy} onchange={e => { const el = e.target as HTMLInputElement; replaceTexture(bigTex!, el.files?.[0] ?? null); el.value = '' }}></label>
             {/if}

@@ -7,7 +7,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import anim, c3, chars, collision, dsp, formats, handpose, musyx, song
+from . import anim, c3, chars, collision, dolphin, dsp, formats, handpose, musyx, song
 from .paths import EXTRACT_DIR as _EXTRACT_DIR  # noqa: F401
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
@@ -711,7 +711,7 @@ class Store:
 
     # ---------------------------------------------------------- extraction --
     def extract(self, e: Entry, dest: Path = EXTRACT_DIR, raw: bool = False, png: bool = False,
-                wav: bool = False, model: str | None = None) -> list[Path]:
+                wav: bool = False, model: str | None = None, dolphin_pack: bool = False) -> list[Path]:
         dest.mkdir(parents=True, exist_ok=True)
         written = []
         if raw:
@@ -724,6 +724,8 @@ class Store:
             written.append(p)
         if png:
             written += self.extract_textures(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_tex"))
+        if dolphin_pack:
+            written += self.extract_textures(e, dest / "dolphin" / "GYQE01", dolphin_names=True)
         if wav:
             written += self.extract_audio(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_wav"))
             written += self.extract_midi(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_midi"))
@@ -731,7 +733,10 @@ class Store:
             written += self.extract_models(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_model"), model)
         return written
 
-    def extract_textures(self, e: Entry, dest: Path) -> list[Path]:
+    def extract_textures(self, e: Entry, dest: Path, dolphin_names: bool = False) -> list[Path]:
+        """Every texture as PNG. With `dolphin_names` the files carry Dolphin's
+        dump names (tex1_<w>x<h>_<hash>..._<fmt>.png), so `dest` can be a
+        Dolphin custom-texture pack folder; identical textures collapse to one file."""
         data = self.data(e)
         texs = self.info(e).all_textures()
         if not texs:
@@ -739,11 +744,37 @@ class Store:
         dest.mkdir(parents=True, exist_ok=True)
         out = []
         for n, (sec, t) in enumerate(texs):
-            tag = f"s{sec.index}_" if sec else ""
-            p = dest / f"{n:03d}_{tag}t{t.index}_{t.width}x{t.height}_{t.fmt_name}.png"
+            if dolphin_names:
+                p = dest / (dolphin.texture_name(data, t) + ".png")
+                if p.exists():
+                    continue
+            else:
+                tag = f"s{sec.index}_" if sec else ""
+                p = dest / f"{n:03d}_{tag}t{t.index}_{t.width}x{t.height}_{t.fmt_name}.png"
             p.write_bytes(t.decode_png(data))
             out.append(p)
         return out
+
+    def dolphin_names(self, e: Entry) -> list[str]:
+        data = self.data(e)
+        return [dolphin.texture_name(data, t) for _sec, t in self.info(e).all_textures()]
+
+    def textures_zip(self, e: Entry, dolphin_names: bool = True) -> bytes:
+        """A zip of the entry's textures as PNG, Dolphin-named by default."""
+        import io
+        import zipfile
+        data = self.data(e)
+        buf = io.BytesIO()
+        seen = set()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            for n, (sec, t) in enumerate(self.info(e).all_textures()):
+                name = (dolphin.texture_name(data, t) if dolphin_names
+                        else f"{n:03d}_{'s%d_' % sec.index if sec else ''}t{t.index}_{t.width}x{t.height}_{t.fmt_name}") + ".png"
+                if name in seen:
+                    continue
+                seen.add(name)
+                z.writestr(name, t.decode_png(data))
+        return buf.getvalue()
 
     # ---------------------------------------------------------- indexing --
     def rebuild_index(self, verify: bool = True, classify: bool = True, scan: bool = True, log=print) -> None:
