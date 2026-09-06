@@ -601,6 +601,20 @@ capped at the room the table reserves for that record. The whole entry then
 goes through the usual replace path (recompress, repoint, backup), so
 *Restore original* undoes it.
 
+**Any size.** Ticking "keep the PNG's size" on the Textures tab (or
+`resize=1` on the replace route) gives the texture the image's own
+dimensions instead of resampling it. `zzzzdat/rebase.py` then rebuilds the
+texture table with new data offsets (mip levels are kept as far as the new
+size allows, records that shared pixels or a palette keep sharing) and
+rebuilds the section container around it: every section addresses its own
+contents relative to its own start, so the sections after the table simply
+slide along, 32-byte aligned, and the header's slot order is kept. Models
+refer to textures by index, so nothing else changes. The longer file is
+appended to ZZZZ.dat and its descriptors repointed as for any replacement.
+Files whose descriptors sit in the master table's ARAM chunk (the character
+body models and texture sets) cannot grow, because the game loads that chunk
+whole; the editor refuses those.
+
 ## Layout
 
 Per-user files (`config.json`, `cache/`, `extracted/`) live in the repository

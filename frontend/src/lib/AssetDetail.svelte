@@ -81,14 +81,15 @@
   let texMsg = $state('')
   let texBusy = $state(false)
   let texGen = $state(0)  // bumps so <img> tags reload after a replacement
+  let texResize = $state(false)  // keep the PNG's own size and rebuild the file around it
   async function replaceTexture(n: number, f: File | null) {
     if (!f || !d) return
     texBusy = true; texMsg = 'encoding…'
     try {
       const fd = new FormData(); fd.append('file', f)
-      const r = await api.replaceTexture(d.id, n, fd)
+      const r = await api.replaceTexture(d.id, n, fd, texResize)
       const t = r.texture
-      texMsg = `Replaced texture #${n} (${t.width}×${t.height} ${t.fmt}${t.levels > 1 ? `, ${t.levels} mip levels` : ''}${t.resized ? `, resized from ${t.source_width}×${t.source_height}` : ''}${t.palette ? `, ${t.palette}-colour palette` : ''}${t.truncated ? `; the last ${t.truncated} bytes of the encoding did not fit the room the file reserves and were dropped` : ''}). The original file is backed up.`
+      texMsg = `Replaced texture #${n} (${t.width}×${t.height} ${t.fmt}${t.levels > 1 ? `, ${t.levels} mip levels` : ''}${t.resized ? `, resized from ${t.source_width}×${t.source_height}` : ''}${!r.in_place ? ', file rebuilt and appended to ZZZZ.dat' : ''}${t.palette ? `, ${t.palette}-colour palette` : ''}${t.truncated ? `; the last ${t.truncated} bytes of the encoding did not fit the room the file reserves and were dropped` : ''}). The original file is backed up.`
       await app.refresh(); d = await api.entry(d.id); texGen++
     } catch (e: any) { texMsg = e.message } finally { texBusy = false }
   }
@@ -155,7 +156,8 @@
             {/if}
             {#if modified}<button class="danger" onclick={restoreEntry}>Restore original file</button>{/if}
             {#if texMsg}<div class={texMsg.startsWith('Replaced') ? 'ok' : texMsg === 'encoding…' ? 'dim' : 'warn'} style="margin-top:6px">{texMsg}</div>{/if}
-            {#if app.game?.edit_ready && d.archive === 'ZZZZ.dat'}<div class="dim" style="margin-top:4px">The PNG is converted to this texture's size and format ({d.textures[bigTex].width}×{d.textures[bigTex].height} {d.textures[bigTex].fmt}); a different size is resampled to fit.</div>{/if}
+            {#if app.game?.edit_ready && d.archive === 'ZZZZ.dat'}<div class="dim" style="margin-top:4px">The PNG is converted to this texture's format ({d.textures[bigTex].fmt}){#if texResize} at the PNG's own size; the file is rebuilt around it (character body files in the ARAM chunk cannot grow){:else} and resampled to {d.textures[bigTex].width}×{d.textures[bigTex].height} to fit in place{/if}.
+              <label style="margin-left:8px"><input type="checkbox" bind:checked={texResize}> keep the PNG's size</label></div>{/if}
             <div class="checker" style="margin-top:8px;display:inline-block"><img src={urls.tex(d.id, bigTex) + '&v=' + texGen} alt="" style="max-width:100%;image-rendering:pixelated"></div>
           </div>
         {:else}

@@ -42,7 +42,8 @@ def post_replace_texture(req: Request, eid: str, n: str):
     form = req.form()
     image = form["file"][1] if "file" in form else Path(form["path"]).read_bytes()
     with req.ctx.write_lock:
-        new, info = replace_texture(st.data(e), st.info(e), int(n), image)
+        resize = req.flag("resize") or form.get("resize", (None, b""))[1] in (b"1", b"true", "1", "true")
+        new, info = replace_texture(st.data(e), st.info(e), int(n), image, resize=resize)
         r = Editor(st.game).replace(e, new)
         st.forget(e)
         st.thumb_png(e, build=True)

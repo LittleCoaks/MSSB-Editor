@@ -275,6 +275,9 @@ class Editor:
             self.journal[key] = entry
         orig = entry["original"]
         span = -(-orig["disc_size"] // SECTOR) * SECTOR
+        if len(blob) > span and any(r.module == "dol" and any(tva <= r.addr < tva + count * 16 for tva, (count, _b) in RELATIVE_TABLES.items()) for r in refs):
+            raise EditError(f"this file lives in the ARAM chunk the game loads whole, so it cannot grow: "
+                            f"the replacement is {len(blob)} bytes, the slot holds {span}")
         if len(blob) <= span:
             offset = orig["offset"]
             payload = blob + bytes(span - len(blob))

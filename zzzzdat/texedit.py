@@ -1,8 +1,10 @@
 """Replace one texture inside an entry's decompressed bytes.
 
-The new image is written *in place*: same width, height, GX format, mip
-count and palette size as the original, so every offset in the texture table
-and in the sections around it stays valid. Anything else in the file is
+The new image is written *in place* by default: same width, height, GX
+format, mip count and palette size as the original, so every offset in the
+texture table and in the sections around it stays valid. With `resize=True`
+the texture takes the image's own size instead and the table and container
+are rebuilt around it (see rebase.py). Anything else in the file is
 untouched, which keeps this safe for the shared-data and odd-padding layouts
 seen in the archive (some records point at the same pixels, some tables
 leave gaps). The image is resampled to the original size when it differs;
@@ -89,9 +91,12 @@ def encode_texture(t: Texture, rgba: bytes, w: int, h: int) -> tuple[bytes, byte
                                       len(pal) if pal else 0), len(out)
 
 
-def replace_texture(data: bytes, fi: FileInfo, n: int, image: bytes) -> tuple[bytes, Replaced]:
+def replace_texture(data: bytes, fi: FileInfo, n: int, image: bytes, resize: bool = False) -> tuple[bytes, Replaced]:
     """Return the entry's bytes with texture `n` (index into
-    `fi.all_textures()`) replaced by `image` (a PNG file)."""
+    `fi.all_textures()`) replaced by `image` (a PNG file). In place by
+    default (the image is resampled to the record's size); with `resize` the
+    texture takes the image's size and the file is rebuilt around it
+    (`rebase.py`), which may make it longer."""
     texs = fi.all_textures()
     if n < 0 or n >= len(texs):
         raise TextureError(f"no texture {n} (the file has {len(texs)})")
@@ -100,6 +105,8 @@ def replace_texture(data: bytes, fi: FileInfo, n: int, image: bytes) -> tuple[by
         w, h, rgba = png.read_png(image)
     except png.PngError as ex:
         raise TextureError(str(ex)) from None
+    if resize and (w, h) != (t.width, t.height):
+        return _replace_resized(data, fi, n, sec, t, rgba, w, h)
     pixels, tlut, info, size = encode_texture(t, rgba, w, h)
     info.n = n
     start = t.abs_data_offset
@@ -116,3 +123,24 @@ def replace_texture(data: bytes, fi: FileInfo, n: int, image: bytes) -> tuple[by
             raise TextureError("palette runs past the end of the file")
         out[ts:ts + troom] = tlut[:troom]
     return bytes(out), info
+
+
+def _replace_resized(data: bytes, fi: FileInfo, n: int, sec, t: Texture, rgba: bytes, w: int, h: int) -> tuple[bytes, Replaced]:
+    from dataclasses import replace as dc_replace
+    from . import rebase
+    if not (1 <= w <= 1024 and 1 <= h <= 1024):
+        raise TextureError("texture sizes must be 1 to 1024 pixels a side")
+    # keep as many mip levels as the new size supports
+    mips = t.mips
+    while mips and (w >> mips) < 1 or mips and (h >> mips) < 1:
+        mips -= 1
+    nt = dc_replace(t, width=w, height=h, mips=mips)
+    pixels, tlut, info, _size = encode_texture(nt, rgba, w, h)
+    info.n = n
+    change = rebase.TextureChange(w, h, pixels, tlut, mips)
+    if sec is None:
+        # a bare texture table: the file is the table
+        table = rebase.rebuild_texture_table(data, 0, fi.textures, {t.index: change})
+        return table, info
+    table = rebase.rebuild_texture_table(data, sec.offset, sec.textures, {t.index: change}, end=sec.offset + sec.size)
+    return rebase.rebuild_container(data, fi.sections, {sec.index: table}), info

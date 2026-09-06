@@ -144,3 +144,53 @@ def test_replace_texture_in_place():
         texedit.replace_texture(data, fi, 7, gx.to_png(1, 1, b"\0\0\0\0"))
     with pytest.raises(texedit.TextureError):
         texedit.replace_texture(data, fi, 0, b"junk")
+
+
+def _container(sections):
+    """A section container: a 0x20-byte header of u32 section offsets (slot 0 doubles as the header size) then 32-aligned sections."""
+    hdr = 0x20
+    out = bytearray(hdr)
+    offs = []
+    for blob in sections:
+        while len(out) % 32:
+            out += b"\0"
+        offs.append(len(out))
+        out += blob
+    # slot 0 is the header size and, with it, the first section's offset
+    for i, o in enumerate(offs):
+        struct.pack_into(">I", out, i * 4, o)
+    return bytes(out)
+
+
+def test_resize_texture_rebuilds_table_and_container():
+    from zzzzdat import rebase
+    table = _texture_file([(16, 8, 14, 2, 0, 0), (8, 8, 9, 0, 2, 256), (4, 4, 6, 0, 0, 0)])
+    fi = formats.identify(table)
+    img = _gradient(32, 32)
+    new, info = texedit.replace_texture(table, fi, 0, gx.to_png(32, 32, img), resize=True)
+    assert (info.width, info.height) == (32, 32) and not info.resized and len(new) > len(table)
+    fi2 = formats.identify(new)
+    assert fi2.kind == "textures" and [(t.width, t.height) for t in fi2.textures] == [(32, 32), (8, 8), (4, 4)]
+    dec = fi2.textures[0].decode_rgba(new)
+    assert sum(abs(a - b) for a, b in zip(img, dec)) / len(img) < 6
+    # the untouched textures keep their pixels and palette
+    assert fi2.textures[1].decode_rgba(new) == fi.textures[1].decode_rgba(table)
+    assert fi2.textures[1].tlut_count == 256 and fi2.textures[1].tlut_offset
+
+    # inside a container with a section after the textures: the trailing section slides and stays intact
+    trailer = bytes(range(256)) * 3
+    cont = _container([table, trailer])
+    fic = formats.identify(cont)
+    assert fic.kind == "container" and len(fic.sections) == 2 and fic.sections[0].textures
+    new2, info2 = texedit.replace_texture(cont, fic, 0, gx.to_png(64, 16, _gradient(64, 16)), resize=True)
+    fic2 = formats.identify(new2)
+    assert len(fic2.sections) == 2 and fic2.sections[0].textures[0].width == 64
+    s1 = fic2.sections[1]
+    assert new2[s1.offset:s1.offset + len(trailer)] == trailer and s1.offset % 32 == 0
+    # header slot order is kept
+    assert struct.unpack_from(">I", new2, 0)[0] == 0x20
+    # smaller than before also works and the same-size case stays in place
+    new3, _ = texedit.replace_texture(cont, fic, 0, gx.to_png(8, 4, _gradient(8, 4)), resize=True)
+    assert formats.identify(new3).sections[0].textures[0].width == 8
+    same, _ = texedit.replace_texture(cont, fic, 0, gx.to_png(16, 8, _gradient(16, 8)), resize=True)
+    assert len(same) == len(cont)

@@ -85,8 +85,8 @@ export const api = {
   modified: () => j<{ ids: number[] }>('/api/modified'),
   thumbs: () => j<{ running: boolean; done: number; total: number }>('/api/thumbs'),
   replace: (id: number, fd: FormData) => j<ReplaceResult>(`/api/entry/${id}/replace`, { method: 'POST', body: fd }),
-  replaceTexture: (id: number, n: number, fd: FormData) =>
-    j<ReplaceResult & { texture: ReplacedTexture }>(`/api/entry/${id}/tex/${n}/replace`, { method: 'POST', body: fd }),
+  replaceTexture: (id: number, n: number, fd: FormData, resize = false) =>
+    j<ReplaceResult & { texture: ReplacedTexture }>(`/api/entry/${id}/tex/${n}/replace${resize ? '?resize=1' : ''}`, { method: 'POST', body: fd }),
   movie: (id: number) => j<MovieInfo>(`/api/entry/${id}/movie`),
   prepareMovie: (id: number) => j<{ ready?: boolean; job?: string }>(`/api/entry/${id}/movie/prepare`, { method: 'POST' }),
   exportMovie: (id: number) => j<{ written: string[]; dest: string }>(`/api/entry/${id}/movie/export`),
