@@ -52,7 +52,9 @@ def _ref(va: int) -> str:
 def slot_vas(slot: int) -> dict:
     """Descriptor addresses that define a slot."""
     return {"subfiles": [chars.SUBFILES_VA + (slot * chars.TRACKS + t) * 16 for t in range(chars.TRACKS)],
-            "body": chars.MASTER_VA + slot * 16,
+            "body": chars.MASTER_VA + chars.SLOT_MODEL[slot] * 16,
+            "body_shared": [s for s in chars.MODEL_SLOTS[chars.SLOT_MODEL[slot]] if s != slot],
+            "texture_set": chars.SLOT_TEXTURE_SET.get(slot),
             "items": [chars.MASTER_VA + (54 + slot * 7 + k) * 16 for k in range(7)],
             "rig": chars.MASTER_VA + (432 + slot) * 16,
             "glove": chars.GLOVE_VA + slot * 2}
@@ -108,8 +110,16 @@ class Cloner:
             raise EditError(f"slot {target} ({chars.SLOT_NAMES[target]}) is already a clone; restore it first")
         s, t = slot_vas(source), slot_vas(target)
         rec = {"source": source, "copy": copy, "backup": {}, "glove": f"{self._u16(t['glove']):04x}",
-               "copied": [], "shared": [], "inplace": []}
-        for va in t["subfiles"] + [t["body"], t["rig"]] + t["items"]:
+               "copied": [], "shared": [], "inplace": [], "notes": []}
+        # the ARAM body model is shared by every colour variant of a model and the
+        # slot -> model table has not been found, so it can only change when the
+        # target is the model's only user
+        aram_keys = ["rig"] if t["body_shared"] else ["body", "rig"]
+        if t["body_shared"]:
+            rec["notes"].append("ARAM body model left alone: shared with " + ", ".join(chars.SLOT_NAMES[x] for x in t["body_shared"]))
+        if t["texture_set"] is not None:
+            rec["notes"].append("the slot's ARAM texture set (colour variant) stays as it was")
+        for va in t["subfiles"] + [t[k] for k in aram_keys] + t["items"]:
             rec["backup"][f"{va:#x}"] = REC.pack(*self._rec(va)).hex()
         # 19 sub-files
         for sva, tva in zip(s["subfiles"], t["subfiles"]):
@@ -123,7 +133,7 @@ class Cloner:
                 rec["shared"].append({"va": f"{tva:#x}", "src": off})
         # body model and rig in the ARAM chunk
         aram = chars.ARAM_CHUNK
-        for key in ("body", "rig"):
+        for key in aram_keys:
             sva, tva = s[key], t[key]
             p, fs, off, cs = self._rec(sva)
             _tp, _tfs, toff, tcs = self._rec(tva)
@@ -151,7 +161,7 @@ class Cloner:
         self.ed.dol.write_bytes(bytes(self.dol))
         self.ed.journal.setdefault("_clones", {})[str(target)] = rec
         self.ed._save()
-        return {"source": source, "target": target, "copy": copy, "copied": len(rec["copied"]),
+        return {"source": source, "target": target, "copy": copy, "copied": len(rec["copied"]), "notes": rec["notes"],
                 "inplace": [x["va"] for x in rec["inplace"]], "shared": len(rec["shared"]),
                 "appended_bytes": sum(-(-c["disc_size"] // SECTOR) * SECTOR for c in rec["copied"])}
 

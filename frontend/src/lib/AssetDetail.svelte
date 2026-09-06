@@ -11,7 +11,11 @@
   let hexText = $state('')
   let bigTex = $state<number | null>(null)
   let playing = $state<number | null>(null)
-  let playGen = $state(0)
+  let player: HTMLAudioElement | undefined = $state()
+  function playStream(n: number) {
+    playing = n
+    queueMicrotask(() => { if (player) { player.src = urls.audio(d!.id, n); player.load(); player.play().catch(() => {}) } })
+  }
 
   $effect(() => {
     const cur = id
@@ -115,13 +119,13 @@
             {#if modified}<button class="danger" onclick={restoreEntry}>Restore original file</button>{/if}
             {#if texMsg}<div class={texMsg.startsWith('Replaced') ? 'ok' : texMsg === 'encoding…' ? 'dim' : 'warn'} style="margin-top:6px">{texMsg}</div>{/if}
             {#if app.game?.edit_ready && d.archive === 'ZZZZ.dat'}<div class="dim" style="margin-top:4px">The PNG is converted to this texture's size and format ({d.textures[bigTex].width}×{d.textures[bigTex].height} {d.textures[bigTex].fmt}); a different size is resampled to fit.</div>{/if}
-            <div class="checker" style="margin-top:8px;display:inline-block"><img src={urls.tex(d.id, bigTex) + '?v=' + texGen} alt="" style="max-width:100%;image-rendering:pixelated"></div>
+            <div class="checker" style="margin-top:8px;display:inline-block"><img src={urls.tex(d.id, bigTex) + '&v=' + texGen} alt="" style="max-width:100%;image-rendering:pixelated"></div>
           </div>
         {:else}
           <div class="texgrid">
             {#each d.textures as t}
               <button class="tex" onclick={() => (bigTex = t.n)}>
-                <div class="checker"><img loading="lazy" src={urls.tex(d.id, t.n) + '?v=' + texGen} alt="" style="max-width:128px;max-height:128px"></div>
+                <div class="checker"><img loading="lazy" src={urls.tex(d.id, t.n) + '&v=' + texGen} alt="" style="max-width:128px;max-height:128px"></div>
                 <span class="dim">{t.width}×{t.height} {t.fmt}</span>
               </button>
             {/each}
@@ -133,13 +137,13 @@
           {#if d.sfx.length}
             <div class="sfxgrid">
               {#each d.sfx as f}
-                <button class="sfx" disabled={!f.streams.length} title={`macro ${hex(f.macro, 4)}${f.streams.length ? '' : ' (plays through a layer; no direct sample)'}`} onclick={() => { if (f.streams.length) { playing = f.streams[0]; playGen++ } }}>▶ sfx {hex(f.id, 4)}{#if f.streams.length > 1}<span class="dim"> ×{f.streams.length}</span>{/if}</button>
+                <button class="sfx" disabled={!f.streams.length} title={`macro ${hex(f.macro, 4)}${f.streams.length ? '' : ' (plays through a layer; no direct sample)'}`} onclick={() => { if (f.streams.length) playStream(f.streams[0]) }}>▶ sfx {hex(f.id, 4)}{#if f.streams.length > 1}<span class="dim"> ×{f.streams.length}</span>{/if}</button>
               {/each}
             </div>
             {#if playing !== null}
               <div class="card" style="margin:8px 0">
                 <div class="row"><b>Playing sample {playing + 1}</b> <span class="dim">{d.audio[playing].label}</span></div>
-                {#key playGen}<audio controls autoplay src={urls.audio(d.id, playing)} style="width:100%;margin-top:6px"></audio>{/key}
+                <audio controls bind:this={player} style="width:100%;margin-top:6px"></audio>
               </div>
             {/if}
           {/if}

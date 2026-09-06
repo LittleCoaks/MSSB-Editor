@@ -12,7 +12,7 @@ documentation in the decomp repo). Known shapes:
       u16 pad
       u32 data offset (relative to the table start)
       u32 tlut offset (palette formats)
-      u16 width, u16 height
+      u16 height, u16 width      (SDK TEXHeader order: height first)
       u8  flags[4]   (wrap s, wrap t, filter, ?)
       f32 LOD bias
       u16 pad, u8 mip levels, u8 GX texture format
@@ -98,7 +98,7 @@ def _texture_record(data: bytes, base: int, index: int) -> Texture | None:
     pos = base + index * 0x20
     if pos + 0x20 > len(data):
         return None
-    count, pad, doff, toff, w, h, flags, lod, pad2, mips, fmt, tlut_n, tlut_fmt, pad3 = struct.unpack_from(">HHIIHH4sfHBBHBB", data, pos)
+    count, pad, doff, toff, h, w, flags, lod, pad2, mips, fmt, tlut_n, tlut_fmt, pad3 = struct.unpack_from(">HHIIHH4sfHBBHBB", data, pos)
     if fmt not in gx.FORMAT_NAMES or not _valid_dim(w) or not _valid_dim(h) or pad or pad2 or pad3 or mips > 11:
         return None
     if base + doff + gx.encoded_size(fmt, w, h) > len(data):

@@ -31,6 +31,8 @@
     scene.background = new THREE.Color(0x101216)
     camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100000)
     controls = new OrbitControls(camera, canvas)
+    controls.zoomToCursor = true
+    controls.zoomSpeed = 1.4
     scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.1))
     const dir = new THREE.DirectionalLight(0xffffff, 0.6); dir.position.set(1, 2, 1.5); scene.add(dir)
     grid = new THREE.GridHelper(1000, 20, 0x334455, 0x223344); scene.add(grid)
@@ -92,7 +94,8 @@
     const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3())
     const r = Math.max(size.x, size.y, size.z, 1)
     grid.position.y = box.min.y; grid.scale.setScalar(r / 500)
-    camera.position.set(c.x + r * 1.1, c.y + r * 0.35, c.z + r * 1.4); camera.near = r / 1000; camera.far = r * 50; camera.updateProjectionMatrix()
+    camera.position.set(c.x + r * 1.1, c.y + r * 0.35, c.z + r * 1.4); camera.near = r / 5000; camera.far = r * 50; camera.updateProjectionMatrix()
+    controls.minDistance = r / 500; controls.maxDistance = r * 20
     controls.target.copy(c); controls.update()
   }
   const duration = $derived(clips.find(x => x.name === clip)?.duration ?? 0)

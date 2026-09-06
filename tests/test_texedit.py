@@ -108,7 +108,7 @@ def _texture_file(entries):
             lw, lh = max(1, lw // 2), max(1, lh // 2)
         while len(body) % 32:
             body += b"\0"
-        struct.pack_into(">HHIIHH4sfHBBHBB", table, i * 0x20, n if i == 0 else 0, 0, doff, toff, w, h, b"\1\1\1\1",
+        struct.pack_into(">HHIIHH4sfHBBHBB", table, i * 0x20, n if i == 0 else 0, 0, doff, toff, h, w, b"\1\1\1\1",
                          0.0, 0, mips, fmt, tc, tf, 0)
     return bytes(table + body)
 

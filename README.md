@@ -156,22 +156,28 @@ with no code patches.
 ### Character tables
 
 `zzzzdat/chars.py` names the two DOL tables that define the 54 playable
-character slots (from DrSeil's guide): the **sub-files table** at
-`0x800F1D78` (54 slots x 19 tracks: model, equipment, 17 animation banks) and
-the **master descriptors** at `0x800EFD38` (516 entries, offsets relative to
-the 0x1A15E800 ARAM chunk: body model, right/left hand, bat, alternate bat,
-three grip poses and the skeleton rig per slot). The index now includes the
-master table's entries, and the catalog uses both tables to name assets
-("Toad (red) - model", "Bowser - pitching grip") and to group them by
-character.
+character slots: the **sub-files table** at `0x800F1D78` (54 slots x 19
+tracks: model, equipment, 17 animation banks; colour variants point at the
+same files as their base slot) and the **master descriptors** at
+`0x800EFD38` (516 entries, offsets relative to the 0x1A15E800 ARAM chunk:
+the 33 distinct body models, 21 texture sets for the colour-variant slots,
+then per slot right/left hand, bat, alternate bat, three grip poses, and the
+rig). The slot order is the game's roster order, confirmed from the model
+names inside each slot's pack and the community's "First Found" names; the
+texture sets were matched to their models by texture layout. DrSeil's guide
+first documented the tables but lists the slots in another order. The
+catalog uses both tables to name assets ("Toad (blue) - textures (ARAM)",
+"Bowser - pitching grip") and groups every slot, variants included.
 
 ### Character cloning
 
 The **Characters** page (and `clone-character SOURCE TARGET`) makes one
 roster slot play as another character, following DrSeil's verified recipe:
-the slot's 19 sub-file descriptors, its body model, seven sub-items and rig
-in the master table, and its glove index are rewritten to describe the
-source. By default the 19 sub-files are copied to the end of ZZZZ.dat so
+the slot's 19 sub-file descriptors, seven sub-items and rig in the master
+table, and its glove index are rewritten to describe the source; the ARAM
+body model too, but only when the target slot is its model's only user (the
+slot-to-model table has not been found, and colour variants share one
+model), and a variant slot keeps its ARAM texture set. By default the 19 sub-files are copied to the end of ZZZZ.dat so
 the clone can be retextured on its own, and the body model and rig are
 copied in place inside the ARAM chunk when the source fits the target's
 span (the chunk is packed tightly and loaded whole, so it cannot grow);
@@ -378,7 +384,7 @@ belongs to is not yet known. Sequenced music (the instrument bank plus
 ```
 u16 count (record 0 only)   u16 pad
 u32 data offset             u32 TLUT offset
-u16 width  u16 height       u8 flags[4] (wrap S/T, filter, ?)
+u16 height u16 width        u8 flags[4] (wrap S/T, filter, ?)   (height first, as in the SDK's TEXHeader)
 f32 LOD bias                u16 pad  u8 mip levels  u8 GX format
 u16 TLUT entries            u8 TLUT format  u8 pad
 ```

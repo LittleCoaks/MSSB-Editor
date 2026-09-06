@@ -22,6 +22,11 @@
   $effect(() => { app.category; app.group; q; shown = 120 })
   const visible = $derived(items.slice(0, shown))
   const kindLabel = (e: EntrySummary) => e.archive === 'disc' ? 'music' : (KIND_LABEL[e.kind] ?? e.kind)
+  let collapsed = $state(false)
+  function pickCategory(id: string) {
+    if (app.category === id && !q) { collapsed = !collapsed; return }
+    collapsed = false; app.category = id; app.group = ''; app.search = ''
+  }
 </script>
 
 <div class="browse">
@@ -29,8 +34,8 @@
     <input type="search" placeholder="Search everything…" bind:value={app.search}>
     {#each cats as c}
       <div class="cat" class:on={c.id === app.category}>
-        <button class="cathead" onclick={() => { app.category = c.id; app.group = ''; app.search = '' }}>{c.name} <span class="dim">{c.count}</span></button>
-        {#if c.id === app.category && !q}
+        <button class="cathead" onclick={() => pickCategory(c.id)}>{c.name} <span class="dim">{c.count}</span>{#if c.id === app.category && !q}<span class="dim" style="float:right">{collapsed ? '▸' : '▾'}</span>{/if}</button>
+        {#if c.id === app.category && !q && !collapsed}
           <ul>
             <li class:on={!app.group}><button onclick={() => (app.group = '')}>All</button></li>
             {#each c.groups as g}
@@ -53,9 +58,11 @@
     <div class="cards">
       {#each visible as e (e.id)}
         <button class="item" class:on={app.selected === e.id} onclick={() => (app.selected = e.id)} title={e.symbol}>
-          <div class="thumb checker">
-            {#if e.ntex}<img loading="lazy" src="{urls.thumb(e.id)}?g={app.thumbGen}" alt="" onerror={e => ((e.target as HTMLImageElement).style.visibility = 'hidden')}>{:else}<span class="noimg">{kindLabel(e) === 'music' ? '🎵' : kindLabel(e) === 'movie' ? '🎬' : kindLabel(e) === 'animation' ? '🏃' : '▫'}</span>{/if}
-          </div>
+          {#if e.ntex}
+            <div class="thumb checker"><img loading="lazy" src="{urls.thumb(e.id)}&g={app.thumbGen}" alt="" onerror={e => ((e.target as HTMLImageElement).style.visibility = 'hidden')}></div>
+          {:else}
+            <div class="thumb plain"><span class="noimg">{kindLabel(e) === 'music' || kindLabel(e) === 'sound effects' || kindLabel(e) === 'sound' ? '🔊' : kindLabel(e) === 'movie' ? '🎬' : kindLabel(e) === 'animation' ? '🏃' : ''}</span></div>
+          {/if}
           <div class="name">{#if app.modified.includes(e.id)}<span title="replaced" class="ok">● </span>{/if}{app.nameOf(e)}</div>
           <div class="meta"><span class="badge {kindLabel(e).replace(' ', '-')}">{kindLabel(e)}</span>{#if e.ntex}<span class="dim">{e.ntex} tex</span>{/if}</div>
         </button>
@@ -91,6 +98,7 @@
   .thumb { height: 110px; border-radius: 5px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .thumb img { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
   .noimg { font-size: 30px; color: var(--dim); }
+  .thumb.plain { height: 44px; background: none; }
   .name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .meta { display: flex; gap: 6px; align-items: center; font-size: 11px; }
   .detail { flex: 1; min-width: 0; overflow: auto; border-left: 1px solid var(--line); }

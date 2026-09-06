@@ -53,6 +53,6 @@ def run(port: int | None = None, width: int = 1400, height: int = 900) -> None:
             pass
     else:
         api = Api()
-        api._window = webview.create_window(TITLE, url, width=width, height=height, min_size=(900, 600), js_api=api)
+        api._window = webview.create_window(TITLE, url, width=width, height=height, min_size=(900, 600), js_api=api, text_select=True)
         webview.start()
     httpd.shutdown()

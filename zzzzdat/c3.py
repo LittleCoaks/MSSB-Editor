@@ -14,8 +14,8 @@ after roeming/MSSB-Export-Models `helper_c3.py`:
     Display            u32 pPrimitiveBank, u32 pStateList, u16 numStates
     DisplayState       u8 id, pad[3], u32 setting, u32 pPrimitiveList, u32 byteLength
 
-quantize: high nibble = component type (1 = s32/f32, 2 = u16, 3 = s16, 4 = u8,
-5 = s8), low nibble = fixed-point fraction bits. Display state ids: 1 = texture
+quantize: high nibble = GX component type (0 = u8, 1 = s8, 2 = u16, 3 = s16,
+4 = f32), low nibble = fixed-point fraction bits (ignored for f32). Display state ids: 1 = texture
 (setting & 0xFF is the texture index when byte 1 of setting is 0x11),
 2 = vertex descriptor (13 components x 2 bits, GX order: pos-matrix, pos,
 normal, color0, color1, tex0..tex7; 0 = absent, 2 = u8 index, 3 = u16 index),
@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 
 GEOPALETTE_VERSION = 0x005BBC61
 
-_QUANT = {1: (4, True), 2: (2, False), 3: (2, True), 4: (1, False), 5: (1, True)}
+_QUANT = {0: (1, False), 1: (1, True), 2: (2, False), 3: (2, True), 4: (4, True)}  # GX_U8, S8, U16, S16, F32
 
 
 @dataclass
@@ -84,7 +84,7 @@ def _array(data: bytes, off: int, count: int, quant: int, ncomp: int, want: int)
             if len(b) < size:
                 comps.append(0.0)
                 continue
-            if fmt == 1 and shift == 0:
+            if fmt == 4:
                 comps.append(struct.unpack(">f", b)[0])
             else:
                 comps.append(int.from_bytes(b, "big", signed=signed) / scale)

@@ -72,6 +72,9 @@ def _stem(label: str) -> str:
 
 
 def character_of(e: Entry) -> str | None:
+    slot = chars.slot_from_community(e.known or "")
+    if slot is not None:
+        return chars.SLOT_NAMES[slot]
     m = KNOWN_CHAR_RE.match(e.known or "")
     if m:
         return canonical(m.group(1))
@@ -127,7 +130,7 @@ def build_catalog(entries: list[Entry]) -> dict:
             tbl = table_of(e)
             cc = chars.classify_entry(e.refs)
             if cc and cc["character"]:
-                ch = chars.base_name(cc["character"])
+                ch = cc["character"]
             if ch:
                 g = group("characters", "Characters", re.sub(r"\W+", "_", ch.lower()), ch)
             elif e.known and ("Stadium" in e.known or "Park" in e.known) or tbl in ("StadiumFiles", "marioStadiumCDR"):

@@ -76,8 +76,8 @@ export const api = {
 }
 
 export const urls = {
-  tex: (id: number, n: number) => `/api/entry/${id}/tex/${n}.png`,
-  thumb: (id: number) => `/api/thumb/${id}.png`,
+  tex: (id: number, n: number) => `/api/entry/${id}/tex/${n}.png?d=2`,  // d = decoder version, busts the browser cache
+  thumb: (id: number) => `/api/thumb/${id}.png?d=2`,
   audio: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav`,
   audioDownload: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav?download=1`,
   glb: (id: number, sec: number, anim?: string) => `/api/entry/${id}/model/${sec}.glb` + (anim ? '?anim=' + encodeURIComponent(anim) : ''),

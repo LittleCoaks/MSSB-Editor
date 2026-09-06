@@ -27,14 +27,17 @@ def game_key(game: Game) -> str:
     return hashlib.sha1(str(game.setting).encode("utf-8", "replace")).hexdigest()[:12]
 
 
+CACHE_VERSION = "v2"  # bump when texture decoding changes
+
+
 def cache_dir(game: Game) -> Path:
-    d = CACHE_DIR / game_key(game) / "tex"
+    d = CACHE_DIR / game_key(game) / CACHE_VERSION / "tex"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def thumb_dir(game: Game) -> Path:
-    d = CACHE_DIR / game_key(game) / "thumbs"
+    d = CACHE_DIR / game_key(game) / CACHE_VERSION / "thumbs"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
