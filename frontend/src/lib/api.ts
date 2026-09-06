@@ -87,6 +87,7 @@ export const urls = {
   audioDownload: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav?download=1`,
   midi: (id: number, n: number) => `/api/entry/${id}/song/${n}.mid`,
   songWav: (id: number, n: number) => `/api/entry/${id}/song/${n}.wav`,
+  songMix: (id: number, ns: number[], loops = 1) => `/api/entry/${id}/song/mix.wav?songs=${ns.join(',')}&loops=${loops}`,
   movieFrame: (id: number, n: number) => `/api/entry/${id}/movie/frame/${n}.jpg`,
   movieAudio: (id: number) => `/api/entry/${id}/movie/audio.wav`,
   glb: (id: number, sec: number, anim?: string, parts?: string) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}`,

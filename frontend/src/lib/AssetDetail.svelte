@@ -21,6 +21,15 @@
     songPlaying = n; songMsg = 'rendering…'
     queueMicrotask(() => { if (songPlayer) { songPlayer.src = urls.songWav(d!.id, n); songPlayer.load(); songPlayer.play().catch(() => (songMsg = 'could not play')) } })
   }
+  let layer = $state<number[]>([])
+  let layerPlaying = $state<number[]>([])
+  let loopLayer = $state(false)
+  function toggleLayer(n: number, on: boolean) { layer = on ? [...layer, n].sort((a, b) => a - b) : layer.filter(x => x !== n) }
+  function playLayer(ns: number[]) {
+    if (!ns.length) return
+    layerPlaying = ns; songPlaying = -1; songMsg = 'rendering…'
+    queueMicrotask(() => { if (songPlayer) { songPlayer.src = urls.songMix(d!.id, ns, loopLayer ? 3 : 1); songPlayer.load(); songPlayer.play().catch(() => (songMsg = 'could not play')) } })
+  }
   function playStream(n: number) {
     playing = n
     queueMicrotask(() => { if (player) { player.src = urls.audio(d!.id, n); player.load(); player.play().catch(() => {}) } })
@@ -171,17 +180,26 @@
       {:else if tab === 'songs'}
         <p class="dim" style="margin-top:0">Sequenced music played by the game's synthesizer on the instrument bank (sound group 31): jingles, results and menu themes. Play renders the song with the bank's own samples (a preview without the game's envelopes and effects); the MIDI download keeps the notes, with instrument numbers as the bank's program slots.</p>
         <table>
-          <thead><tr><th>#</th><th>tempo</th><th>length</th><th>tracks</th><th>notes</th><th>channels</th><th></th><th></th></tr></thead>
+          <thead><tr><th></th><th>#</th><th>tempo</th><th>length</th><th>tracks</th><th>notes</th><th>channels</th><th></th><th></th></tr></thead>
           <tbody>
             {#each d.songs as s}
-              <tr><td>{s.n + 1}</td><td>{s.bpm} bpm{s.tempo > 1 ? ` (${s.tempo} changes)` : ''}</td><td>{s.seconds} s</td><td>{s.tracks}</td><td>{s.notes}</td><td class="dim">{s.channels.map(c => c + 1).join(', ')}</td>
+              <tr><td><input type="checkbox" checked={layer.includes(s.n)} onchange={e => toggleLayer(s.n, (e.target as HTMLInputElement).checked)} title="layer this song"></td><td>{s.n + 1}</td><td>{s.bpm} bpm{s.tempo > 1 ? ` (${s.tempo} changes)` : ''}</td><td>{s.seconds} s</td><td>{s.tracks}</td><td>{s.notes}</td><td class="dim">{s.channels.map(c => c + 1).join(', ')}</td>
                 <td><button onclick={() => playSong(s.n)} title="render and play">{songPlaying === s.n ? '⏹' : '▶'}</button></td>
                 <td><a href={urls.midi(d.id, s.n)}>MIDI</a> · <a href={urls.songWav(d.id, s.n) + '?download=1'}>WAV</a></td></tr>
             {/each}
           </tbody>
         </table>
+        <div class="row" style="margin-top:10px">
+          <span class="dim">Layer:</span>
+          {#if d.songs.length >= 2}
+            <button onclick={() => playLayer([0, 1])} title="the menu player runs several sequences at once; songs 1 and 2 are the two it starts">Menu (songs 1 + 2)</button>
+          {/if}
+          <button onclick={() => playLayer(layer)} disabled={layer.length < 2}>Play ticked together{layer.length ? ` (${layer.map(n => n + 1).join(' + ')})` : ''}</button>
+          <label class="dim"><input type="checkbox" bind:checked={loopLayer}> repeat 3×</label>
+          {#if layer.length}<a href={urls.songMix(d.id, layer, loopLayer ? 3 : 1) + '&download=1'}>download mix</a>{/if}
+        </div>
         {#if songPlaying !== null}
-          <div class="card" style="margin-top:8px"><div class="row"><b>Song {songPlaying + 1}</b> <span class="dim">{songMsg}</span></div>
+          <div class="card" style="margin-top:8px"><div class="row"><b>{songPlaying >= 0 ? `Song ${songPlaying + 1}` : `Songs ${layerPlaying.map(n => n + 1).join(' + ')} layered`}</b> <span class="dim">{songMsg}</span></div>
             <audio controls bind:this={songPlayer} style="width:100%;margin-top:6px" onended={() => (songPlaying = null)} oncanplay={() => (songMsg = '')}></audio></div>
         {/if}
       {:else if tab === 'details'}

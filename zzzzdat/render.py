@@ -202,6 +202,36 @@ def _envelope(np, n: int, held: int, rate: int, adsr: tuple):
 def render(song: Song, bank: Bank, rate: int = OUT_RATE, setup_id: int | None = None) -> bytes:
     """Stereo 16-bit WAV of the song; `setup_id` selects the bank's MIDISETUP
     (initial program, volume and pan per channel) the way the game does."""
+    return to_wav(render_pcm(song, bank, rate, setup_id), rate)
+
+
+def render_layered(songs: list[tuple[Song, int | None]], bank: Bank, rate: int = OUT_RATE, loops: int = 1) -> bytes:
+    """Several songs played together, as the menus do with their sequence
+    slots; each is repeated `loops` times back to back before mixing."""
+    import numpy as np
+    parts = []
+    for s, setup in songs:
+        pcm = render_pcm(s, bank, rate, setup)
+        if loops > 1:
+            body = pcm[:int(_seconds(_tempo_map(s), s.ticks) * rate)]
+            pcm = np.concatenate([body] * (loops - 1) + [pcm])
+        parts.append(pcm)
+    n = max(len(p) for p in parts)
+    mix = np.zeros((n, 2), dtype="float64")
+    for p in parts:
+        mix[:len(p)] += p
+    return to_wav(mix, rate)
+
+
+def to_wav(mix, rate: int) -> bytes:
+    import numpy as np
+    peak = float(np.abs(mix).max()) or 1.0
+    pcm = np.clip(mix / peak * 0.9 * 32767, -32768, 32767).astype("<i2")
+    return dsp.wav(pcm.tobytes(), rate, 2)
+
+
+def render_pcm(song: Song, bank: Bank, rate: int = OUT_RATE, setup_id: int | None = None):
+    """Unnormalised float64 stereo mix of one song."""
     import numpy as np
     tmap = _tempo_map(song)
     max_release = max([v[3] for v in bank.curves.values()] + [RELEASE])
@@ -261,6 +291,4 @@ def render(song: Song, bank: Bank, rate: int = OUT_RATE, setup_id: int | None = 
             seg = samp[:i1 - i0] * env[:i1 - i0] * amp
             mix[i0:i1, 0] += seg * l
             mix[i0:i1, 1] += seg * r
-    peak = float(np.abs(mix).max()) or 1.0
-    pcm = np.clip(mix / peak * 0.9 * 32767, -32768, 32767).astype("<i2")
-    return dsp.wav(pcm.tobytes(), rate, 2)
+    return mix

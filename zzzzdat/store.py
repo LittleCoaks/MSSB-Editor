@@ -352,6 +352,24 @@ class Store:
                 self._wav.popitem(last=False)
         return w
 
+    def song_mix_wav(self, e: Entry, ns: tuple[int, ...], loops: int = 1) -> bytes:
+        """Several of an entry's songs layered (and optionally looped)."""
+        key = (e.id, "mix", ns, loops)
+        if key in self._wav:
+            return self._wav[key]
+        bank = self.instrument_bank()
+        if bank is None:
+            raise RuntimeError("the instrument bank (MusyX song group) was not found in this game")
+        from .render import render_layered
+        songs = song.parse_songs(self.data(e))
+        setup_of = {0: 19, 1: 20} if len(songs) == 19 else {}
+        w = render_layered([(songs[n], setup_of.get(n)) for n in ns if n < len(songs)], bank, loops=loops)
+        with self._cache_lock:
+            self._wav[key] = w
+            while len(self._wav) > 8:
+                self._wav.popitem(last=False)
+        return w
+
     def extract_midi(self, e: Entry, dest: Path) -> list[Path]:
         songs = song.parse_songs(self.data(e))
         if not songs:
