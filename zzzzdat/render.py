@@ -11,9 +11,13 @@ channels, drum pages for MIDI channel 10. A page's macro id is one of:
 * a keymap (id | 0x4000): 128 KEYMAP entries {u16 macro, s8 transpose,
   u8 pan, s16 prioOffset, pad} choose a macro per key (drums).
 
-The renderer keeps only what the ear needs: sample choice, key transposition
+The renderer keeps what the ear needs most: sample choice, key transposition
 against the sample's base note, sample loops while a note is held, velocity
-and channel volume, pan, and a short release after note-off. A program change naming a program the
+and channel volume, pan, the macro's ADSR envelope (0x0C SET_ADSR names a
+curve table: little-endian u16 attack ms, decay ms, sustain level / 4096,
+release ms) and, when the song has one, the MIDISETUP channel setup
+(initial program, volume, pan per channel, selected by the song id the game
+starts the song with). A program change naming a program the
 bank has no page for is ignored, as the sequencer does. Envelopes, vibrato
 and the other macro commands are ignored, so it is a preview, not the game's
 mixer.
@@ -28,7 +32,8 @@ from . import dsp, musyx
 from .song import PPQ, Song
 
 OUT_RATE = 32000
-RELEASE = 0.35   # seconds of fade after a note ends
+RELEASE = 0.35   # seconds of fade after a note ends when the macro has no ADSR
+DEFAULT_ADSR = (0.0, 0.0, 1.0, RELEASE)
 
 
 @dataclass
@@ -37,6 +42,7 @@ class Voice:
     key: int
     volume: float   # 0..1
     pan: int        # 0..127
+    adsr: tuple = DEFAULT_ADSR   # attack s, decay s, sustain 0..1, release s
 
 
 class Bank:
@@ -49,6 +55,19 @@ class Bank:
         self.drum_pages = self._pages(po, ps, drumpage) if typ == 0 else {}
         macro_off, _curve_off, keymap_off, layer_off = struct.unpack_from(">4I", data, lo)
         self.macros = self._mem_list(lo, ls, macro_off)
+        self.curves = {}
+        for cid, (a, b) in self._mem_list(lo, ls, _curve_off).items():
+            if b - a >= 8:
+                at, dt, sl, rt = struct.unpack_from("<4H", data, a)
+                self.curves[cid] = (at / 1000.0, dt / 1000.0, min(sl, 4096) / 4096.0, max(rt, 5) / 1000.0)
+        self.midisetup = {}
+        p = po + _ms
+        while _ms and p + 0x54 <= po + ps:
+            sid = struct.unpack_from(">H", data, p)[0]
+            if sid == 0xFFFF:
+                break
+            self.midisetup[sid] = [struct.unpack_from(">BBBBB", data, p + 4 + c * 5) for c in range(16)]
+            p += 0x54
         self.keymaps = self._mem_list(lo, ls, keymap_off)
         self.layers = self._mem_list(lo, ls, layer_off)
         self.samples = {s.id: s for s in self.group.samples}
@@ -77,11 +96,12 @@ class Bank:
         return out
 
     # ------------------------------------------------------------ lookup --
-    def _macro_voice(self, mid: int, key: int, depth: int = 0) -> tuple[musyx.Sample, int] | None:
+    def _macro_voice(self, mid: int, key: int, depth: int = 0) -> tuple[musyx.Sample, int, tuple] | None:
         span = self.macros.get(mid)
         if not span or depth > 4:
             return None
         a, b = span
+        adsr = DEFAULT_ADSR
         for q in range(a, b, 8):
             w0, w1 = struct.unpack_from(">II", self.data, q)
             op = w0 & 0x7F
@@ -91,9 +111,11 @@ class Bank:
                 key += struct.unpack(">b", bytes([(w0 >> 8) & 0xFF]))[0]
             elif op == 0x19:                     # SET_KEY
                 key = (w0 >> 8) & 0xFF
+            elif op == 0x0C:                     # SET_ADSR (curve table id)
+                adsr = self.curves.get((w0 >> 8) & 0xFFFF, adsr)
             elif op == 0x10:                     # START_SAMPLE
                 s = self.samples.get((w0 >> 8) & 0xFFFF)
-                return (s, key) if s else None
+                return (s, key, adsr) if s else None
             elif op == 0x08:                     # PLAY_MACRO (spawns another macro)
                 r = self._macro_voice((w0 >> 8) & 0xFFFF, key, depth + 1)
                 if r:
@@ -113,7 +135,7 @@ class Bank:
                 if lo_ <= key <= hi:
                     r = self._macro_voice(m, key + tr)
                     if r:
-                        out.append(Voice(r[0], r[1], vol / 127.0, pan))
+                        out.append(Voice(r[0], r[1], vol / 127.0, pan, r[2]))
         elif mid & 0x4000 and mid in self.keymaps:
             a, b = self.keymaps[mid]
             if a + key * 8 + 8 <= b:
@@ -121,11 +143,11 @@ class Bank:
                 if m != 0xFFFF:
                     r = self._macro_voice(m, key + tr)
                     if r:
-                        out.append(Voice(r[0], r[1], 1.0, pan))
+                        out.append(Voice(r[0], r[1], 1.0, pan, r[2]))
         else:
             r = self._macro_voice(mid, key)
             if r:
-                out.append(Voice(r[0], r[1], 1.0, 64))
+                out.append(Voice(r[0], r[1], 1.0, 64, r[2]))
         return out
 
     def pcm(self, s: musyx.Sample):
@@ -158,16 +180,41 @@ def _seconds(tmap, tick: int) -> float:
     return 0.0
 
 
-def render(song: Song, bank: Bank, rate: int = OUT_RATE) -> bytes:
-    """Stereo 16-bit WAV of the song."""
+def _envelope(np, n: int, held: int, rate: int, adsr: tuple):
+    """Linear ADSR over n samples with key-off at `held`."""
+    at, dt, sl, rt = adsr
+    env = np.ones(n)
+    a = min(int(at * rate), held)
+    if a > 0:
+        env[:a] = np.linspace(0.0, 1.0, a, endpoint=False)
+    d = min(int(dt * rate), max(held - a, 0))
+    if d > 0:
+        env[a:a + d] = np.linspace(1.0, sl, d, endpoint=False)
+    if a + d < held:
+        env[a + d:held] = sl if dt > 0 else 1.0
+    if n > held:
+        level = env[held - 1] if held > 0 else 1.0
+        r = n - held
+        env[held:] = np.linspace(level, 0.0, r) ** 1.5
+    return env
+
+
+def render(song: Song, bank: Bank, rate: int = OUT_RATE, setup_id: int | None = None) -> bytes:
+    """Stereo 16-bit WAV of the song; `setup_id` selects the bank's MIDISETUP
+    (initial program, volume and pan per channel) the way the game does."""
     import numpy as np
     tmap = _tempo_map(song)
-    total = _seconds(tmap, song.ticks) + RELEASE + 0.1
+    max_release = max([v[3] for v in bank.curves.values()] + [RELEASE])
+    total = _seconds(tmap, song.ticks) + max_release + 0.1
     n_out = int(total * rate) + 1
     mix = np.zeros((n_out, 2), dtype="float64")
     program = {c: 0 for c in range(16)}
     volume = {c: 100 for c in range(16)}
     pan = {c: 64 for c in range(16)}
+    for c, (prog, vol, pn, _rev, _cho) in enumerate(bank.midisetup.get(setup_id, [])):
+        if prog in (bank.drum_pages if c == 9 else bank.pages):
+            program[c] = prog
+        volume[c], pan[c] = vol, pn
     for ev in song.events:  # already sorted by time, programs/controls before notes
         c = ev.channel
         if ev.kind == "program":
@@ -190,7 +237,7 @@ def render(song: Song, bank: Bank, rate: int = OUT_RATE) -> bytes:
             if len(src) < 2:
                 continue
             ratio = (2.0 ** ((v.key - v.sample.base_note) / 12.0)) * v.sample.rate / rate
-            n = int((dur + RELEASE) * rate)
+            n = int((dur + v.adsr[3]) * rate)
             pos = np.arange(n, dtype="float64") * ratio
             loop = v.sample.loop_length > 0 and v.sample.loop_start + v.sample.loop_length <= len(src)
             if loop:
@@ -204,10 +251,8 @@ def render(song: Song, bank: Bank, rate: int = OUT_RATE) -> bytes:
             if n <= 0:
                 continue
             samp = np.interp(pos, np.arange(len(src)), src)
-            env = np.ones(n)
             held = min(int(dur * rate), n)
-            if n > held:
-                env[held:] = np.linspace(1.0, 0.0, n - held) ** 2
+            env = _envelope(np, n, held, rate, v.adsr)
             amp = (ev.b / 127.0) * (volume[c] / 127.0) * v.volume
             p = ((pan[c] + v.pan) / 2.0) / 127.0
             l, r = math.cos(p * math.pi / 2), math.sin(p * math.pi / 2)

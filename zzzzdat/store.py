@@ -342,7 +342,10 @@ class Store:
             raise RuntimeError("the instrument bank (MusyX song group) was not found in this game")
         from .render import render
         songs = song.parse_songs(self.data(e))
-        w = render(songs[n], bank)
+        # the menus start the first two songs of the 19-song file as MusyX song
+        # ids 19 and 20 (menus.rel lbl_2_data_128), which select their channel setup
+        setup = {0: 19, 1: 20}.get(n) if len(songs) == 19 else None
+        w = render(songs[n], bank, setup_id=setup)
         with self._cache_lock:
             self._wav[key] = w
             while len(self._wav) > 8:
