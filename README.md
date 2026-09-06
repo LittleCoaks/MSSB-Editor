@@ -357,6 +357,12 @@ interleaved position array to bones by their pre-order index in the actor's
 tree, with source vertices equal to the rest pose, so it exports as ordinary
 glTF skinning. Hermite tangents are ignored (linear / slerp between keys).
 
+Hands, gloves and bats are separate models (per-slot items in the master
+table, or extra sections in menu packs) modelled from the wrist along +X.
+Every rig shares the same arm ids (16..20 right, 22..26 left), so the viewer
+can hang them from wrist bones 19 and 25 ("with hands / gloves / bat") and
+they follow the animation.
+
 The model viewer plays them: pick a bank (sections of the file itself, then
 the character's standalone banks from the DOL sub-file table), then a
 sequence; `.glb` downloads carry the skeleton, skin and animations

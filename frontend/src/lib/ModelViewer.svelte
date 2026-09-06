@@ -5,7 +5,8 @@
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
   import { urls, type BankInfo, type ModelInfo } from './api'
 
-  let { entry, models, banks = [] }: { entry: number; models: ModelInfo[]; banks?: BankInfo[] } = $props()
+  let { entry, models, banks = [], parts = [] }: { entry: number; models: ModelInfo[]; banks?: BankInfo[]; parts?: string[] } = $props()
+  let part = $state('')          // '', 'hands' or 'gloves'
   let canvas: HTMLCanvasElement
   let section = $state(models[0]?.section ?? 0)
   let wire = $state(false)
@@ -48,14 +49,14 @@
     return () => { alive = false; renderer.dispose() }
   })
 
-  $effect(() => { const s = section, e = entry, b = bank; if (renderer) load(e, s, b) })
+  $effect(() => { const s = section, e = entry, b = bank, p = part; if (renderer) load(e, s, b, p) })
   $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshStandardMaterial).wireframe = w }) })
   $effect(() => { const c = clip; if (mixer) play(c) })
-  $effect(() => { entry; bank = ''; })
+  $effect(() => { entry; bank = ''; part = '' })
 
-  function load(e: number, s: number, b: string) {
+  function load(e: number, s: number, b: string, p: string) {
     msg = 'loading…'
-    new GLTFLoader().load(urls.glb(e, s, b || undefined), g => {
+    new GLTFLoader().load(urls.glb(e, s, b || undefined, p || undefined), g => {
       if (root) scene.remove(root)
       root = g.scene; scene.add(root)
       let tris = 0
@@ -114,9 +115,17 @@
       {#each banks as b}<option value={b.key}>{b.label}{b.sequences ? ` · ${b.sequences} sequences` : ''}</option>{/each}
     </select>
   {/if}
+  {#if parts.length}
+    <select bind:value={part} title="Attached parts">
+      <option value="">body only</option>
+      {#if parts.some(p => p.endsWith('hand'))}<option value="hands">with hands</option>{/if}
+      {#if parts.some(p => p.endsWith('glove'))}<option value="gloves">with gloves</option>{/if}
+      {#if parts.some(p => p.endsWith('bat'))}<option value="bat">with bat</option>{/if}
+    </select>
+  {/if}
   <label><input type="checkbox" bind:checked={wire}> wireframe</label>
   <button onclick={reset}>Reset view</button>
-  <a class="btn" href={urls.glb(entry, section, bank || undefined)}>Download .glb</a>
+  <a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined)}>Download .glb</a>
   <a class="btn" href={urls.obj(entry, section)}>Download .obj</a>
   <span class="dim">{msg}</span>
 </div>

@@ -49,6 +49,7 @@ class Mesh:
     uvs: list[tuple]
     draws: list[Draw]
     tpl_names: list[str] = field(default_factory=list)
+    attach: int | None = None   # bone id this mesh hangs from (attached parts such as hands)
 
     @property
     def triangle_count(self) -> int:
@@ -349,7 +350,7 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
     animations = []
     if bones:
         scene_nodes, skins, animations = _rig(nodes, bones, mesh_node_of, skinned_mesh, banks or [],
-                                              add_view, add_accessor)
+                                              add_view, add_accessor, model.meshes)
     doc = {"asset": {"version": "2.0", "generator": "zzzzdat"}, "scene": 0,
            "scenes": [{"nodes": scene_nodes}], "nodes": nodes, "meshes": meshes,
            "materials": materials, "accessors": accessors, "bufferViews": views,
@@ -372,7 +373,8 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
             + struct.pack("<I", len(bufs)) + b"BIN\0" + bytes(bufs))
 
 
-def _rig(nodes: list, bones: list, mesh_node_of: dict, skinned_mesh, banks: list, add_view, add_accessor):
+def _rig(nodes: list, bones: list, mesh_node_of: dict, skinned_mesh, banks: list, add_view, add_accessor,
+         model_meshes: list | None = None):
     """Append bone nodes (and a root that turns the actor upright) to `nodes`;
     return (scene root nodes, skins, animations). Bone node order is the
     pre-order traversal so skin joint indices need no remapping."""
@@ -393,9 +395,13 @@ def _rig(nodes: list, bones: list, mesh_node_of: dict, skinned_mesh, banks: list
         pb = node_of.get(b.parent) if b.parent else None
         if pb is None or not b.inherit:
             nodes[flip]["children"].append(node_of[b.offset])
+    by_id_all = {b.id: b for b in bones}
     for mi, ni in mesh_node_of.items():
         owner = next((b for b in order if b.geo == mi), None)
-        if owner and mi != skinned_mesh:
+        att = model_meshes[mi].attach if model_meshes else None
+        if att is not None and att in by_id_all:
+            nodes[node_of[by_id_all[att].offset]]["children"].append(ni)
+        elif owner and mi != skinned_mesh:
             nodes[node_of[owner.offset]]["children"].append(ni)
         else:
             nodes[flip]["children"].append(ni)

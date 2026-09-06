@@ -363,8 +363,53 @@ class Store:
         label = f"{c['role']}" if (c and x.kind == "anim") else (f"section {sec}" if base else f"file {x.id}")
         return label, b
 
-    def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = ()) -> bytes:
-        key = (e.id, section, rig, bank_keys)
+    # attached parts: mesh name -> wrist bone id (every character rig shares the
+    # Biped-style ids: 16..20 right arm, 22..26 left arm; the hand meshes are
+    # modelled from the wrist along +X)
+    PART_BONES = {"L_hand": 25, "R_hand": 19, "L_glove": 25, "R_glove": 19,
+                  "L_bat": 25, "R_bat": 19, "L_hand_bat": 25, "R_hand_bat": 19}
+    PART_SETS = {"hands": ("L_hand", "R_hand"), "gloves": ("L_glove", "R_glove"),
+                 "bat": ("L_bat", "R_bat", "L_hand_bat", "R_hand_bat")}
+
+    def parts(self, e: Entry) -> list[dict]:
+        """Attachable parts for a character model: hand/glove containers in the
+        same file, else the slot's items from the master table."""
+        if e.archive != "ZZZZ.dat" or self.actor(e) is None:
+            return []
+        out = []
+        data = self.data(e)
+        for s in self.info(e).sections:
+            if s.kind == "geopalette":
+                m = c3.parse_geopalette(data, s.offset)
+                if m and all(mm.name in self.PART_BONES for mm in m.meshes) and m.meshes:
+                    out.append({"entry": e.id, "section": s.index, "name": m.meshes[0].name})
+        c = chars.classify_entry(e.refs)
+        if not out and c and c.get("slot") is not None:
+            base = chars.MASTER_VA + (chars.ITEMS_BASE + c["slot"] * 7) * 16
+            for x in self.entries:
+                for r in x.refs:
+                    if r.startswith("dol:.data:"):
+                        va = int(r.split(":")[2].split(" ")[0], 16)
+                        if base <= va < base + 4 * 16 and x.label:
+                            name = x.label.split(".")[0].rstrip("0123456789").rstrip("_")
+                            if name in self.PART_BONES:
+                                out.append({"entry": x.id, "section": None, "name": name})
+        return out
+
+    def _part_meshes(self, part: dict) -> tuple[list[c3.Mesh], list, bytes]:
+        x = self.get(part["entry"])
+        data = self.data(x)
+        fi = self.info(x)
+        if part["section"] is not None:
+            sec = fi.sections[part["section"]]
+        else:
+            sec = next(s for s in fi.sections if s.kind == "geopalette")
+        m = c3.parse_geopalette(data, sec.offset)
+        return (m.meshes if m else []), fi.all_textures(), data
+
+    def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = (),
+            parts: str = "") -> bytes:
+        key = (e.id, section, rig, bank_keys, parts)
         if key in self._glb:
             return self._glb[key]
         bones = self.actor(e) if rig else None
@@ -373,6 +418,22 @@ class Store:
         texs = self.info(e).all_textures()
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
         pngs = {i: t.decode_png(data) for i, (_sec, t) in enumerate(texs) if i in used}
+        if bones and parts:
+            want = self.PART_SETS.get(parts, ())
+            m = c3.Model(list(m.meshes))
+            next_tex = len(texs)
+            for p in self.parts(e):
+                if p["name"] not in want:
+                    continue
+                meshes, ptexs, pdata = self._part_meshes(p)
+                for mm in meshes:
+                    mm = c3.Mesh(mm.name, mm.positions, mm.normals, mm.uvs,
+                                 [c3.Draw(None if d.texture is None else d.texture + next_tex, d.tris, d.matrix) for d in mm.draws],
+                                 mm.tpl_names, attach=self.PART_BONES.get(mm.name))
+                    m.meshes.append(mm)
+                for i, (_s, t) in enumerate(ptexs):
+                    pngs[next_tex + i] = t.decode_png(pdata)
+                next_tex += len(ptexs)
         if bones:
             sk = self.skin(e)
             banks = [b for b in (self.bank(k) for k in bank_keys) if b]

@@ -106,7 +106,7 @@
 
     <div class="body">
       {#if tab === 'model'}
-        <ModelViewer entry={d.id} models={d.models} banks={d.banks} />
+        <ModelViewer entry={d.id} models={d.models} banks={d.banks} parts={d.parts} />
       {:else if tab === 'textures'}
         {#if bigTex !== null}
           <div class="big">

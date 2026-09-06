@@ -15,7 +15,7 @@ export interface ModelInfo { section: number; offset: number; meshes: string[]; 
 export interface BankInfo { key: string; entry: number; section: number; label: string; sequences: number | null }
 export interface EntryDetail extends EntrySummary {
   file_kind: string; hvqm4: Record<string, string | number> | null; sections: Section[]; textures: Texture[];
-  audio: AudioStream[]; sfx: SfxInfo[]; group: GroupInfo | null; models: ModelInfo[]; banks: BankInfo[]; file_name: string;
+  audio: AudioStream[]; sfx: SfxInfo[]; group: GroupInfo | null; models: ModelInfo[]; banks: BankInfo[]; parts: string[]; file_name: string;
 }
 export interface IndexDoc { meta: Record<string, any>; archive: string | null; archive_size: number; entries: EntrySummary[]; error?: string }
 export interface GameInfo {
@@ -80,7 +80,7 @@ export const urls = {
   thumb: (id: number) => `/api/thumb/${id}.png?d=2`,
   audio: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav`,
   audioDownload: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav?download=1`,
-  glb: (id: number, sec: number, anim?: string) => `/api/entry/${id}/model/${sec}.glb` + (anim ? '?anim=' + encodeURIComponent(anim) : ''),
+  glb: (id: number, sec: number, anim?: string, parts?: string) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}`,
   obj: (id: number, sec: number) => `/api/entry/${id}/model/${sec}.obj`,
   data: (id: number) => `/api/entry/${id}/data`,
   raw: (id: number) => `/api/entry/${id}/raw`,

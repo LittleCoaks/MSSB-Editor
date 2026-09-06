@@ -143,3 +143,19 @@ def test_musyx_group(store):
     assert w[:4] == b"RIFF" and len(w) == 44 + 34098 * 2
     assert store.wav_size(e, 0) == len(w)
     assert e.label == "Sound effects group 30"
+
+
+def test_attached_parts(store):
+    import json
+    import struct
+    e = store.get(91)  # Mario: hands and gloves come from the master table items
+    assert sorted({p["name"] for p in store.parts(e)}) == ["L_glove", "L_hand", "R_glove", "R_hand"]
+    glb = store.glb(e, 2, rig=True, parts="hands")
+    n = struct.unpack_from("<I", glb, 12)[0]
+    doc = json.loads(glb[20:20 + n])
+    names = {i: nd["name"] for i, nd in enumerate(doc["nodes"])}
+    node_of = {v: k for k, v in names.items()}
+    assert node_of["L_hand"] in doc["nodes"][node_of["bone25"]]["children"]
+    assert node_of["R_hand"] in doc["nodes"][node_of["bone19"]]["children"]
+    e2 = store.get(893)  # menu Mario carries its hands in the same container
+    assert sorted({p["name"] for p in store.parts(e2)}) == ["L_hand", "R_hand"]
