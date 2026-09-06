@@ -65,6 +65,6 @@ candidates = [r"C:\Program Files (x86)\NSIS\makensis.exe", r"C:\Program Files\NS
 makensis = shutil.which("makensis") or next((c for c in candidates if Path(c).exists()), None)
 if not makensis:
     sys.exit("makensis not found: install NSIS (https://nsis.sourceforge.io) to build the installer")
-cmd = [makensis, f"/DVERSION={version}", str(ROOT / "installer" / "installer.nsi")]
+cmd = [makensis, "/V3", f"/DVERSION={version}", f"/DROOT={ROOT}", str(ROOT / "installer" / "installer.nsi")]
 print(" ".join(cmd))
 sys.exit(subprocess.call(cmd, cwd=ROOT))

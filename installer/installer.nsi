@@ -1,6 +1,6 @@
 ; MSSB Editor installer (NSIS). Built by `python build.py --installer` after the
 ; PyInstaller one-folder build; expects dist\MSSB Editor\ under the repo root.
-;   makensis /DVERSION=x.y.z installer\installer.nsi
+;   makensis /DVERSION=x.y.z /DROOT=<repo root> installer\installer.nsi
 Unicode true
 !include "MUI2.nsh"
 !include "x64.nsh"
@@ -9,25 +9,28 @@ Unicode true
 !ifndef VERSION
   !define VERSION "0.0.0"
 !endif
+!ifndef ROOT
+  !define ROOT ".."      ; the repository root; build.py passes it absolute
+!endif
 !define APPNAME "MSSB Editor"
 !define PUBLISHER "LittleCoaks"
 !define REGKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\MSSBEditor"
 
 Name "${APPNAME}"
-OutFile "..\dist\MSSB Editor Setup ${VERSION}.exe"
+OutFile "${ROOT}\dist\MSSB Editor Setup ${VERSION}.exe"
 InstallDir "$PROGRAMFILES64\${APPNAME}"
 InstallDirRegKey HKLM "Software\${APPNAME}" "InstallDir"
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
 
-!define MUI_ICON "..\zzzzdat\ui\icon.ico"
-!define MUI_UNICON "..\zzzzdat\ui\icon.ico"
+!define MUI_ICON "${ROOT}\zzzzdat\ui\icon.ico"
+!define MUI_UNICON "${ROOT}\zzzzdat\ui\icon.ico"
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\MSSB Editor.exe"
 !define MUI_FINISHPAGE_RUN_TEXT "Start ${APPNAME}"
 
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "..\LICENSE"
+!insertmacro MUI_PAGE_LICENSE "${ROOT}\LICENSE"
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -41,7 +44,7 @@ Section "MSSB Editor" SecMain
   SetOutPath "$INSTDIR"
   ; a previous version's bundle is removed first so renamed files do not pile up
   RMDir /r "$INSTDIR\_internal"
-  File /r "..\dist\MSSB Editor\*"
+  File /r "${ROOT}\dist\MSSB Editor\*"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKLM "Software\${APPNAME}" "InstallDir" "$INSTDIR"
   WriteRegStr HKLM "${REGKEY}" "DisplayName" "${APPNAME}"

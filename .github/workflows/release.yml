@@ -21,6 +21,8 @@ jobs:
           python-version: "3.13"
       - run: pip install ".[build]"
       - run: python native/build_hvqm4.py
+      - name: Install NSIS (no longer on the runner image)
+        run: choco install nsis -y --no-progress
       - run: python build.py --installer
       - name: Check the tag matches the version
         shell: pwsh
