@@ -8,12 +8,14 @@ export interface EntrySummary {
 }
 export interface Texture { n: number; section: number | null; index: number; width: number; height: number; fmt: string; mips: number; offset: number; size: number; tlut: number; flags: string }
 export interface Section { index: number; offset: number; size: number; kind: string; magic: number; ntex: number }
-export interface AudioStream { pos: number; kind: string; rate: number; channels: number; seconds: number; samples: number; loop: boolean }
+export interface AudioStream { pos: number; kind: string; rate: number; channels: number; seconds: number; samples: number; loop: boolean; label?: string; note?: number }
+export interface SfxInfo { id: number; macro: number; priority: number; streams: number[] }
+export interface GroupInfo { id: number; type: number; kind: string; samples: number; sfx: number }
 export interface ModelInfo { section: number; offset: number; meshes: string[]; triangles: number; textures: number[] }
 export interface BankInfo { key: string; entry: number; section: number; label: string; sequences: number | null }
 export interface EntryDetail extends EntrySummary {
   file_kind: string; hvqm4: Record<string, string | number> | null; sections: Section[]; textures: Texture[];
-  audio: AudioStream[]; models: ModelInfo[]; banks: BankInfo[]; file_name: string;
+  audio: AudioStream[]; sfx: SfxInfo[]; group: GroupInfo | null; models: ModelInfo[]; banks: BankInfo[]; file_name: string;
 }
 export interface IndexDoc { meta: Record<string, any>; archive: string | null; archive_size: number; entries: EntrySummary[]; error?: string }
 export interface GameInfo {
@@ -93,7 +95,7 @@ export const hex = (n: number, w = 8) => '0x' + n.toString(16).padStart(w, '0')
 
 export const KIND_LABEL: Record<string, string> = {
   container: 'asset pack', textures: 'textures', anim: 'animation', hvqm4: 'movie', adgc: 'sound bank',
-  'dsp-adpcm': 'sound', 'dtk-adpcm': 'music', geopalette: 'model', unknown: 'data', rel: 'code',
+  'dsp-adpcm': 'sound', 'dtk-adpcm': 'music', musyx: 'sound effects', geopalette: 'model', unknown: 'data', rel: 'code',
 }
 
 export let catalogNames: Record<string, string> = {}

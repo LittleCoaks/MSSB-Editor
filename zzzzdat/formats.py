@@ -39,7 +39,7 @@ import re
 import struct
 from dataclasses import dataclass, field
 
-from . import dsp, gx
+from . import dsp, gx, musyx
 
 
 @dataclass
@@ -186,6 +186,8 @@ SECTION_KINDS = {0x005BBC61: "geopalette", 0x007B7960: "c3-7b7960", 0x00184300: 
 def classify_blob(data: bytes) -> str:
     if is_hvqm4(data):
         return "hvqm4"
+    if musyx.is_group(data):
+        return "musyx"
     if data[:8] == b"AdGCForm":
         return "adgc"
     magic = struct.unpack_from(">I", data, 0)[0] if len(data) >= 4 else 0
@@ -221,6 +223,9 @@ class FileInfo:
     hvqm4: dict | None = None
     names: list[str] = field(default_factory=list)
     audio: list[dict] = field(default_factory=list)  # {pos, kind, rate, channels, seconds, samples}
+    sfx: list[dict] = field(default_factory=list)    # MusyX groups: {id, macro, samples (stream numbers)}
+    group: dict | None = None                        # MusyX groups: {id, type, kind}
+    musyx: "musyx.Group | None" = None
 
     @property
     def label(self) -> str:
@@ -237,17 +242,41 @@ class FileInfo:
 def identify(data: bytes) -> FileInfo:
     if is_hvqm4(data):
         return FileInfo("hvqm4", hvqm4=hvqm4_info(data))
+    if musyx.is_group(data):
+        return musyx_info(data)
     texs = parse_texture_table(data)
     if texs:
         fi = FileInfo("textures", textures=texs)
     else:
         secs = parse_container(data)
         fi = FileInfo("container", sections=secs) if secs else FileInfo(classify_blob(data))
-    if fi.kind != "dsp-adpcm":
+    if fi.kind not in ("dsp-adpcm", "musyx"):
         fi.names = find_names(data)
     for pos, h in dsp.find_dsp_streams(data):
         fi.audio.append({"pos": pos, "kind": "dsp-adpcm", "rate": h.sample_rate, "channels": 1,
                          "seconds": round(h.seconds, 2), "samples": h.sample_count, "loop": bool(h.loop_flag)})
+    return fi
+
+
+def musyx_info(data: bytes) -> FileInfo:
+    g = musyx.parse_group(data)
+    fi = FileInfo("musyx", musyx=g)
+    if not g:
+        return fi
+    stream_of = {s.id: n for n, s in enumerate(g.samples)}
+    users: dict[int, list[int]] = {}
+    for f in g.sfx:
+        for sid in f.samples:
+            users.setdefault(sid, []).append(f.id)
+    for n, s in enumerate(g.samples):
+        used = users.get(s.id, [])
+        label = f"sample {s.id:#x}" + (f" · sfx {', '.join(f'{u:#x}' for u in used[:4])}" + (" …" if len(used) > 4 else "") if used else "")
+        fi.audio.append({"pos": n, "kind": "musyx", "rate": s.rate, "channels": 1, "seconds": round(s.seconds, 2),
+                         "samples": s.count, "loop": bool(s.loop_length), "label": label, "note": s.base_note})
+    fi.sfx = [{"id": f.id, "macro": f.macro, "priority": f.priority, "streams": [stream_of[s] for s in f.samples if s in stream_of]}
+              for f in g.sfx]
+    fi.group = {"id": g.id, "type": g.type, "kind": g.kind, "samples": len(g.samples), "sfx": len(g.sfx)}
+    fi.names = [f"{g.kind.capitalize()} group {g.id}"]
     return fi
 
 

@@ -132,3 +132,14 @@ def test_clone_character_and_restore(store):
     assert hashlib.sha1(ed.dol.read_bytes()).hexdigest() == sha
     assert not Editor(store.game).journal.get("_clones")
     assert len(Store().entries) == len(store.entries)
+
+
+def test_musyx_group(store):
+    e = store.get(30)
+    fi = store.info(e)
+    assert fi.kind == "musyx" and fi.group["id"] == 30 and len(fi.audio) == 12 and len(fi.sfx) == 13
+    assert all(f["streams"] for f in fi.sfx)
+    w = store.wav(e, 0)
+    assert w[:4] == b"RIFF" and len(w) == 44 + 34098 * 2
+    assert store.wav_size(e, 0) == len(w)
+    assert e.label == "Sound effects group 30"

@@ -7,7 +7,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import anim, c3, chars, dsp, formats
+from . import anim, c3, chars, dsp, formats, musyx
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
                           scan_adgc, scan_unreferenced, verify_entries)
 from .disc import Archive, Game, current_game, find_archive
@@ -16,7 +16,7 @@ from .lzss import decompress
 
 KNOWN_NAMES_PATH = INDEX_DIR / "known_names.json"
 
-EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin",
+EXT_BY_KIND = {"hvqm4": "h4m", "dsp-adpcm": "adpcm", "textures": "tex", "container": "bin", "musyx": "grp",
                "anim": "anm", "adgc": "adgc", "geopalette": "geo", "dtk-adpcm": "adp", "unknown": "bin", "": "bin"}
 DISC_ID_BASE = 10000
 CLONE_ID_BASE = 20000
@@ -263,6 +263,9 @@ class Store:
         data = self.data(e)
         if st["kind"] == "dtk-adpcm":
             w = dsp.dtk_wav(data, max_seconds)
+        elif st["kind"] == "musyx":
+            g = self.info(e).musyx
+            w = musyx.wav(data, g, g.samples[st["pos"]], max_seconds)
         else:
             _, w = dsp.decode_stream(data, st["pos"], max_seconds)
         self._wav[key] = w
@@ -410,6 +413,8 @@ class Store:
         st = self.info(e).audio[n]
         if st["kind"] == "dtk-adpcm":
             return dsp.dtk_wav_size(e.size, max_seconds)
+        if st["kind"] == "musyx":
+            return len(self.wav(e, n, max_seconds))
         return dsp.dsp_wav_size(self.data(e), st["pos"], max_seconds)
 
     def wav_stream(self, e: Entry, n: int = 0, max_seconds: float | None = None):
@@ -419,6 +424,9 @@ class Store:
             yield self._wav[key]
             return
         st = self.info(e).audio[n]
+        if st["kind"] == "musyx":
+            yield self.wav(e, n, max_seconds)
+            return
         data = self.data(e)
         gen = dsp.dtk_wav_stream(data, max_seconds) if st["kind"] == "dtk-adpcm" else dsp.dsp_wav_stream(data, st["pos"], max_seconds)
         parts = []

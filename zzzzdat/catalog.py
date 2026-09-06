@@ -117,6 +117,9 @@ def build_catalog(entries: list[Entry]) -> dict:
             g = group("music", "Music", "streams", "Streamed music")
         elif e.kind == "hvqm4":
             g = group("movies", "Movies", "movies", "Movies")
+        elif e.kind == "musyx":
+            g = group("sounds", "Sounds", "sfx" if "effects" in e.label else "instruments",
+                      "Sound effects" if "effects" in e.label else "Instrument banks")
         elif e.kind in ("adgc", "dsp-adpcm") or e.naud:
             g = group("sounds", "Sounds", "banks", "Sound banks")
         else:

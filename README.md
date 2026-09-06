@@ -234,7 +234,7 @@ Two ADPCM flavours are decoded to WAV on the fly (`zzzzdat/dsp.py`):
   mono bank inside the `AdGCForm` file at 0x8F2E808 (entry 89), which is
   presumably every voice clip and sound effect back to back; the cue table that
   splits it has not been located yet. The remaining sound effects, if any,
-  are probably in the still-unknown `lbl_800EF508` series.
+  are in the MusyX groups of the `lbl_800EF508` series (see below).
 
 ## Desktop window and packaging
 
@@ -279,8 +279,9 @@ Index entries are classified by content:
 | `hvqm4` | 3 | Nintendo HVQM4 1.3 movies (intro 82 MB, 23 MB, 3 MB) |
 | `rel` | 3 | `menus.rel`, `game.rel`, `debug.rel` in `aaaa.dat` (listed for completeness) |
 | `adgc` | 1 | the DSP-ADPCM sound bank |
-| `dsp-adpcm` | 2 | headerless ADPCM-looking data |
-| `unknown` | 223 | includes the 52 large stored files of the `lbl_800EF508` table (24 MB, a different container layout, not decoded) |
+| `musyx` | 48 | MusyX sound groups from the `lbl_800EF508` table: 47 sound-effect groups (875 effects, 1,300 samples) and one instrument bank |
+| `dsp-adpcm` | 2 | small tables (`0x131` version word) referenced from menus.rel and game.rel, purpose unknown; flagged by the ADPCM heuristic |
+| `unknown` | 175 | |
 | `dtk-adpcm` | 17 | disc `.adp` music (not in the archive; ids 10000+) |
 
 About 9,300 textures are decodable across all entries. Sixty entries carry a
@@ -355,6 +356,21 @@ the character's standalone banks from the DOL sub-file table), then a
 sequence; `.glb` downloads carry the skeleton, skin and animations
 (`/api/entry/<id>/model/<sec>.glb?anim=<entry>:<section>`).
 
+### MusyX sound groups
+
+The game's sound effects run on Factor 5's MusyX engine (the decomp has its
+source under `src/Musyx`). The 48 files of the `lbl_800EF508` table are
+group files: four sections (project, sample directory, pool, sample data)
+that `sndPushGroup` takes as-is. `zzzzdat/musyx.py` documents the layout;
+in short, the project's FX table maps a sound-effect id to a macro, the
+macro's `START_SAMPLE` steps name the samples, and the sample directory
+gives each sample's offset, rate, base note, loop and DSP-ADPCM
+coefficients. The Audio tab lists every sample of a group with the effects
+that use it, and a button per effect plays its sample. Thirty-four of the
+groups are character voice sets (13 lines each); which character each
+belongs to is not yet known. Sequenced music (the instrument bank plus
+`.song` data elsewhere) is not rendered.
+
 ### Texture table
 
 0x20-byte records, data offsets relative to the table start:
@@ -407,6 +423,7 @@ zzzzdat/
   png.py          PNG reader (stdlib only) and resampling
   texedit.py      in-place texture replacement inside an entry
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
+  musyx.py        MusyX sound groups: sfx -> macro -> sample, sample decoding
   c3.py           C3 GeoPalette model parsing, actors, OBJ and glTF export (rigged)
   anim.py         ANIM banks and skin files
   app.py          desktop window (pywebview) around the server

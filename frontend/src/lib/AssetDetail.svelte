@@ -10,10 +10,12 @@
   let hexOff = $state(0)
   let hexText = $state('')
   let bigTex = $state<number | null>(null)
+  let playing = $state<number | null>(null)
+  let playGen = $state(0)
 
   $effect(() => {
     const cur = id
-    d = null; msg = ''; bigTex = null
+    d = null; msg = ''; bigTex = null; playing = null
     api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : 'details' } })
   })
   $effect(() => { if (tab === 'hex' && d) loadHex() })
@@ -126,10 +128,26 @@
           </div>
         {/if}
       {:else if tab === 'audio'}
+        {#if d.group}
+          <p class="dim" style="margin-top:0">MusyX {d.group.kind} group {d.group.id}: {d.group.samples} samples{d.group.sfx ? `, ${d.group.sfx} sound effects` : ''}. Each sound effect is a macro that plays one of the samples below.</p>
+          {#if d.sfx.length}
+            <div class="sfxgrid">
+              {#each d.sfx as f}
+                <button class="sfx" disabled={!f.streams.length} title={`macro ${hex(f.macro, 4)}${f.streams.length ? '' : ' (plays through a layer; no direct sample)'}`} onclick={() => { if (f.streams.length) { playing = f.streams[0]; playGen++ } }}>▶ sfx {hex(f.id, 4)}{#if f.streams.length > 1}<span class="dim"> ×{f.streams.length}</span>{/if}</button>
+              {/each}
+            </div>
+            {#if playing !== null}
+              <div class="card" style="margin:8px 0">
+                <div class="row"><b>Playing sample {playing + 1}</b> <span class="dim">{d.audio[playing].label}</span></div>
+                {#key playGen}<audio controls autoplay src={urls.audio(d.id, playing)} style="width:100%;margin-top:6px"></audio>{/key}
+              </div>
+            {/if}
+          {/if}
+        {/if}
         {#each d.audio as s, n}
           <div class="card" style="margin-bottom:10px">
-            <div class="row"><b>Stream {n + 1}</b> <span class="dim">{s.rate} Hz · {s.channels === 2 ? 'stereo' : 'mono'} · {s.seconds} s{s.loop ? ' · loops' : ''}</span> <a href={urls.audioDownload(d.id, n)}>download WAV</a></div>
-            <audio controls preload="metadata" src={urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
+            <div class="row"><b>{s.kind === 'musyx' ? `Sample ${n + 1}` : `Stream ${n + 1}`}</b> {#if s.label}<span class="dim">{s.label}</span>{/if} <span class="dim">{s.rate} Hz · {s.channels === 2 ? 'stereo' : 'mono'} · {s.seconds} s{s.loop ? ' · loops' : ''}{s.note !== undefined && s.note !== 60 ? ` · base note ${s.note}` : ''}</span> <a href={urls.audioDownload(d.id, n)}>download WAV</a></div>
+            <audio controls preload={s.kind === 'musyx' ? 'none' : 'metadata'} src={urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
           </div>
         {/each}
       {:else if tab === 'details'}
@@ -188,4 +206,6 @@
   .tex { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px; background: var(--panel); }
   .tex .checker { display: inline-block; }
   .big .checker { max-width: 100%; }
+  .sfxgrid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .sfx { padding: 4px 8px; font-size: 12px; font-family: ui-monospace, Consolas, monospace; }
 </style>
