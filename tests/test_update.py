@@ -12,7 +12,9 @@ def test_parse_and_newer():
     assert version.newer("v9.0.0")
     assert not version.newer(version.VERSION)
     assert not version.newer("0.0.1")
-    assert version.parse("garbage") == (0,)
+    assert version.parse("garbage") == (0, 0, 0)
+    assert version.parse("v0.1") == version.parse("0.1.0") == (0, 1, 0)
+    assert not version.newer("0.1") and not version.newer("v0.1.0")
 
 
 def test_pyproject_matches_version():

@@ -10,7 +10,8 @@ RELEASES_URL = f"https://github.com/{REPO}/releases"
 
 
 def parse(v: str) -> tuple[int, ...]:
-    """'v1.2.3' -> (1, 2, 3); anything unparseable sorts lowest."""
+    """'v1.2.3' -> (1, 2, 3), padded to three parts so 'v0.1' equals '0.1.0';
+    anything unparseable sorts lowest."""
     v = v.strip().lstrip("vV")
     out = []
     for part in v.split("."):
@@ -21,7 +22,8 @@ def parse(v: str) -> tuple[int, ...]:
             else:
                 break
         out.append(int(digits) if digits else 0)
-    return tuple(out) if out else (0,)
+    out = (out or [0]) + [0] * (3 - len(out))
+    return tuple(out[:max(3, len(out))])
 
 
 def newer(candidate: str, current: str = VERSION) -> bool:
