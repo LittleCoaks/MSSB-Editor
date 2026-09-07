@@ -20,15 +20,12 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install ".[build]"
+      - name: Check the tag matches the version (v0.1 and 0.1.0 count as the same)
+        run: python -c "import sys; from zzzzdat.version import VERSION, parse; t='${{ github.ref_name }}'; ok = parse(t) == parse(VERSION); print(t, 'vs', VERSION, 'ok' if ok else 'MISMATCH'); sys.exit(0 if ok else 1)"
       - run: python native/build_hvqm4.py
       - name: Install NSIS (no longer on the runner image)
         run: choco install nsis -y --no-progress
       - run: python build.py --installer
-      - name: Check the tag matches the version
-        shell: pwsh
-        run: |
-          $v = (python -c "from zzzzdat.version import VERSION; print(VERSION)").Trim()
-          if ("v$v" -ne "${{ github.ref_name }}") { throw "tag ${{ github.ref_name }} does not match VERSION $v" }
       - uses: actions/upload-artifact@v4
         with:
           name: windows-installer
