@@ -634,8 +634,9 @@ class Store:
         for s in self.info(e).sections:
             if collision.is_table(s.magic):
                 tris, tags, problems = collision.triangles(data[s.offset:s.offset + s.size])
-                return {"triangles": [[[x, -y, -z] for x, y, z in t] for t in tris], "tags": tags, "problems": problems}
-        return {"triangles": [], "tags": [], "problems": []}
+                names = {t: collision.surface_name(t) for t in set(tags)}
+                return {"triangles": [[[x, -y, -z] for x, y, z in t] for t in tris], "tags": tags, "names": names, "problems": problems}
+        return {"triangles": [], "tags": [], "names": {}, "problems": []}
 
     def extract_models(self, e: Entry, dest: Path, fmt: str = "glb") -> list[Path]:
         out = []

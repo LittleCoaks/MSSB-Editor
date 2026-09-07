@@ -183,8 +183,10 @@ through the per-slot u16 table at `0x800EEAAC` (slot x 6); the u16 table at
 (master items 486+, mirrored at `0x800F71D8`), -1 for Boo, King Boo, Shy Guy
 and Petey. Both those tables were once thought to be sound. The per-slot
 sub-items 4..6 and the shared sets share one record layout: a count, then
-entries of (total frames, key count, flags, (frame, code) pairs); code 0x64xx
-selects a hand pose. debug.rel keeps the development file names of every
+entries of (total frames, key count, flags, (code, frame) pairs); a code's
+high byte is a channel (0x64 = hand pose) and the frame word's high byte
+marks the moment: 0x80 bat contact (mid-swing on nearly every swing), 0x50
+pitch release, 0x40 the catch, 0x60 follow-through, 0x20 the last frame. debug.rel keeps the development file names of every
 sub-file (`char/ninNN/model0.dat`, `model1.dat`, `motb.dat` ... `motpm.dat`),
 which is where the bank names in the UI come from. game.rel's two data
 tables are the preset team rosters (12 x 1440 bytes, copied to
@@ -242,8 +244,12 @@ object positions. Each pack also has a collision mesh (`zzzzdat/collision.py`): 
 `00 NN 43 00` section of NN records, each a run of GX-style primitives
 (u16 kind, u16 n: kind 1 = triangle strip of n triangles, kind 0 = triangle
 list of n triangles) whose points are (x, y, z, u16 surface tag, u16 0). The
-viewer's "collision" tick draws it as translucent panels: the outfield wall
-ring, the dugouts and the ground. Finding it also fixed the posing of packs
+viewer's "collision" tick draws it as translucent panels coloured by surface
+type with a legend. The types are game.rel's `BALL_COLLISION_TYPE`
+(`collision_primitives.h` in the decomp): 1 grass, 2 wall, 3 structure, 4
+foul line, 5 unclimbable wall, 6 dirt, 7 pit wall, 8 pit, 9 rough terrain, 10
+water, 11 Chain Chomp hazard, with bit 0x80 marking foul territory; the game
+reads the type from the newest vertex of the triangle the ball hit. Finding it also fixed the posing of packs
 with several skeletons: actors pair with GeoPalettes in order (the park's,
 then the sky's), not by nearest-preceding section, which had posed the park
 with the sky's transform. Two field packs (Wario Palace, Toy Field) are GeoPalettes with a

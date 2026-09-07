@@ -35,8 +35,14 @@ Two 16-byte descriptor tables describe every playable character:
   the model setup path that also calls `animateModelArmsGlovesBats`.
   Every record (sub-items and shared) has the same layout: u32 count, 0x28,
   end of the offset table, 6, 30, 16, then `count` u32 offsets to entries
-  of u16 (total frames, key count, flags, then (frame, code) pairs; codes
-  0x64xx select a hand pose, 0x40xx/0x50xx/0x80xx are other cues).
+  of u16 (total frames, key count, flags, then (code, frame) pairs). A code's
+  high byte is a channel in tens (0x64 = 100 selects a hand pose; 0x3c, 0x32,
+  0x28, 0x1e also occur) and its low byte the value. The frame word carries a
+  marker in its high byte: measured over every character, 0x80 falls at the
+  middle of nearly every swing (bat contact), 0x50 a third into pitches (the
+  release), 0x40 two thirds into catches (the catch) and after pitch release,
+  0x60 late in pitches (follow-through), 0x20 on the last frame, 0x01..0x06 in
+  the first frames, 0xff at frame 0 (unset).
 * **Sub-file names**: debug.rel keeps the development paths: each base
   character was `char/ninNN/` (NN = base slot) holding `model0.dat`,
   `model1.dat` and the 17 banks `motb, motr, motf, motp, motc, mote, moto,

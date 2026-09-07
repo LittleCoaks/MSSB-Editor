@@ -23,14 +23,17 @@ Details of what already works are in the README.
 
 ## Data still not understood
 
-- [ ] **Collision surface tags.** The stadium collision panels carry tags
-      (3, 6, 0x83, 0x85, ...); colour the overlay by tag and work out which is
-      grass, dirt, wall and out-of-play.
+- [x] Collision surface tags: game.rel's `BALL_COLLISION_TYPE` (grass, wall,
+      structure, foul line, dirt, pit, water, Chain Chomp hazard...; 0x80 =
+      foul territory); the overlay is coloured by type with a legend.
 - [ ] **Stadium prop placement.** Mario Stadium's props are listed but not
       positioned in the scene; their positions live in game code.
-- [ ] **Animation event codes** other than the hand pose (0x40xx, 0x50xx,
-      0x80xx), probably sound and effect cues; would let the viewer play the
-      bat pose at the right frame of a swing.
+- [x] Animation event keys: (code, frame) pairs; the frame's high byte marks
+      bat contact (0x80), pitch release (0x50), the catch (0x40),
+      follow-through (0x60), last frame (0x20). Inferred from where they fall
+      across every character, not from code. Still open: the meaning of the
+      code channels other than 0x64 (0x3c, 0x32, 0x28, 0x1e), and playing the
+      bat pose at the contact frame in the viewer.
 - [ ] What separates two daytime files of the same stadium (their skies match).
 - [x] The bat (built into the batting hands, pulled out by a hand pose).
 - [x] The hand tables, event-track sets, grip records, game.rel tables.

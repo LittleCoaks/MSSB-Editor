@@ -60,17 +60,23 @@
     const url = overlay
     if (lines) { scene.remove(lines); lines = null }
     if (!url || !renderer) return
-    fetch(url).then(r => r.json()).then((j: { triangles: number[][][] }) => {
+    fetch(url).then(r => r.json()).then((j: { triangles: number[][][]; tags: number[]; names: Record<string, string> }) => {
+      tagNames = j.names ?? {}
       if (url !== overlay) return
-      // the collision mesh: translucent panels with their edges, so fences, walls and the ground read as surfaces
+      // the collision mesh: translucent panels coloured by surface tag, with their edges
       const g = new THREE.Group(); g.name = 'collision'
-      const fill = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false })
-      const edge = new THREE.LineBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.7 })
       const flat = new Float32Array(j.triangles.length * 9)
-      j.triangles.forEach((t, i) => t.forEach((p, k) => { flat.set(p, i * 9 + k * 3) }))
-      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(flat, 3))
-      g.add(new THREE.Mesh(geo, fill))
-      g.add(new THREE.LineSegments(new THREE.WireframeGeometry(geo), edge))
+      const cols = new Float32Array(j.triangles.length * 9)
+      const seen = new Map<number, number>()
+      j.triangles.forEach((t, i) => t.forEach((p, k) => {
+        flat.set(p, i * 9 + k * 3)
+        const c = tagColour(j.tags[i]); cols.set([c.r, c.g, c.b], i * 9 + k * 3)
+        seen.set(j.tags[i], (seen.get(j.tags[i]) ?? 0) + 1)
+      }))
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(flat, 3)); geo.setAttribute('color', new THREE.BufferAttribute(cols, 3))
+      g.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.35, side: THREE.DoubleSide, depthWrite: false })))
+      g.add(new THREE.LineSegments(new THREE.WireframeGeometry(geo), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25 })))
+      tagLegend = [...seen.entries()].sort((a, b) => a[0] - b[0]).map(([t, n]) => ({ tag: t, n, css: '#' + tagColour(t).getHexString() }))
       g.visible = showLines
       lines = g; scene.add(g)
     }).catch(() => {})
@@ -98,6 +104,16 @@
   // a stadium's sky dome encloses the park: draw it inside-out so the orbit camera looks through it
   const isSky = (m: THREE.Object3D) => /sky|cloud|enkei/i.test(m.name) || /sky|cloud/i.test(m.parent?.name ?? '')
   const isGlare = (m: THREE.Object3D) => /glare/.test(m.name) || /glare/.test(m.parent?.name ?? '')
+  // one colour per surface tag: the low 7 bits pick a hue, the high bit lightens it
+  let tagLegend = $state<{ tag: number; n: number; css: string }[]>([])
+  let tagNames = $state<Record<string, string>>({})
+  const tagName = (t: number) => tagNames[String(t)] ?? `surface ${t & 0x7f}${t & 0x80 ? ' (foul)' : ''}`
+  // fixed colours for the game's surface types (BALL_COLLISION_TYPE); foul territory is the paler shade
+  const SURFACE_HUES: Record<number, number> = { 1: 120, 2: 30, 3: 0, 4: 60, 5: 15, 6: 40, 7: 280, 8: 260, 9: 90, 10: 200, 11: 320 }
+  function tagColour(t: number) {
+    const hue = SURFACE_HUES[t & 0x7f] ?? ((t & 0x7f) * 47) % 360
+    return new THREE.Color().setHSL(hue / 360, 0.8, t & 0x80 ? 0.75 : 0.45)
+  }
   function play(name: string) {
     if (!mixer) return
     const c = clips.find(x => x.name === name)
@@ -159,6 +175,7 @@
   {/if}
   <label><input type="checkbox" bind:checked={wire}> wireframe</label>
   {#if overlay}<label title="the stadium's collision panels: fences, walls, dugouts"><input type="checkbox" bind:checked={showLines}> collision</label>{/if}
+  {#if overlay && showLines && tagLegend.length}<span class="legend">{#each tagLegend as l}<span title="{l.n} triangles"><i style="background:{l.css}"></i>{tagName(l.tag)}</span>{/each}</span>{/if}
   <button onclick={reset}>Reset view</button>
   {#if whole}<a class="btn" href={urls.scene(entry)}>Download .glb (whole scene)</a>{:else}<a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined, variant, pose)}>Download .glb</a>
   <a class="btn" href={urls.obj(entry, section, pose)}>Download .obj</a>{/if}
@@ -182,5 +199,7 @@
 <style>
   .tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }  /* not .bar: app.css uses that for progress bars */
   .mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .legend { display: inline-flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--dim); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
   canvas { width: 100%; height: 65vh; min-height: 320px; display: block; border: 1px solid var(--line); border-radius: 6px; background: #101216; }
 </style>

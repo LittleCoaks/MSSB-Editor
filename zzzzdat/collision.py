@@ -7,18 +7,29 @@ primitives:
 
     u16 kind, u16 n        kind 1: triangle strip, n triangles, n + 2 points
                            kind 0: triangle list,  n triangles, 3n points
-    points of f32 x, f32 y, f32 z, u16 tag, u16 0   (tag = surface code:
-                           3, 6, 0x83, 0x85 ...; the 0x80 bit and the low
-                           values are not decoded)
+    points of f32 x, f32 y, f32 z, u16 tag, u16 0   (tag = BALL_COLLISION_TYPE,
+                           see SURFACES; bit 0x80 marks foul territory)
 
-A record ends with a 4-byte trailer. Coordinates are in the stadium's actor
-space, so they line up with the posed meshes.
+This is game.rel's TriangleGroup / CollisionTriangle (collision_primitives.h
+in the decomp): checkTriangleCollisions walks the list, takes a strip's
+triangles with alternating winding, and reads the surface type from the
+newest vertex of the triangle that was hit. Coordinates are in the stadium's
+actor space, so they line up with the posed meshes.
 """
 from __future__ import annotations
 
 import struct
 
 Point = tuple[float, float, float]
+
+# game.rel's BALL_COLLISION_TYPE (collision_primitives.h in the decomp); 0x80 = foul territory
+SURFACES = {0: "none", 1: "grass", 2: "wall", 3: "structure", 4: "foul line", 5: "unclimbable wall", 6: "dirt",
+            7: "pit wall", 8: "pit", 9: "rough terrain", 10: "water", 11: "Chain Chomp hazard"}
+FOUL = 0x80
+
+
+def surface_name(tag: int) -> str:
+    return SURFACES.get(tag & 0x7F, f"surface {tag & 0x7F}") + (" (foul)" if tag & FOUL else "")
 
 
 def is_table(magic: int) -> bool:
@@ -56,11 +67,11 @@ def triangles(section: bytes) -> tuple[list[tuple[Point, Point, Point]], list[in
                 for k in range(count):
                     a, b, c = pts[k], pts[k + 1], pts[k + 2]
                     tris.append((a[0], b[0], c[0]) if k % 2 == 0 else (c[0], b[0], a[0]))
-                    tags.append(a[1])
+                    tags.append(c[1])   # the game reads the type from the newest vertex
             else:
                 for k in range(count):
                     a, b, c = pts[3 * k], pts[3 * k + 1], pts[3 * k + 2]
                     tris.append((a[0], b[0], c[0]))
-                    tags.append(a[1])
+                    tags.append(c[1])
             pos += 4 + npts * 16
     return tris, tags, problems
