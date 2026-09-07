@@ -32,7 +32,12 @@ HELPER = "hvqm4dec.exe" if sys.platform == "win32" else "hvqm4dec"
 def helper_path() -> Path | None:
     candidates = [PACKAGE_DATA / "native" / "bin" / HELPER, Path(__file__).resolve().parents[1] / "native" / "bin" / HELPER]
     if FROZEN:
-        candidates.insert(0, Path(sys.executable).resolve().parent / HELPER)
+        exe_dir = Path(sys.executable).resolve().parent
+        # Windows one-folder build: next to the exe. macOS .app (PyInstaller 6): the
+        # executable is in Contents/MacOS and added binaries in Contents/Frameworks
+        # (sys._MEIPASS), older layouts in Contents/Resources.
+        candidates = [exe_dir / HELPER, PACKAGE_DATA / HELPER, exe_dir.parent / "Frameworks" / HELPER,
+                      exe_dir.parent / "Resources" / HELPER] + candidates
     for c in candidates:
         if c.is_file():
             return c
