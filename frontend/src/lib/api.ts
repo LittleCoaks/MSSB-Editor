@@ -110,6 +110,7 @@ export const urls = {
   thumb: (id: number) => `/api/thumb/${id}.png?d=2`,
   audio: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav`,
   audioDownload: (id: number, n: number) => `/api/entry/${id}/audio/${n}.wav?download=1`,
+  audioStereo: (id: number, n: number, download = false) => `/api/entry/${id}/audio/${n}/stereo.wav${download ? '?download=1' : ''}`,
   midi: (id: number, n: number) => `/api/entry/${id}/song/${n}.mid`,
   songWav: (id: number, n: number) => `/api/entry/${id}/song/${n}.wav`,
   songMix: (id: number, ns: number[], loops = 1) => `/api/entry/${id}/song/mix.wav?songs=${ns.join(',')}&loops=${loops}`,

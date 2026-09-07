@@ -276,6 +276,24 @@ class Store:
             self._wav.popitem(last=False)
         return w
 
+    def stereo_wav(self, e: Entry, n: int) -> bytes:
+        """Samples `n` and `n + 1` interleaved as one stereo WAV: the music the
+        MusyX groups carry is stored as separate left and right samples."""
+        streams = self.info(e).audio
+        if n + 1 >= len(streams):
+            raise KeyError(f"entry {e.id} has no sample {n + 2} to pair with {n + 1}")
+        import struct as _struct
+        left, right = self.wav(e, n), self.wav(e, n + 1)
+        rate = streams[n]["rate"]
+        lp, rp = left[44:], right[44:]
+        m = min(len(lp), len(rp)) // 2
+        out = bytearray(m * 4)
+        out[0::4] = lp[0:m * 2:2]
+        out[1::4] = lp[1:m * 2:2]
+        out[2::4] = rp[0:m * 2:2]
+        out[3::4] = rp[1:m * 2:2]
+        return dsp.wav(bytes(out), rate, 2)
+
     # -------------------------------------------------------------- models --
     def models(self, e: Entry) -> list[dict]:
         """Summaries of every parseable GeoPalette section in an entry."""

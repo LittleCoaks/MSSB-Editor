@@ -97,6 +97,9 @@
   "0x183a9800": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
   "0x18682000": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
   "0x1801e000": "Prototype test animations (test, f_h_01)",
-  "0x180bf800": "Prototype test animations (test, f_h_01)"
+  "0x180bf800": "Prototype test animations (test, f_h_01)",
+  "0x7f24800": "Dictionary music (MusyX group 0: one 34.7 s loop as a left/right sample pair)",
+  "0x84f1800": "Sound effects group 32 (with a 76.6 s looping left/right music pair, probably the main menu)",
+  "0x8d8b000": "Sound effects group 53 (a 20.7 s left/right music pair and a 4 s jingle pair)"
  }
 }

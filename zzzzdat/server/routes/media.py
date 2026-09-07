@@ -91,6 +91,18 @@ def get_midi(req: Request, eid: str, n: str):
     req.bytes(st.midi(e, int(n)), "audio/midi", f"{st.file_name(e).rsplit('.', 1)[0]}_song{int(n) + 1}.mid")
 
 
+@router.get(r"/api/entry/(?P<eid>\d+)/audio/(?P<n>\d+)/stereo\.wav")
+def get_audio_stereo(req: Request, eid: str, n: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    w = st.stereo_wav(e, int(n))
+    stem = st.file_name(e).rsplit(".", 1)[0]
+    if req.flag("download"):
+        req.bytes(w, "audio/wav", f"{stem}_{n}+{int(n) + 1}_stereo.wav")
+    else:
+        req.bytes(w, "audio/wav")
+
+
 @router.get(r"/api/entry/(?P<eid>\d+)/audio/(?P<n>\d+)(?:\.wav)?")
 def get_audio(req: Request, eid: str, n: str):
     st = req.ctx.require_store()

@@ -535,6 +535,15 @@ groups are character voice sets (13 lines each); which character each
 belongs to is not yet known. Sequenced music (the instrument bank plus
 `.song` data elsewhere) is not rendered.
 
+### Sampled music in the sound groups
+
+Three MusyX groups carry music as plain samples rather than sequences, stored
+as separate left and right samples of equal length: group 0 is the
+Dictionary music (a 34.7 s loop), group 32 holds a 76.6 s loop (probably the
+main menu) and group 53 a 20.7 s pair plus a 4 s jingle pair. The Audio tab
+shows such a pair as one stereo player with a stereo WAV download
+(`/api/entry/<id>/audio/<n>/stereo.wav`).
+
 ### Movies
 
 The three cutscenes are HVQM4 1.3 (Hudson's codec, 640x448 at 30 fps with

@@ -189,10 +189,15 @@
           {/if}
         {/if}
         {#each d.audio as s, n}
+          {@const pair = s.kind === 'musyx' && s.seconds >= 3 && d.audio[n + 1] && d.audio[n + 1].seconds === s.seconds && d.audio[n + 1].rate === s.rate}
+          {@const paired = n > 0 && s.kind === 'musyx' && s.seconds >= 3 && d.audio[n - 1].seconds === s.seconds && d.audio[n - 1].rate === s.rate}
+          {#if !paired}
           <div class="card" style="margin-bottom:10px">
-            <div class="row"><b>{s.kind === 'musyx' ? `Sample ${n + 1}` : `Stream ${n + 1}`}</b> {#if s.label}<span class="dim">{s.label}</span>{/if} <span class="dim">{s.rate} Hz · {s.channels === 2 ? 'stereo' : 'mono'} · {s.seconds} s{s.loop ? ' · loops' : ''}{s.note !== undefined && s.note !== 60 ? ` · base note ${s.note}` : ''}</span> <a href={urls.audioDownload(d.id, n)}>download WAV</a></div>
-            <audio controls preload={s.kind === 'musyx' ? 'none' : 'metadata'} src={urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
+            <div class="row"><b>{s.kind === 'musyx' ? (pair ? `Samples ${n + 1} + ${n + 2}` : `Sample ${n + 1}`) : `Stream ${n + 1}`}</b> {#if s.label}<span class="dim">{s.label}</span>{/if} <span class="dim">{s.rate} Hz · {pair ? 'left + right pair, played as stereo' : s.channels === 2 ? 'stereo' : 'mono'} · {s.seconds} s{s.loop ? ' · loops' : ''}{s.note !== undefined && s.note !== 60 ? ` · base note ${s.note}` : ''}</span>
+              {#if pair}<a href={urls.audioStereo(d.id, n, true)}>download stereo WAV</a> <span class="dim">·</span> <a href={urls.audioDownload(d.id, n)}>left</a> <a href={urls.audioDownload(d.id, n + 1)}>right</a>{:else}<a href={urls.audioDownload(d.id, n)}>download WAV</a>{/if}</div>
+            <audio controls preload={s.kind === 'musyx' ? 'none' : 'metadata'} src={pair ? urls.audioStereo(d.id, n) : urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
           </div>
+          {/if}
         {/each}
       {:else if tab === 'movie'}
         <MoviePlayer entry={d.id} />
