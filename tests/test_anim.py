@@ -84,3 +84,30 @@ def test_invert():
     m = [[0.0, -1.0, 0.0, 3.0], [1.0, 0.0, 0.0, -2.0], [0.0, 0.0, 2.0, 1.0], [0.0, 0.0, 0.0, 1.0]]
     ident = c3._mul(m, c3._invert(m))
     assert all(abs(ident[i][j] - (i == j)) < 1e-12 for i in range(4) for j in range(4))
+
+
+def test_fill_weight_gaps_inherits_from_the_nearest_covered_vertex():
+    """The skin lists tile the body in runs that do not quite meet; the few
+    vertices left between them used to fall back to bone 0 and tear away from
+    the body as soon as an animation moved the root."""
+    sk = anim.Skin(weights={0: [(3, 1.0)], 3: [(7, 0.5), (8, 0.5)]})
+    positions = [(0.0, 0.0, 0.0), (0.1, 0.0, 0.0), (9.0, 0.0, 0.0), (10.0, 0.0, 0.0)]
+    out = anim.fill_weight_gaps(sk, positions)
+    assert out[0] == [(3, 1.0)] and out[3] == [(7, 0.5), (8, 0.5)]   # covered ones are untouched
+    assert out[1] == [(3, 1.0)]                                      # sits beside vertex 0
+    assert out[2] == [(7, 0.5), (8, 0.5)]                            # sits beside vertex 3
+    assert out[1] is not sk.weights[0]                               # a copy, not the same list
+    # nothing to inherit from: leave it to the caller's own fallback
+    assert anim.fill_weight_gaps(anim.Skin(), positions) == {}
+
+
+def test_is_static_spots_a_sequence_that_never_moves():
+    rest = [anim.Key(t, (0, 0, 0, 1), (0, 1, 0)) for t in (0.0, 20.0, 40.0)]
+    assert anim.is_static(anim.Sequence("placeholder", [anim.Track(1, rest, 40.0)]))
+    assert anim.is_static(anim.Sequence("empty", []))
+    assert anim.is_static(anim.Sequence("one pose", [anim.Track(1, rest[:1], 0.0)]))
+    moving = rest[:2] + [anim.Key(40.0, (0, 0, 0, 1), (0, 1.5, 0))]
+    assert not anim.is_static(anim.Sequence("moves", [anim.Track(1, moving, 40.0)]))
+    # one bone turning is enough, even if every other track holds still
+    turn = [anim.Key(0.0, (0, 0, 0, 1), None), anim.Key(40.0, (0, 0.5, 0, 0.87), None)]
+    assert not anim.is_static(anim.Sequence("turns", [anim.Track(1, rest, 40.0), anim.Track(2, turn, 40.0)]))

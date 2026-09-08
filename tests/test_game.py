@@ -159,10 +159,42 @@ def test_attached_parts(store):
     doc = json.loads(glb[20:20 + n])
     names = {i: nd["name"] for i, nd in enumerate(doc["nodes"])}
     node_of = {v: k for k, v in names.items()}
-    assert node_of["L_hand"] in doc["nodes"][node_of["bone25"]]["children"]
-    assert node_of["R_hand"] in doc["nodes"][node_of["bone19"]]["children"]
+    # each hand hangs from the wrist on its own side. The model faces +Z once
+    # the exporter turns it upright, so its left arm is the one at +X; bone 19
+    # is that arm, and the two wrists roll oppositely, so hanging a hand on the
+    # wrong one leaves its thumb facing behind the character.
+    bones = {b.id: b for b in store.actor(e)}
+    assert bones[19].world[0][3] > 0 and bones[25].world[0][3] < 0
+    assert node_of["L_hand"] in doc["nodes"][node_of["bone19"]]["children"]
+    assert node_of["R_hand"] in doc["nodes"][node_of["bone25"]]["children"]
+    # the thumb runs along the hand's local +Y, and the two hands mirror in it,
+    # so both thumbs must come out pointing the same way: forward
+    parts = {q["name"]: store._part_meshes(q)[0][0] for q in store.parts(e)}
+    for name, sign in (("L_hand", 1), ("R_hand", -1)):
+        b = bones[store.PART_BONES[name]]
+        thumb_z = -b.world[2][1] * sign        # local +Y in the viewer's flipped space
+        assert thumb_z > 0.5, f"{name} thumb points backwards"
+        ys = [v[1] for v in parts[name].positions]
+        assert (max(ys) + min(ys)) * sign > 0, f"{name} thumb is not on its local {'+' if sign > 0 else '-'}Y side"
     e2 = store.get(893)  # menu Mario carries its hands in the same container
     assert sorted({p["name"] for p in store.parts(e2)}) == ["L_hand", "R_hand"]
+
+
+def test_every_drawn_body_vertex_is_weighted(store):
+    """The skin lists leave a few vertices between their runs; unweighted ones
+    fall back to bone 0 and fly off the body once an animation moves the root."""
+    from zzzzdat import c3, roster
+    for cid in (0, 4, 8):
+        d = roster.detail(store, cid)
+        m = d["models"][0]
+        e = store.get(m["entry"])
+        bones = store.actor(e)
+        model = store.model(e, m["section"], posed=False)
+        mesh = model.meshes[c3.skinned_mesh_index(model, bones)]
+        drawn = {v[0] for dr in mesh.draws for t in dr.tris for v in t if v[0] is not None}
+        raw, filled = store.skin(e).weights, store.skin_weights(e, model, bones)
+        assert [v for v in drawn if v not in raw], f"{d['name']} has no gaps to test"
+        assert not [v for v in drawn if v not in filled]
 
 
 def test_sequenced_songs(store):

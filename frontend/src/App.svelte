@@ -2,19 +2,18 @@
   import { onMount } from 'svelte'
   import { app, type Page } from './lib/state.svelte'
   import GameSetup from './lib/GameSetup.svelte'
-  import Browse from './lib/Browse.svelte'
   import Music from './lib/Music.svelte'
   import Files from './lib/Files.svelte'
   import Characters from './lib/Characters.svelte'
   import Stadiums from './lib/Stadiums.svelte'
 
   const pages: { id: Page; label: string }[] = [
-    { id: 'browse', label: 'Browse assets' }, { id: 'files', label: 'All files' }, { id: 'characters', label: 'Characters' }, { id: 'stadiums', label: 'Stadiums' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
+    { id: 'files', label: 'Browse assets' }, { id: 'characters', label: 'Characters' }, { id: 'stadiums', label: 'Stadiums' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
   ]
 
   onMount(() => {
     const h = location.hash.replace('#', '')
-    if (h.startsWith('entry/')) { app.selected = +h.slice(6); app.page = 'browse' }
+    if (h.startsWith('entry/')) { app.selected = +h.slice(6); app.page = 'files' }
     else if (h.startsWith('characters/')) app.page = 'characters'
     else if (h.startsWith('stadiums/')) app.page = 'stadiums'
     else if (pages.some(p => p.id === h)) app.page = h as Page
@@ -34,10 +33,12 @@
     {#if app.loading}
       <span class="dim">loading…</span>
     {:else if app.game?.ok}
-      {#if app.thumbs.running}<span class="dim" title="Thumbnails are made from your game files after it is selected">building thumbnails {app.thumbs.done}/{app.thumbs.total}…</span>{/if}
       <span class="pill" class:rw={app.game.writable} title={app.game.setting ?? ''}>
-        {app.game.layout === 'iso' ? 'ISO' : 'Extracted folder'} · {app.game.writable ? 'editable' : 'view only'}
+        {app.game.version ?? '?'} · {app.game.layout === 'iso' ? 'ISO' : 'Extracted folder'} · {app.game.writable ? 'editable' : 'view only'}
       </span>
+      {#if !app.game.indexed}
+        <button class="pill bad" onclick={() => app.go('game')} title="this version has not been indexed yet">not indexed</button>
+      {/if}
     {:else}
       <span class="pill bad">no game selected</span>
     {/if}
@@ -57,8 +58,6 @@
     <div class="card warn" style="margin:16px">Could not reach the editor: {app.error}</div>
   {:else if app.page === 'game'}
     <GameSetup />
-  {:else if app.page === 'browse'}
-    <Browse />
   {:else if app.page === 'files'}
     <Files />
   {:else if app.page === 'characters'}

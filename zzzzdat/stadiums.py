@@ -1,7 +1,8 @@
 """The stadiums: the seven parks with their file variants and props.
 
-The DOL table `StadiumFiles` at 0x800EFBE8 has 21 descriptors, three per
-stadium in the game's stadium order. Some stadiums use three distinct files
+The DOL table `StadiumFiles` (0x800EFBE8 in the US build; `layout.py` finds
+it in the others) has 21 descriptors, three per stadium in the game's stadium
+order. Some stadiums use three distinct files
 (Mario Stadium), some two, some one file for all three slots. Every stadium
 file is a section container: one or two big GeoPalettes (the park and its
 sky dome), tiny placeholder meshes, per-section actors, a texture table and

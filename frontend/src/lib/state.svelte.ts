@@ -1,34 +1,24 @@
 import { api, friendlyName, setCatalogNames, type Catalog, type EntrySummary, type GameInfo, type UpdateInfo } from './api'
 
-export type Page = 'browse' | 'files' | 'characters' | 'stadiums' | 'music' | 'game'
+export type Page = 'files' | 'characters' | 'stadiums' | 'music' | 'game'
 
 class AppState {
-  page = $state<Page>('browse')
+  page = $state<Page>('files')
   game = $state<GameInfo | null>(null)
   entries = $state<Map<number, EntrySummary>>(new Map())
   archiveSize = $state(0)   // bytes in ZZZZ.dat, for the archive map
   catalog = $state<Catalog | null>(null)
   loading = $state(false)
   error = $state('')
-  // browse selection
-  category = $state<string>('characters')
+  // browse selection; no category means "everything", which is how Browse opens
+  category = $state<string>('')
   group = $state<string>('')
   selected = $state<number | null>(null)
   search = $state('')
   modified = $state<number[]>([])
-  thumbs = $state<{ running: boolean; done: number; total: number }>({ running: false, done: 0, total: 0 })
-  thumbGen = $state(0)  // bumps when the thumbnail build finishes so cards reload their images
   update = $state<UpdateInfo | null>(null)   // version and the last release check
   updateDismissed = $state(false)
 
-
-  async watchThumbs() {
-    for (;;) {
-      try { this.thumbs = await api.thumbs() } catch { return }
-      if (!this.thumbs.running) { this.thumbGen++; return }
-      await new Promise(r => setTimeout(r, 1500))
-    }
-  }
 
   async checkUpdates(force = false) {
     try {
@@ -50,8 +40,7 @@ class AppState {
         this.catalog = cat
         setCatalogNames(cat.names ?? {})
         this.modified = (await api.modified()).ids
-        this.watchThumbs()
-        if (!cat.categories.some(c => c.id === this.category)) this.category = cat.categories[0]?.id ?? ''
+        if (this.category && !cat.categories.some(c => c.id === this.category)) this.category = ''
       } else {
         this.entries = new Map()
         this.catalog = null
@@ -70,7 +59,7 @@ class AppState {
   }
 
   go(page: Page) { this.page = page; location.hash = page }
-  open(id: number) { this.selected = id; this.page = 'browse' }
+  open(id: number) { this.selected = id; this.page = 'files' }
 }
 
 export const app = new AppState()

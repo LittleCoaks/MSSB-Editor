@@ -1,5 +1,6 @@
 """Dolphin texture-dump names, so exported PNGs can go straight into a
-Dolphin custom-texture pack (User/Load/Textures/GYQE01/).
+Dolphin custom-texture pack (User/Load/Textures/<disc id>/, GYQE01 for the
+American disc).
 
 Dolphin names a dumped texture
 

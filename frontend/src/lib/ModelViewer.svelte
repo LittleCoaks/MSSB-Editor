@@ -6,7 +6,7 @@
   import { urls, type BankInfo, type ModelInfo } from './api'
 
   let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false, overlay = undefined }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean; overlay?: string } = $props()
-  let showLines = $state(true)
+  let showLines = $state(false)   // the collision overlay hides the stadium; ask for it
   let lines: THREE.Group | null = null
   let part = $state('')          // '', 'hands' or 'gloves'
   let variant = $state<number | undefined>(undefined)  // colour variant slot
@@ -26,6 +26,8 @@
   let action: THREE.AnimationAction | null = null
   let grid: THREE.GridHelper
   let alive = true
+  let radius = 1                       // scene size, which sets the fly speed and the near plane
+  const held = new Set<string>()       // keys down for the fly camera
   const clock = new THREE.Clock()
 
   onMount(() => {
@@ -37,6 +39,13 @@
     controls = new OrbitControls(camera, canvas)
     controls.zoomToCursor = true
     controls.zoomSpeed = 1.4
+    // WASD flies the camera and its pivot together, so you can go past the point
+    // orbiting alone can reach - inside the stands, under the roof, up to a sign
+    canvas.tabIndex = 0
+    canvas.addEventListener('pointerdown', () => canvas.focus())
+    canvas.addEventListener('keydown', e => key(e, true))
+    canvas.addEventListener('keyup', e => key(e, false))
+    canvas.addEventListener('blur', () => held.clear())
     scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.1))
     const dir = new THREE.DirectionalLight(0xffffff, 0.6); dir.position.set(1, 2, 1.5); scene.add(dir)
     grid = new THREE.GridHelper(1000, 20, 0x334455, 0x223344); scene.add(grid)
@@ -46,11 +55,62 @@
       if (w && h && (canvas.width !== w * devicePixelRatio || canvas.height !== h * devicePixelRatio)) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix() }
       const dt = clock.getDelta()
       if (mixer && playing) { mixer.update(dt * speed); if (action) frame = Math.round(action.time * 60) }
+      fly(dt)
+      // a stadium spans thousands of units, so a fixed near plane leaves the depth
+      // buffer too coarse to keep the field's painted layers apart: tie it to how
+      // far away the camera actually is
+      const near = Math.max(camera.position.distanceTo(controls.target) / 250, radius * 1e-6)
+      if (Math.abs(near - camera.near) > camera.near * 0.2) { camera.near = near; camera.updateProjectionMatrix() }
       controls.update(); renderer.render(scene, camera); requestAnimationFrame(tick)
     }
     tick()
     return () => { alive = false; renderer.dispose() }
   })
+
+  const LOOK: Record<string, string> = { arrowleft: 'left', arrowright: 'right', arrowup: 'up', arrowdown: 'down' }
+  function key(e: KeyboardEvent, down: boolean) {
+    const k = e.key.toLowerCase()
+    if (!'wasdqe'.includes(k) && k !== 'shift' && !(k in LOOK)) return
+    if (down) held.add(k in LOOK ? LOOK[k] : k); else held.delete(k in LOOK ? LOOK[k] : k)
+    e.preventDefault()
+  }
+  const FWD = new THREE.Vector3(), RIGHT = new THREE.Vector3(), MOVE = new THREE.Vector3()
+  const AIM = new THREE.Spherical()
+  // The arrow keys turn the camera on the spot: dragging orbits around the pivot,
+  // which is unusable once you are inside the scene and the pivot is behind you.
+  function look(dt: number) {
+    const yaw = (held.has('left') ? 1 : 0) - (held.has('right') ? 1 : 0)
+    const pitch = (held.has('up') ? 1 : 0) - (held.has('down') ? 1 : 0)
+    if (!yaw && !pitch) return
+    const step = dt * 1.6 * (held.has('shift') ? 2 : 1)
+    // keep the pivot the same distance ahead, and swing it around the camera
+    AIM.setFromVector3(MOVE.copy(controls.target).sub(camera.position))
+    AIM.theta += yaw * step
+    AIM.phi = Math.min(Math.PI - 0.01, Math.max(0.01, AIM.phi - pitch * step))
+    controls.target.copy(camera.position).add(MOVE.setFromSpherical(AIM))
+  }
+
+  function fly(dt: number) {
+    if (!held.size || !controls) return
+    look(dt)
+    MOVE.set(0, 0, 0)
+    camera.getWorldDirection(FWD)
+    RIGHT.crossVectors(FWD, camera.up).normalize()
+    if (held.has('w')) MOVE.add(FWD)
+    if (held.has('s')) MOVE.sub(FWD)
+    if (held.has('d')) MOVE.add(RIGHT)
+    if (held.has('a')) MOVE.sub(RIGHT)
+    if (held.has('e')) MOVE.y += 1
+    if (held.has('q')) MOVE.y -= 1
+    if (!MOVE.lengthSq()) return
+    // speed follows how close in you already are, so it suits a hand and a park
+    // alike, capped at the scene's own size so flying past it does not run away
+    const gap = camera.position.distanceTo(controls.target)
+    const reach = Math.min(Math.max(gap, radius * 0.002), radius)
+    MOVE.normalize().multiplyScalar(reach * dt * 0.8 * (held.has('shift') ? 4 : 1))
+    camera.position.add(MOVE)
+    controls.target.add(MOVE)
+  }
 
   $effect(() => { const s = section, e = entry, b = bank, p = part, v = variant, k = pose; if (renderer) load(e, s, b, p, v, k) })
   $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshStandardMaterial).wireframe = w }) })
@@ -81,7 +141,10 @@
       lines = g; scene.add(g)
     }).catch(() => {})
   })
-  $effect(() => { if (lines) lines.visible = showLines })
+  // read showLines first: an effect only re-runs on what it actually read, and
+  // `lines` arrives from a fetch, so `if (lines) ... showLines` registers no
+  // dependency on the first pass and the collision overlay then never hides
+  $effect(() => { const on = showLines; if (lines) lines.visible = on })
   let lastEntry = entry
   $effect(() => { if (entry !== lastEntry) { lastEntry = entry; bank = ''; part = ''; variant = undefined } })
 
@@ -91,14 +154,39 @@
       if (root) scene.remove(root)
       root = g.scene; scene.add(root)
       let tris = 0
-      root.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { tris += m.geometry.index ? m.geometry.index.count / 3 : 0; const mat = m.material as THREE.MeshStandardMaterial; mat.side = isSky(m) ? THREE.BackSide : THREE.DoubleSide; if (isGlare(m)) { m.visible = false }  /* the sun-glare billboard is a screen effect, not scenery */ mat.wireframe = wire; m.frustumCulled = false } })
+      root.traverse(o => {
+        const m = o as THREE.Mesh
+        if (!m.isMesh) return
+        tris += m.geometry.index ? m.geometry.index.count / 3 : 0
+        const mat = m.material as THREE.MeshStandardMaterial
+        mat.side = isSky(m) ? THREE.BackSide : THREE.DoubleSide
+        if (isGlare(m)) m.visible = false   // the sun-glare billboard is a screen effect, not scenery
+        mat.wireframe = wire
+        m.frustumCulled = false
+        // markings, scuffs, shadows and lettering the game painted into the surface
+        // below them (extras.decal is the layer): identical depths cannot be told
+        // apart, so nudge and order them instead of letting them tear
+        const decal = (mat.userData?.decal ?? 0) as number
+        if (decal) {
+          mat.polygonOffset = true
+          mat.polygonOffsetFactor = -1
+          mat.polygonOffsetUnits = -decal
+          m.renderOrder = decal
+        }
+        if (mat.userData?.blend === 'add') {
+          // paint on a black ground: the console added it to what was underneath
+          mat.blending = THREE.AdditiveBlending
+          mat.transparent = true
+          mat.depthWrite = false
+        }
+      })
       mixer = g.animations.length ? new THREE.AnimationMixer(root) : null
       action = null
       clips = g.animations
       clip = g.animations[0]?.name ?? ''
       if (mixer) play(clip)
       reset()
-      msg = `${Math.round(tris).toLocaleString()} triangles` + (g.animations.length ? ` · ${g.animations.length} animations` : '') + ' · drag to orbit, wheel to zoom, right-drag to pan'
+      msg = `${Math.round(tris).toLocaleString()} triangles` + (g.animations.length ? ` · ${g.animations.length} animations` : '') + ' · drag to orbit, wheel to zoom, right-drag to pan · W/A/S/D flies (Q/E down/up), arrow keys turn, shift faster'
     }, undefined, err => (msg = 'could not load model: ' + err))
   }
   // a stadium's sky dome encloses the park: draw it inside-out so the orbit camera looks through it
@@ -139,8 +227,9 @@
     const size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3())
     const r = Math.max(size.x, size.y, size.z, 1)
     grid.position.y = box.min.y; grid.scale.setScalar(r / 500)
+    radius = r
     camera.position.set(c.x + r * 1.1, c.y + r * 0.35, c.z + r * 1.4); camera.near = r / 5000; camera.far = r * 50; camera.updateProjectionMatrix()
-    controls.minDistance = r / 500; controls.maxDistance = r * 20
+    controls.minDistance = r / 20000; controls.maxDistance = r * 20
     controls.target.copy(c); controls.update()
   }
   const duration = $derived(clips.find(x => x.name === clip)?.duration ?? 0)
@@ -156,7 +245,7 @@
   {#if banks.length}
     <select bind:value={bank} title="Animation bank">
       <option value="">no animation</option>
-      {#each banks as b}<option value={b.key}>{b.label}{b.sequences ? ` · ${b.sequences} sequences` : ''}</option>{/each}
+      {#each banks as b}<option value={b.key}>{b.label}{b.sequences ? ` · ${b.sequences} animations` : ''}</option>{/each}
     </select>
   {/if}
   {#if variants.length}
@@ -177,7 +266,9 @@
   {#if overlay}<label title="the stadium's collision panels: fences, walls, dugouts"><input type="checkbox" bind:checked={showLines}> collision</label>{/if}
   {#if overlay && showLines && tagLegend.length}<span class="legend">{#each tagLegend as l}<span title="{l.n} triangles"><i style="background:{l.css}"></i>{tagName(l.tag)}</span>{/each}</span>{/if}
   <button onclick={reset}>Reset view</button>
-  {#if whole}<a class="btn" href={urls.scene(entry)}>Download .glb (whole scene)</a>{:else}<a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined, variant, pose)}>Download .glb</a>
+  {#if whole}<a class="btn" href={urls.scene(entry)}>Download .glb (whole scene)</a>
+  <a class="btn" href={urls.sceneDae(entry)} title="COLLADA; the textures come from the Textures tab's zip">Download .dae (whole scene)</a>{:else}<a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined, variant, pose)}>Download .glb</a>
+  <a class="btn" href={urls.dae(entry, section, bank || undefined, part || undefined, variant, pose)} title="COLLADA, with the skeleton and the selected animation bank; it names its textures <model>_tex<n>.png, which Export model writes beside it">Download .dae</a>
   <a class="btn" href={urls.obj(entry, section, pose)}>Download .obj</a>{/if}
   <span class="dim">{msg}</span>
 </div>

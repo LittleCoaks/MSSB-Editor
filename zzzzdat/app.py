@@ -56,6 +56,11 @@ def run(port: int | None = None, width: int = 1400, height: int = 900) -> None:
         except KeyboardInterrupt:
             pass
     else:
+        # pywebview cancels every download unless this is set, so in the desktop
+        # window the WAV / glTF / SoundFont / raw-file links would do nothing at
+        # all; with it, each backend asks where to save (WinForms SaveFileDialog
+        # on Windows) using the name the server's Content-Disposition gives.
+        webview.settings["ALLOW_DOWNLOADS"] = True
         api = Api()
         api._window = webview.create_window(TITLE, url, width=width, height=height, min_size=(900, 600), js_api=api, text_select=True)
         webview.start(icon=str(ICON) if ICON.is_file() else None)

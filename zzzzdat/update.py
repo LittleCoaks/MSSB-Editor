@@ -20,6 +20,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -67,7 +68,11 @@ def check(repo: str, force: bool = False, timeout: float = 8.0) -> dict:
             a = _asset_for_platform(rel.get("assets") or [])
             if a:
                 out["asset"] = {"name": a["name"], "url": a["browser_download_url"], "size": a.get("size", 0)}
-        except Exception as ex:  # offline, rate limited, no releases yet
+        except urllib.error.HTTPError as ex:
+            # 404 is what the API says when a repository has no published
+            # release, which is a normal state, not a failure to check
+            out["error"] = None if ex.code == 404 else f"HTTP {ex.code}: {ex.reason}"
+        except Exception as ex:  # offline, rate limited, bad response
             out["error"] = f"{type(ex).__name__}: {ex}"
         _last, _last_at, _last_repo = out, time.time(), repo
         return out

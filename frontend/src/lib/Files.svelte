@@ -1,6 +1,7 @@
 <script lang="ts">
-  // The raw entry table: every indexed file with its offsets, sizes and the
-  // executable references it is loaded from. Sortable, filterable, and
+  // The asset browser: every indexed file with its offsets, sizes and the
+  // executable references it is loaded from, narrowed by the catalog's own
+  // organisation (characters, stadiums, menus...). Sortable, filterable, and
   // clicking a row opens it in the detail panel.
   import { app } from './state.svelte'
   import { hex, kb, KIND_LABEL, type EntrySummary } from './api'
@@ -22,12 +23,22 @@
   let shown = $state(300)
   let byPlace = $state(false)   // archive order: ZZZZ.dat by offset, gaps shown as rows
 
+  const cats = $derived(app.catalog?.categories ?? [])
+  const cat = $derived(cats.find(c => c.id === app.category) ?? null)
+  const grp = $derived(cat?.groups.find(g => g.id === app.group) ?? null)
+  // the catalog groups entries by what they are; used here to narrow the table
+  const scope = $derived.by(() => {
+    if (grp) return new Set(grp.items)
+    if (cat) return new Set(cat.groups.flatMap(g => g.items))
+    return null
+  })
   const all = $derived([...app.entries.values()])
   const kinds = $derived([...new Set(all.map(e => e.kind))].sort())
   const archives = $derived([...new Set(all.map(e => e.archive))].sort())
   const q = $derived(filter.trim().toLowerCase())
   const rows = $derived.by(() => {
     let list = all
+    if (scope) list = list.filter(e => scope.has(e.id))
     if (kind) list = list.filter(e => e.kind === kind)
     if (archive) list = list.filter(e => e.archive === archive)
     if (onlyModified) list = list.filter(e => app.modified.includes(e.id))
@@ -47,7 +58,7 @@
     })
     return list
   })
-  $effect(() => { q; kind; archive; onlyModified; sortKey; sortDesc; byPlace; shown = 300 })
+  $effect(() => { q; kind; archive; onlyModified; sortKey; sortDesc; byPlace; scope; shown = 300 })
   // in archive order, a gap between consecutive entries becomes a row of its own
   type Row = { e: EntrySummary } | { gap: [number, number] }
   const placed = $derived.by((): Row[] => {
@@ -55,13 +66,14 @@
     const out: Row[] = []
     let cur = 0
     for (const e of rows) {
-      if (!q && !kind && !onlyModified && e.offset > cur) out.push({ gap: [cur, e.offset - cur] })
+      if (!q && !kind && !scope && !onlyModified && e.offset > cur) out.push({ gap: [cur, e.offset - cur] })
       out.push({ e }); cur = Math.max(cur, e.offset + e.disc_size)
     }
     return out
   })
   const visible = $derived(placed.slice(0, shown))
   function jumpTo(id: number) { app.selected = id; byPlace = true; filter = ''; kind = ''; onlyModified = false
+    app.category = ''; app.group = ''
     const i = placed.findIndex(r => 'e' in r && r.e.id === id); if (i >= shown) shown = i + 200
     queueMicrotask(() => document.getElementById('file-' + id)?.scrollIntoView({ block: 'center' })) }
   function sortBy(k: Col['key']) { if (sortKey === k) sortDesc = !sortDesc; else { sortKey = k; sortDesc = false } }
@@ -72,6 +84,16 @@
   <section class="list" class:narrow={app.selected !== null}>
     <div class="row" style="margin-bottom:10px">
       <input type="search" placeholder="Filter by id, 0xoffset, name, symbol, reference…" bind:value={filter} style="width:320px">
+      <select value={app.category} onchange={e => { app.category = (e.target as HTMLSelectElement).value; app.group = '' }} title="The catalog's own grouping">
+        <option value="">everything</option>
+        {#each cats as c}<option value={c.id}>{c.name} ({c.count})</option>{/each}
+      </select>
+      {#if cat}
+        <select bind:value={app.group}>
+          <option value="">all of {cat.name}</option>
+          {#each cat.groups as g}<option value={g.id}>{g.name} ({g.items.length})</option>{/each}
+        </select>
+      {/if}
       <select bind:value={kind}><option value="">all kinds</option>{#each kinds as k}<option value={k}>{k}</option>{/each}</select>
       <select bind:value={archive}><option value="">all archives</option>{#each archives as a}<option value={a}>{a}</option>{/each}</select>
       <label><input type="checkbox" bind:checked={onlyModified}> replaced only</label>

@@ -63,5 +63,42 @@ def test_glb_is_valid_container():
     assert glb[:4] == b"glTF"
     assert int.from_bytes(glb[8:12], "little") == len(glb)
     assert b'"POSITION"' in glb and b'"TEXCOORD_0"' in glb
+    # the parser's index tuples carry a colour index too, which OBJ has no place for
     obj = c3.to_obj(m)
     assert obj.count("\nv ") == 3 and "f 1/1 2/2 3/3" in obj
+
+
+def _flat_mesh(heights):
+    """One horizontal quad per height, each drawn over its own four positions."""
+    positions, draws = [], []
+    for tex, y in enumerate(heights):
+        b = len(positions)
+        positions += [(0.0, y, 0.0), (10.0, y, 0.0), (10.0, y, 10.0), (0.0, y, 10.0)]
+        v = [(b + i, None, None, None) for i in range(4)]
+        draws.append(c3.Draw(tex, [(v[0], v[1], v[2]), (v[0], v[2], v[3])]))
+    return c3.Mesh("m", positions, [], [], draws)
+
+
+def test_decal_levels_stack_coplanar_draws():
+    """Markings painted into a surface share its plane; the depth buffer cannot
+    separate them, so the writer records which layer each one is."""
+    assert c3.decal_levels(_flat_mesh([0.0, 0.0, 0.0])) == [0, 1, 2]
+    assert c3.decal_levels(_flat_mesh([0.0, 5.0, 9.0])) == [0, 0, 0]
+    # a plane is matched whichever way the later draw is wound
+    m = _flat_mesh([0.0, 0.0])
+    m.draws[1].tris = [tuple(reversed(t)) for t in m.draws[1].tris]
+    assert c3.decal_levels(m) == [0, 1]
+
+
+def test_glb_materials_carry_the_composite_mode():
+    import json
+    import struct
+    m = _flat_mesh([0.0, 0.0])
+    png = b"\x89PNG\r\n\x1a\n"        # the writer only embeds the bytes, it does not read them
+    glb = c3.to_glb(c3.Model([m]), {0: png, 1: png}, tex_modes={0: "opaque", 1: "add"})
+    n = struct.unpack_from("<I", glb, 12)[0]
+    doc = json.loads(glb[20:20 + n])
+    base, decal = doc["materials"]
+    assert "extras" not in base and base.get("alphaMode", "OPAQUE") == "OPAQUE"
+    assert decal["extras"] == {"decal": 1, "blend": "add"} and decal["alphaMode"] == "BLEND"
+    assert len(doc["images"]) == 2      # one per texture, not one per material

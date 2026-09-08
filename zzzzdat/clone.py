@@ -56,11 +56,11 @@ def menu_ref_string(base: int, slot: int) -> str:
 def _ref(va: int) -> str:
     """The index's reference string for a descriptor in one of the two tables."""
     if chars.SUBFILES_VA <= va < chars.SUBFILES_VA + chars.SLOTS * chars.TRACKS * 16:
-        base, sym = chars.SUBFILES_VA, "lbl_800F1D78"
+        base = chars.SUBFILES_VA
     else:
-        base, sym = chars.MASTER_VA, "lbl_800EFD38"
+        base = chars.MASTER_VA
     off = va - base
-    return f"dol:.data:{va:#x} {sym}" + (f"+{off:#x}" if off else "")
+    return f"dol:.data:{va:#x} lbl_{base:08X}" + (f"+{off:#x}" if off else "")
 
 
 def slot_vas(slot: int) -> dict:

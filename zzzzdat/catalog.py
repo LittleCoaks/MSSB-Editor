@@ -71,8 +71,10 @@ def display_name(e: Entry, by_id: dict[int, Entry] | None = None) -> str:
     if e.twin >= 0 and by_id and e.twin in by_id:
         return "copy of " + (display_name(by_id[e.twin], by_id) or f"file {e.twin}")
     tbl = table_of(e)
-    if tbl == "lbl_800F71D8":
-        return f"hand-pose event set {(int(e.refs[0].split(':')[2].split(' ')[0], 16) - 0x800F71D8) // 16} (copy outside ARAM)"
+    if tbl == "event-sets":
+        from . import layout
+        n = (int(e.refs[0].split(":")[2].split(" ")[0], 16) - layout.current().event_copy_va) // 16
+        return f"hand-pose event set {n} (copy outside ARAM)"
     if e.known:
         return e.known.replace("First Found ", "")
     if e.kind == "musyx":
@@ -94,7 +96,7 @@ def display_name(e: Entry, by_id: dict[int, Entry] | None = None) -> str:
     return ""
 
 STADIUM_NAMES = {
-    "StadiumFiles": "Stadiums (main files)", "marioStadiumCDR": "Mario Stadium props",
+    "stadiums": "Stadiums (main files)", "marioStadiumCDR": "Mario Stadium props",
 }
 
 
@@ -122,14 +124,61 @@ def character_of(e: Entry) -> str | None:
     return None
 
 
-def table_of(e: Entry) -> str:
+# The DOL tables this program knows by sight, named after what they hold
+# instead of after a symbol: the decomp's symbol names only exist for the US
+# build, and every build puts these tables somewhere else.
+def _dol_table(va: int) -> str | None:
+    from . import layout
+    l = layout.current()
+    for name, base, count in (("subfiles", l.subfiles_va, chars.SLOTS * chars.TRACKS),
+                              ("hands", l.hand_table_va, chars.SLOTS * 6),
+                              ("event-sets", l.event_copy_va, l.master_entries - layout.MASTER_SHARED_BASE),
+                              ("master", l.master_va, l.master_entries),
+                              ("stadiums", l.stadium_va, l.stadiums * 3),
+                              ("musyx", l.musyx_va, l.musyx_count),
+                              ("screens", l.rel_table_va, l.rel_table_count)):
+        if base <= va < base + count * 16:
+            return name
+    return None
+
+
+def ref_runs(entries: list[Entry]) -> dict[str, str]:
+    """`module:section:address` -> the address its run of descriptors starts at.
+
+    Without the decomp's symbols -- which only exist for the US build -- every
+    descriptor would be its own table and the catalog would fill with one-item
+    groups. Descriptors sit in tables of back-to-back 16-byte records, so the
+    run an address belongs to stands in for the symbol's name."""
+    seen: dict[tuple[str, str], set[int]] = {}
+    for e in entries:
+        for r in e.refs:
+            head = r.split(" ")[0]
+            parts = head.split(":")
+            if len(parts) == 3 and parts[0] not in ("scan", "disc"):
+                seen.setdefault((parts[0], parts[1]), set()).add(int(parts[2], 16))
+    out: dict[str, str] = {}
+    for (mod, sec), addrs in seen.items():
+        for a in sorted(addrs):
+            start = out.get(f"{mod}:{sec}:{a - 16:#x}") if a - 16 in addrs else None
+            out[f"{mod}:{sec}:{a:#x}"] = start or f"{mod}:{sec}:{a:#x}"
+    return out
+
+
+def table_of(e: Entry, runs: dict[str, str] | None = None) -> str:
     if not e.refs:
         return "unreferenced"
     r = e.refs[0]
     if r.startswith("scan:"):
         return r
+    head = r.split(" ")[0]
+    if head.startswith("dol:"):
+        known = _dol_table(int(head.split(":")[2], 16))
+        if known:
+            return known
     parts = r.split(" ", 1)
-    return parts[1].split("+")[0] if len(parts) > 1 else parts[0]
+    if len(parts) > 1:
+        return parts[1].split("+")[0]
+    return (runs or {}).get(head, head)
 
 
 def thumb_for(e: Entry) -> str | None:
@@ -140,6 +189,7 @@ def build_catalog(entries: list[Entry]) -> dict:
     cats: dict[str, dict] = {}
     names: dict[int, str] = {}
     by_id = {e.id: e for e in entries}
+    runs = ref_runs(entries)
 
     def group(cat_id: str, cat_name: str, grp_id: str, grp_name: str) -> dict:
         c = cats.setdefault(cat_id, {"id": cat_id, "name": cat_name, "groups": {}})
@@ -182,22 +232,22 @@ def build_catalog(entries: list[Entry]) -> dict:
                                                  "leftover": ("leftover", "Leftovers")}[e.tag.split(":")[0]])
         else:
             ch = character_of(e)
-            tbl = table_of(e)
+            tbl = table_of(e, runs)
             cc = chars.classify_entry(e.refs)
             if cc and cc["character"]:
                 ch = cc["character"]
             if ch:
                 g = group("characters", "Characters", re.sub(r"\W+", "_", ch.lower()), ch)
-            elif cc or tbl == "lbl_800F71D8":
+            elif cc or tbl == "event-sets":
                 g = group("characters", "Characters", "_shared", "Hand-pose event sets")
-            elif e.known and ("Stadium" in e.known or "Park" in e.known) or tbl in ("StadiumFiles", "marioStadiumCDR"):
-                name = e.known or ({"StadiumFiles": "Stadium files", "marioStadiumCDR": "Mario Stadium props"}.get(tbl, tbl))
+            elif e.known and ("Stadium" in e.known or "Park" in e.known) or tbl in ("stadiums", "marioStadiumCDR"):
+                name = e.known or ({"stadiums": "Stadium files", "marioStadiumCDR": "Mario Stadium props"}.get(tbl, tbl))
                 g = group("stadiums", "Stadiums", re.sub(r"\W+", "_", name.lower()), name)
-            elif e.kind == "anim" and tbl == "lbl_800F1D78":
+            elif e.kind == "anim" and tbl == "subfiles":
                 g = group("characters", "Characters", "_animations", "Animations (unsorted)")
             elif e.module == "menus" and e.ntex:
                 g = group("menus", "Menus & UI", "menus_" + tbl, f"Menu textures ({tbl})")
-            elif tbl == "lbl_800E8AA8" and e.ntex:
+            elif tbl == "screens" and e.ntex:
                 g = group("menus", "Menus & UI", "screens", "Screens & UI (main.dol)")
             elif tbl == "lbl_1_data_CC8":
                 g = group("menus", "Menus & UI", "debug", "Debug menu")

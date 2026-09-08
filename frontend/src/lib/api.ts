@@ -24,7 +24,8 @@ export interface GameInfo {
   setting: string | null; layout: string; iso: string | null; files_dir: string | null; sys_dir: string | null; dol: string | null;
   archive: string | null; archive_source: string | null; writable: boolean; ok: boolean; problem: string; entries: number;
   error?: string | null; default_dump?: string | null; edit_ready?: boolean;
-  thumbs?: { running: boolean; done: number; total: number };
+  version: string | null; version_name: string | null; region: string | null; demo: boolean;
+  indexed?: boolean; index_stale?: boolean; index_built?: string | null; index_path?: string | null;
 }
 export interface CatalogGroup { id: string; name: string; items: number[]; thumb: string | null }
 export interface CatalogCategory { id: string; name: string; count: number; groups: CatalogGroup[] }
@@ -35,7 +36,7 @@ export interface Track {
   mismatch: boolean; entry: number | null;
 }
 export interface MusicInfo { root: string | null; tracks: Track[]; numpy: boolean; backends: string[]; can_install_decoder: boolean }
-export interface Job { id: string; state: 'running' | 'done' | 'error'; progress: number; error?: string; result?: any; dest?: string; track?: string }
+export interface Job { id: string; state: 'running' | 'done' | 'error'; progress: number; note?: string; error?: string; result?: any; dest?: string; track?: string }
 export interface ReplaceResult { offset: number; disc_size: number; size: number; in_place: boolean; descriptors: number }
 export interface ReplacedTexture { n: number; width: number; height: number; fmt: string; levels: number; source_width: number; source_height: number; resized: boolean; palette: number; truncated: number }
 export interface SlotInfo { slot: number; name: string; clone_of: number | null; clone_of_name: string | null; copy: boolean | null; inplace: number }
@@ -46,7 +47,7 @@ export interface RosterSlot { slot: number; name: string }
 export interface RosterEntry { id: number; name: string; slot: number; slots: RosterSlot[]; thumb: number | null; model_entry: number | null; sound_entry: number | null; variants: number }
 export interface RosterModel { role: string; entry: number; section: number; meshes: string[]; triangles: number; textures: number; size: number; models: ModelInfo[]; poses?: number; bat_pose?: number | null }
 export interface RosterVariant { slot: number; name: string; texture_entry: number | null; own: boolean }
-export interface RosterBank { key: string; entry: number; track: number; category: string; label: string; sequences: string[]; named: boolean }
+export interface RosterBank { key: string; entry: number; track: number; category: string; label: string; sequences: string[]; playable: number; named: boolean }
 export interface RosterSounds { entry: number; group: number | null; samples: { n: number; seconds: number; rate: number; label: string }[]; sfx: SfxInfo[] }
 export interface RosterFile { entry: number; role: string; kind: string; size: number; slot: number | null; textures: number; audio: number }
 export interface StadiumFile { entry: number; textures: number; size: number; slots?: number[]; sky?: { rgb: number[]; night: boolean } | null; models?: { section: number; meshes: string[]; triangles: number; textures: number }[]; triangles?: number; sections?: number }
@@ -71,20 +72,20 @@ export const api = {
   game: () => j<GameInfo>('/api/game'),
   setGame: (path: string) => j<GameInfo>('/api/game?path=' + encodeURIComponent(path), { method: 'POST' }),
   dumpGame: (only: string) => j<{ job: string }>('/api/game/dump?only=' + encodeURIComponent(only), { method: 'POST' }),
+  indexGame: () => j<{ job: string }>('/api/game/index', { method: 'POST' }),
   fs: (path: string) => j<FsListing>('/api/fs?path=' + encodeURIComponent(path)),
   job: (id: string) => j<Job>('/api/job/' + id),
   catalog: () => j<Catalog>('/api/catalog'),
   entry: (id: number) => j<EntryDetail>('/api/entry/' + id),
   hex: (id: number, offset: number, length = 4096) => j<{ offset: number; total: number; hex: string }>(`/api/entry/${id}/hex?offset=${offset}&length=${length}`),
-  extract: (id: number, opts: { png?: boolean; wav?: boolean; model?: string; dolphin?: boolean }) =>
-    j<{ written: string[]; dolphin_pack: string }>(`/api/entry/${id}/extract?${opts.png ? 'png=1' : ''}${opts.wav ? '&wav=1' : ''}${opts.model ? '&model=' + opts.model : ''}${opts.dolphin ? '&dolphin=1' : ''}`),
+  extract: (id: number, opts: { png?: boolean; wav?: boolean; model?: string; dolphin?: boolean; sf2?: boolean }) =>
+    j<{ written: string[]; dolphin_pack: string }>(`/api/entry/${id}/extract?${opts.png ? 'png=1' : ''}${opts.wav ? '&wav=1' : ''}${opts.model ? '&model=' + opts.model : ''}${opts.dolphin ? '&dolphin=1' : ''}${opts.sf2 ? '&sf2=1' : ''}`),
   music: () => j<MusicInfo>('/api/music'),
   musicJob: (id: string) => j<Job>('/api/music/job/' + id),
   musicRestore: (track: string) => j<{ ok: boolean }>('/api/music/restore?track=' + encodeURIComponent(track), { method: 'POST' }),
   musicRoot: (path: string) => j<{ root: string }>('/api/music/root?path=' + encodeURIComponent(path), { method: 'POST' }),
   musicInstall: (fd: FormData) => j<{ job: string }>('/api/music/install', { method: 'POST', body: fd }),
   modified: () => j<{ ids: number[] }>('/api/modified'),
-  thumbs: () => j<{ running: boolean; done: number; total: number }>('/api/thumbs'),
   replace: (id: number, fd: FormData) => j<ReplaceResult>(`/api/entry/${id}/replace`, { method: 'POST', body: fd }),
   replaceTexture: (id: number, n: number, fd: FormData, resize = false) =>
     j<ReplaceResult & { texture: ReplacedTexture }>(`/api/entry/${id}/tex/${n}/replace${resize ? '?resize=1' : ''}`, { method: 'POST', body: fd }),
@@ -118,6 +119,9 @@ export const urls = {
   movieAudio: (id: number) => `/api/entry/${id}/movie/audio.wav`,
   glb: (id: number, sec: number, anim?: string, parts?: string, variant?: number, pose?: number) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}${pose !== undefined ? '&pose=' + pose : ''}`,
   scene: (id: number) => `/api/entry/${id}/model/all.glb`,
+  sceneDae: (id: number) => `/api/entry/${id}/model/all.dae`,
+  dae: (id: number, sec: number, anim?: string, parts?: string, variant?: number, pose?: number) => `/api/entry/${id}/model/${sec}.dae?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}${pose !== undefined ? '&pose=' + pose : ''}`,
+  soundfont: (id: number) => `/api/entry/${id}/soundfont.sf2`,
   collision: (id: number) => `/api/entry/${id}/collision.json`,
   obj: (id: number, sec: number, pose?: number) => `/api/entry/${id}/model/${sec}.obj${pose !== undefined ? '?pose=' + pose : ''}`,
   data: (id: number) => `/api/entry/${id}/data`,

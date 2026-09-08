@@ -26,11 +26,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .paths import CONFIG_PATH, DATA_DIR, EXE_DIR, PACKAGE_DATA
+from .versions import UnknownVersion, Version, identify
 
 VIEWER_ROOT = DATA_DIR  # kept for older imports: the per-user data folder
 ARCHIVE_NAME = "ZZZZ.dat"
 ISO_SUFFIXES = (".iso", ".gcm")
-GAME_ID = "GYQE01"
+GAME_ID = "GYQE01"  # the US build, still the default when nothing is configured
+HEADER_LEN = 0x460  # boot.bin (0x440) plus the start of bi2.bin, enough to name the build
 
 
 # ------------------------------------------------------------------ config --
@@ -76,6 +78,7 @@ class Game:
     files_dir: Path | None = None
     sys_dir: Path | None = None
     problem: str = ""
+    version: Version | None = None
 
     @staticmethod
     def detect(path: str | Path | None, files: str | Path | None = None) -> "Game":
@@ -95,6 +98,7 @@ class Game:
                 if cand and (cand / "files").is_dir():
                     g.files_dir, g.sys_dir = cand / "files", cand / "sys"
                     break
+            g.identify()
             return g
         # folders
         if (p / "files").is_dir() or (p / "sys").is_dir():
@@ -107,18 +111,60 @@ class Game:
             g.layout, g.files_dir, g.sys_dir = "gcr", p, p
         else:
             return Game(p, problem="folder has neither files/+sys/ nor the game's files")
-        # an image beside the folder is only used if it is this game
+        g.identify()
+        # an image beside the folder is only used if it is the same build
+        want = g.version.game_id if g.version else GAME_ID
         for cand in sorted(p.glob("*.iso")) + sorted(p.glob("*.gcm")):
             try:
                 with open(cand, "rb") as f:
-                    if f.read(6) == GAME_ID.encode():
+                    if f.read(6).decode("ascii", "replace") == want:
                         g.iso = cand
                         break
             except OSError:
                 pass
+        if g.version is None and g.iso:
+            g.identify()
         if not g.archive_path():
             g.problem = f"no {ARCHIVE_NAME} in the folder and no ISO beside it"
         return g
+
+    def disc_header(self) -> bytes:
+        """The start of the disc: boot.bin then the start of bi2.bin. Read from
+        the image, or reassembled from the files a dump keeps them in. The image
+        wins when it is what the user chose, since the folder paired with it is
+        only a copy."""
+        if self.iso and self.layout == "iso":
+            with open(self.iso, "rb") as f:
+                return f.read(HEADER_LEN)
+        if self.sys_dir:
+            boot = self.sys_dir / "boot.bin"
+            bi2 = self.sys_dir / "bi2.bin"
+            if boot.exists():
+                head = boot.read_bytes()[:0x440].ljust(0x440, b"\0")
+                return head + (bi2.read_bytes()[:0x20] if bi2.exists() else b"\0" * 0x20)
+            hdr = self.sys_dir / "ISO.hdr"  # GameCube Rebuilder keeps both in one file
+            if hdr.exists():
+                return hdr.read_bytes()[:HEADER_LEN]
+        if self.iso:
+            with open(self.iso, "rb") as f:
+                return f.read(HEADER_LEN)
+        return b""
+
+    def identify(self) -> Version | None:
+        """Name this build. A folder that keeps no disc header (a bare ZZZZ.dat
+        next to snd/, say) leaves the version unknown, and the reader falls back
+        to the US layout the way it always did; a header that names a different
+        game is a problem worth reporting."""
+        header = self.disc_header()
+        if len(header) < 6:
+            self.version = None
+            return None
+        try:
+            self.version = identify(header)
+        except UnknownVersion as ex:
+            self.version = None
+            self.problem = self.problem or str(ex)
+        return self.version
 
     # what is available -------------------------------------------------
     @property
@@ -187,7 +233,11 @@ class Game:
                 "sys_dir": str(self.sys_dir) if self.sys_dir else None,
                 "dol": str(self.dol_path()) if self.dol_path() else None,
                 "archive": str(arc[0]) if arc else None, "archive_source": arc[1] if arc else None,
-                "writable": self.writable, "ok": self.ok, "problem": self.problem}
+                "writable": self.writable, "ok": self.ok, "problem": self.problem,
+                "version": self.version.key if self.version else None,
+                "version_name": self.version.name if self.version else None,
+                "region": self.version.region if self.version else None,
+                "demo": bool(self.version and self.version.demo)}
 
 
 def current_game() -> Game:

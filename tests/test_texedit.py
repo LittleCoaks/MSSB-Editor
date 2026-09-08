@@ -194,3 +194,44 @@ def test_resize_texture_rebuilds_table_and_container():
     assert formats.identify(new3).sections[0].textures[0].width == 8
     same, _ = texedit.replace_texture(cont, fic, 0, gx.to_png(16, 8, _gradient(16, 8)), resize=True)
     assert len(same) == len(cont)
+
+
+def _solid(w, h, rgba):
+    return bytearray(bytes(rgba) * (w * h))
+
+
+def test_composite_kind_reads_the_pixels():
+    """The display states carry no blend mode, so how a texture wants
+    compositing is decided from what it holds."""
+    n = 32 * 32
+    assert gx.composite_kind(_solid(32, 32, (200, 180, 60, 255))) == "opaque"
+    # a cutout: alpha is only ever off or on
+    cut = _solid(32, 32, (200, 180, 60, 255))
+    cut[3::4] = bytes(0 if i % 2 else 255 for i in range(n))
+    assert gx.composite_kind(cut) == "mask"
+    # a gradient over a real picture: alpha in between, on more than a scattering
+    grad = bytearray()
+    for y in range(32):
+        for x in range(32):
+            grad += bytes((x * 8, y * 8, 128, 255))
+    grad[3] = 128
+    assert gx.composite_kind(grad) == "opaque"          # one stray pixel is dithering
+    for i in range(0, 20 * 4, 4):
+        grad[i + 3] = 128
+    assert gx.composite_kind(grad) == "blend"
+    # an overlay: a picture with nothing solid anywhere in it, so there is no
+    # threshold to test against and it has to be blended wherever it is drawn
+    over = bytearray(grad)
+    over[3::4] = bytes(min(200, 40 + (i % 32) * 5) for i in range(n))
+    assert gx.composite_kind(over) == "alpha"
+    # and a flat colour whose picture is entirely in the alpha
+    flat = _solid(32, 32, (10, 10, 10, 255))
+    flat[3::4] = bytes((i * 255) // n for i in range(n))
+    assert gx.composite_kind(flat) == "alpha"
+    # paint on a black ground, which the console added to what was underneath
+    paint = _solid(32, 32, (0, 0, 0, 255))
+    for i in range(0, n, 4):
+        paint[i * 4:i * 4 + 3] = b"\xd0\xd0\xd0"
+    assert gx.composite_kind(paint) == "add"
+    # an evenly dark *surface* has no pure black in it, and must stay opaque
+    assert gx.composite_kind(_solid(32, 32, (26, 24, 22, 255))) == "opaque"

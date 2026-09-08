@@ -4,7 +4,46 @@
   "archive_size": 450041856,
   "source": "iso",
   "covered_bytes": 447788140,
-  "built": "2026-09-05 13:44:00"
+  "built": "2026-09-05 13:44:00",
+  "version": "GYQE01",
+  "layout": {
+   "key": "GYQE01",
+   "aram_chunk": 437643264,
+   "subfiles_va": 2148474232,
+   "hand_table_va": 2148490648,
+   "event_copy_va": 2148495832,
+   "slot_table_va": 2148496312,
+   "glove_va": 2148461228,
+   "event_set_va": 2148461336,
+   "master_va": 2148465976,
+   "master_entries": 516,
+   "stadium_va": 2148465640,
+   "stadiums": 7,
+   "musyx_va": 2148463880,
+   "musyx_count": 48,
+   "rel_table_va": 2148436648,
+   "rel_table_count": 68,
+   "rels": {
+    "menus": [
+     2048,
+     370712,
+     1058788
+    ],
+    "game": [
+     374784,
+     1000528,
+     2236664
+    ],
+    "debug": [
+     1376256,
+     160192,
+     364844
+    ]
+   },
+   "music_table_va": 2148435892,
+   "music_tracks": 15,
+   "resolved": true
+  }
  },
  "entries": [
   {
@@ -1154,7 +1193,7 @@
    "names": [
     "Sound effects group 0"
    ],
-   "known": "",
+   "known": "Dictionary music (MusyX group 0: one 34.7 s loop as a left/right sample pair)",
    "naud": 2,
    "thumb": 0,
    "twin": -1,
@@ -2048,7 +2087,7 @@
    "names": [
     "Sound effects group 32"
    ],
-   "known": "",
+   "known": "Sound effects group 32 (with a 76.6 s looping left/right music pair, probably the main menu)",
    "naud": 36,
    "thumb": 0,
    "twin": -1,
@@ -2317,7 +2356,7 @@
    "names": [
     "Sound effects group 53"
    ],
-   "known": "",
+   "known": "Sound effects group 53 (a 20.7 s left/right music pair and a 4 s jingle pair)",
    "naud": 4,
    "thumb": 0,
    "twin": -1,

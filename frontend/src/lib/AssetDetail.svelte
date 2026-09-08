@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte'
   import { api, urls, kb, hex, friendlyName, KIND_LABEL, type EntryDetail, type EntrySummary } from './api'
   import { app } from './state.svelte'
   import ModelViewer from './ModelViewer.svelte'
@@ -11,6 +12,17 @@
   let hexOff = $state(0)
   let hexText = $state('')
   let bigTex = $state<number | null>(null)
+  let bodyEl = $state<HTMLElement | undefined>()
+  let texScroll = 0   // where the texture grid stood when a texture was opened
+  function openTex(n: number) {
+    texScroll = bodyEl?.scrollTop ?? 0
+    bigTex = n
+    tick().then(() => bodyEl?.scrollTo({ top: 0 }))
+  }
+  function closeTex() {
+    bigTex = null
+    tick().then(() => bodyEl?.scrollTo({ top: texScroll }))
+  }
   let playing = $state<number | null>(null)
   let player: HTMLAudioElement | undefined = $state()
   let songPlayer: HTMLAudioElement | undefined = $state()
@@ -61,9 +73,9 @@
     }
     hexText = out || '(end of file)'
   }
-  async function extract(opts: { png?: boolean; wav?: boolean; model?: string; dolphin?: boolean }) {
+  async function extract(opts: { png?: boolean; wav?: boolean; model?: string; dolphin?: boolean; sf2?: boolean }) {
     msg = 'exporting…'
-    try { const r = await api.extract(d!.id, opts); msg = opts.dolphin ? `saved ${r.written.length} texture(s) to ${r.dolphin_pack}; copy the GYQE01 folder into Dolphin's Load/Textures` : `saved ${r.written.length} file(s) to ${r.written[0].replace(/[\/][^\/]*$/, '')}` } catch (e: any) { msg = e.message }
+    try { const r = await api.extract(d!.id, opts); msg = opts.dolphin ? `saved ${r.written.length} texture(s) to ${r.dolphin_pack}; copy the GYQE01 folder into Dolphin's Load/Textures` : r.written.length ? `saved ${r.written.length} file(s) to ${r.written[0].replace(/[\/][^\/]*$/, '')}` : 'nothing to export' } catch (e: any) { msg = e.message }
   }
   const kindLabel = (k: string) => KIND_LABEL[k] ?? k
   let replacing = $state(false)
@@ -134,21 +146,21 @@
       <span style="flex:1"></span>
       <div class="row">
         {#if d.textures.length}<button onclick={() => extract({ png: true })}>Export PNGs</button><button onclick={() => extract({ dolphin: true })} title="Writes the textures with Dolphin's dump names into extracted/dolphin/GYQE01, a folder you can drop into Dolphin's Load/Textures as a custom-texture pack">Export for Dolphin</button><a class="btn" href={urls.texturesZip(d.id)} title="All textures as PNG with Dolphin's dump names, zipped">Zip (Dolphin names)</a>{/if}
-        {#if d.models.length}<button onclick={() => extract({ model: 'both' })}>Export model</button>{/if}
-        {#if d.audio.length}<button onclick={() => extract({ wav: true })}>Export WAV</button>{/if}
+        {#if d.models.length}<button onclick={() => extract({ model: 'all' })} title="glTF, COLLADA and OBJ, with the textures each format names">Export model</button>{/if}
+        {#if d.audio.length}<button onclick={() => extract({ wav: true, sf2: !!d!.group })}>Export WAV</button>{/if}
         {#if d.songs.length}<button onclick={() => extract({ wav: true })}>Export MIDI</button>{/if}
         <a class="btn" href={urls.data(d.id)}>Raw file</a>
       </div>
     </div>
     {#if msg}<div class="dim" style="padding:0 16px 6px">{msg}</div>{/if}
 
-    <div class="body">
+    <div class="body" bind:this={bodyEl}>
       {#if tab === 'model'}
         <ModelViewer entry={d.id} models={d.models} banks={d.banks} parts={d.parts} variants={d.variants} />
       {:else if tab === 'textures'}
         {#if bigTex !== null}
           <div class="big">
-            <button onclick={() => (bigTex = null)}>← back</button>
+            <button onclick={closeTex}>← back</button>
             <span class="dim">#{bigTex} · {d.textures[bigTex].width}×{d.textures[bigTex].height} {d.textures[bigTex].fmt}</span>
             <a class="btn" href={urls.tex(d.id, bigTex)} download={(d.dolphin_names[bigTex] ?? `texture_${bigTex}`) + '.png'} title="saved under Dolphin's dump name, ready for a custom-texture pack">Download PNG</a>
             <code class="dim" style="font-size:11px">{d.dolphin_names[bigTex]}.png</code>
@@ -164,7 +176,7 @@
         {:else}
           <div class="texgrid">
             {#each d.textures as t}
-              <button class="tex" onclick={() => (bigTex = t.n)}>
+              <button class="tex" onclick={() => openTex(t.n)}>
                 <div class="checker"><img loading="lazy" src={urls.tex(d.id, t.n) + '&v=' + texGen} alt="" style="max-width:128px;max-height:128px"></div>
                 <span class="dim">{t.width}×{t.height} {t.fmt}</span>
               </button>
@@ -173,7 +185,8 @@
         {/if}
       {:else if tab === 'audio'}
         {#if d.group}
-          <p class="dim" style="margin-top:0">MusyX {d.group.kind} group {d.group.id}: {d.group.samples} samples{d.group.sfx ? `, ${d.group.sfx} sound effects` : ''}. Each sound effect is a macro that plays one of the samples below.</p>
+          <p class="dim" style="margin-top:0">MusyX {d.group.kind} group {d.group.id}: {d.group.samples} samples{d.group.sfx ? `, ${d.group.sfx} sound effects` : ''}. Each sound effect is a macro that plays one of the samples below.
+            <a href={urls.soundfont(d.id)} title="Every sample of the group as a SoundFont 2 bank, with its {d.group.type === 0 ? 'program pages' : 'sound effects'} as presets: playable in any sampler">Download .sf2</a></p>
           {#if d.sfx.length}
             <div class="sfxgrid">
               {#each d.sfx as f}
@@ -263,7 +276,7 @@
             {#if editMsg}<span class={editMsg.startsWith('Replaced') || editMsg.startsWith('Original') ? 'ok' : 'warn'}>{editMsg}</span>{/if}
           </div>
         {/if}
-        <p class="dim" style="margin-top:14px">Every indexed file with offsets and references is listed under <a href="#files" onclick={() => app.go('files')}>All files</a>.</p>
+        <p class="dim" style="margin-top:14px">Every indexed file with offsets and references is listed under <a href="#files" onclick={() => app.go('files')}>Browse assets</a>.</p>
       {:else if tab === 'hex'}
         <div class="row" style="margin-bottom:8px">
           <button onclick={() => { hexOff = Math.max(0, hexOff - 4096); loadHex() }}>◀</button>

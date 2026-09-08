@@ -20,6 +20,8 @@ def fmt_size(n: int) -> str:
 
 def cmd_index(a):
     store = Store()
+    v = store.game.version
+    print(f"indexing {v.name if v else 'this game'} -> {store.index_path}")
     store.rebuild_index(verify=not a.no_verify, classify=not a.no_classify, scan=not a.no_scan)
 
 
@@ -33,7 +35,8 @@ def cmd_annotate(a):
     from .store import KNOWN_NAMES_PATH
     from . import formats
     ents = load_index(store.index_path)  # the shipped index, without clone adjustments
-    known = load_known_names(KNOWN_NAMES_PATH)
+    v = store.game.version
+    known = load_known_names(KNOWN_NAMES_PATH) if (v is None or v.us) else {}
     for e in ents:
         if e.archive == "ZZZZ.dat":
             e.known = known.get(e.offset, "")
@@ -123,7 +126,7 @@ def cmd_extract(a):
     dest = Path(a.out) if a.out else EXTRACT_DIR
     for name in a.entries:
         e = store.get(name)
-        for p in store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav, model=a.model):
+        for p in store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav, model=a.model, sf2=a.sf2):
             print(p)
 
 
@@ -139,7 +142,7 @@ def cmd_extract_all(a):
             print(f"skip {e.id} ({fmt_size(e.size)})")
             continue
         try:
-            store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav, model=a.model)
+            store.extract(e, dest, raw=a.raw, png=a.png, wav=a.wav, model=a.model, sf2=a.sf2)
             n += 1
         except Exception as ex:
             print(f"entry {e.id}: {ex}", file=sys.stderr)
@@ -177,6 +180,17 @@ def cmd_model(a):
         print(p)
     if not store.models(e):
         print("no GeoPalette sections in this entry")
+
+
+def cmd_soundfont(a):
+    store = Store()
+    e = store.get(a.entry)
+    dest = Path(a.out) if a.out else EXTRACT_DIR
+    paths = store.extract_soundfont(e, dest)
+    for p in paths:
+        print(p)
+    if not paths:
+        print("this entry is not a MusyX group")
 
 
 def cmd_game(a):
@@ -331,6 +345,23 @@ def cmd_layout(a):
           f"{cov['gaps']} gaps totalling {cov['gap_bytes'] / 1e6:.1f} MB")
 
 
+def cmd_tables(a):
+    """Where this build keeps its tables (see layout.py)."""
+    from . import layout as layout_mod
+    store = Store()
+    v = store.game.version
+    l = store.layout
+    print(f"{v.name if v else 'unknown build'}  ({l.key}, addresses {'found in this DOL' if l.resolved else 'assumed'})")
+    for name, value in l.to_dict().items():
+        if name in ("key", "resolved", "rels"):
+            continue
+        print(f"  {name:18} {value:#x}" if isinstance(value, int) and value >= 0x1000 else f"  {name:18} {value}")
+    for module, (off, cs, size) in l.rels.items():
+        print(f"  {module + '.rel':18} aaaa.dat {off:#x} +{cs:#x} -> {size:#x}")
+    problems = layout_mod.check(l)
+    print("  " + ("looks consistent" if not problems else "PROBLEM: " + "; ".join(problems)))
+
+
 def cmd_app(a):
     from .app import run
     run(a.port, a.width, a.height)
@@ -347,7 +378,7 @@ def main(argv=None):
 
     s = sub.add_parser("annotate", help="re-run the unreferenced-file analysis (twins, animation sources) on the index")
     s.set_defaults(fn=cmd_annotate)
-    s = sub.add_parser("index", help="(re)build index/GYQE01.json by scanning the game executables")
+    s = sub.add_parser("index", help="(re)build this game's asset index by scanning its executables")
     s.add_argument("--no-verify", action="store_true", help="skip decode verification (faster, noisier)")
     s.add_argument("--no-classify", action="store_true", help="skip content classification")
     s.add_argument("--no-scan", action="store_true", help="skip the AdGCForm and brute-force gap scans")
@@ -382,7 +413,8 @@ def main(argv=None):
     s.add_argument("--raw", action="store_true", help="write the compressed on-disc bytes")
     s.add_argument("--png", action="store_true", help="also decode textures to PNG")
     s.add_argument("--wav", action="store_true", help="also decode audio to WAV")
-    s.add_argument("--model", choices=["glb", "obj", "both"], help="also export models")
+    s.add_argument("--model", choices=["glb", "obj", "dae", "both", "all"], help="also export models")
+    s.add_argument("--sf2", action="store_true", help="also write a MusyX group as a SoundFont bank")
     s.set_defaults(fn=cmd_extract)
 
     s = sub.add_parser("extract-all", help="extract every indexed entry")
@@ -391,15 +423,21 @@ def main(argv=None):
     s.add_argument("--raw", action="store_true")
     s.add_argument("--png", action="store_true")
     s.add_argument("--wav", action="store_true")
-    s.add_argument("--model", choices=["glb", "obj", "both"])
+    s.add_argument("--model", choices=["glb", "obj", "dae", "both", "all"])
+    s.add_argument("--sf2", action="store_true")
     s.add_argument("--max-size", type=lambda v: int(v, 0), default=1 << 30)
     s.set_defaults(fn=cmd_extract_all)
 
-    s = sub.add_parser("model", help="export an entry's models (glTF binary and/or OBJ+MTL+PNG)")
+    s = sub.add_parser("model", help="export an entry's models (glTF binary, COLLADA and/or OBJ+MTL+PNG)")
     s.add_argument("entry")
-    s.add_argument("--format", choices=["glb", "obj", "both"], default="glb")
+    s.add_argument("--format", choices=["glb", "obj", "dae", "both", "all"], default="glb")
     s.add_argument("-o", "--out")
     s.set_defaults(fn=cmd_model)
+
+    s = sub.add_parser("soundfont", help="export a MusyX group as a SoundFont 2 bank (.sf2)")
+    s.add_argument("entry")
+    s.add_argument("-o", "--out")
+    s.set_defaults(fn=cmd_soundfont)
 
     s = sub.add_parser("wav", help="decode an entry's audio to WAV (disc .adp music or DSP streams)")
     s.add_argument("entry")
@@ -416,6 +454,9 @@ def main(argv=None):
     s = sub.add_parser("game", help="show or set the game (an .iso/.gcm or an extracted folder)")
     s.add_argument("path", nargs="?")
     s.set_defaults(fn=cmd_game)
+
+    s = sub.add_parser("tables", help="show where this build of the game keeps its descriptor tables")
+    s.set_defaults(fn=cmd_tables)
 
     s = sub.add_parser("dump", help="extract the game's files from the ISO into a Dolphin-style folder (needed for editing)")
     s.add_argument("-o", "--out", help="destination (default: '<iso name> (extracted)' beside the ISO)")

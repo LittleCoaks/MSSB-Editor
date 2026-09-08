@@ -9,7 +9,7 @@
   let updJob = $state<Job | null>(null)
   async function checkNow() {
     updBusy = true; updMsg = ''
-    try { await app.checkUpdates(true); if (app.update?.status && !app.update.status.available && !app.update.status.error) updMsg = 'You have the newest version.' }
+    try { await app.checkUpdates(true); const st = app.update?.status; if (st && !st.available && !st.error && st.latest) updMsg = 'You have the newest version.' }
     finally { updBusy = false }
   }
   async function setAuto(on: boolean) {
@@ -31,7 +31,16 @@
   let over = $state(false)
   let fs = $state<FsListing | null>(null)
   let dump = $state<Job | null>(null)
+  let indexJob = $state<Job | null>(null)
   const g = $derived(app.game)
+
+  async function buildIndex() {
+    try {
+      const { job } = await api.indexGame()
+      indexJob = await pollJob(job, api.job, j => (indexJob = j))
+      if (indexJob.state === 'done') await app.refresh()
+    } catch (e: any) { msg = e.message }
+  }
 
   async function use(p: string) {
     if (!p) return
@@ -40,7 +49,7 @@
       await api.setGame(p)
       msg = ''
       await app.refresh()
-      if (app.game?.ok) app.go('browse')
+      if (app.game?.ok && app.game.indexed) app.go('files')
     } catch (e: any) { msg = e.message } finally { busy = false }
   }
   async function browse(p: string) {
@@ -76,12 +85,36 @@
 
 <div class="page">
   <h1>Your game</h1>
-  <p class="dim">MSSB Editor works with your own copy of Mario Superstar Baseball (GYQE01). Give it either the <b>disc image</b> (.iso / .gcm) or an <b>extracted game folder</b>.</p>
+  <p class="dim">MSSB Editor works with your own copy of Mario Superstar Baseball — the American (GYQE01), European (GYQP01)
+    or Japanese (GYQJ01) disc, or either kiosk demo. Give it the <b>disc image</b> (.iso / .gcm) or an <b>extracted game folder</b>.</p>
 
   <div class="card current">
     {#if g?.ok}
-      <div><b>{g.setting}</b></div>
+      <div><b>{g.version_name ?? 'Mario Superstar Baseball'}</b></div>
+      <div class="dim">{g.setting}</div>
       <div class="dim">{g.layout === 'iso' ? 'Disc image' : 'Extracted folder'} · {g.entries} assets found</div>
+      {#if !g.indexed}
+        <div class="warn" style="margin-top:8px">
+          This version has no asset index yet. Building one reads the whole of ZZZZ.dat once
+          (several minutes); after that it is remembered.
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="primary" disabled={indexJob?.state === 'running'} onclick={buildIndex}>Build the asset index</button>
+          {#if indexJob}
+            {#if indexJob.state === 'running'}<span class="dim">{indexJob.note || 'working…'}</span>
+            {:else if indexJob.state === 'error'}<span class="warn">{indexJob.error}</span>
+            {:else}<span class="ok">Done — {indexJob.result?.entries} assets.</span>{/if}
+          {/if}
+        </div>
+      {:else if g.index_stale}
+        <div class="warn" style="margin-top:8px">
+          The index does not match this copy of the game — it was built from a bigger ZZZZ.dat, or from a
+          different version. Rebuild it to be sure of what is where.
+          <button onclick={buildIndex}>Rebuild</button>
+        </div>
+      {:else if g.version && g.version !== 'GYQE01'}
+        <div class="dim">Index built {g.index_built} · community asset names are only known for the American disc.</div>
+      {/if}
       {#if g.writable}
         <div class="ok">Editing enabled — changes go to {g.files_dir}</div>
         {#if !g.edit_ready && g.iso}
@@ -158,6 +191,8 @@
     </div>
     {#if status?.error}
       <p class="dim" style="margin:8px 0 0">Could not check: {status.error}</p>
+    {:else if status && !status.latest}
+      <p class="dim" style="margin:8px 0 0">No release has been published yet.</p>
     {:else if status?.available}
       <p class="ok" style="margin:8px 0 0">MSSB Editor {status.latest} is available.</p>
       {#if status.notes}<pre style="margin:8px 0;max-height:220px;white-space:pre-wrap">{status.notes}</pre>{/if}
@@ -180,7 +215,7 @@
 </div>
 
 <style>
-  .page { padding: 20px 24px; overflow: auto; max-width: 900px; }
+  .page { padding: 20px 24px; overflow: auto; }
   .current { margin: 14px 0; }
   .explorer { padding: 8px; }
   .explorer ul { list-style: none; margin: 6px 0 0; padding: 0; max-height: 300px; overflow: auto; }

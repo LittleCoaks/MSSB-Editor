@@ -105,8 +105,8 @@ def get_extract(req: Request, eid: str):
     st = req.ctx.require_store()
     e = st.get(eid)
     paths = st.extract(e, EXTRACT_DIR, raw=req.flag("raw"), png=req.flag("png"), wav=req.flag("wav"),
-                       model=req.q("model") or None, dolphin_pack=req.flag("dolphin"))
-    req.json({"written": [str(p) for p in paths], "dolphin_pack": str(EXTRACT_DIR / "dolphin" / "GYQE01")})
+                       model=req.q("model") or None, dolphin_pack=req.flag("dolphin"), sf2=req.flag("sf2"))
+    req.json({"written": [str(p) for p in paths], "dolphin_pack": str(EXTRACT_DIR / "dolphin" / st.dolphin_id)})
 
 
 @router.get(r"/api/entry/(?P<eid>\d+)/textures\.zip")

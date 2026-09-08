@@ -1,5 +1,10 @@
 """The character tables in main.dol.
 
+The addresses below are the US build's (GYQE01). Every other version has the
+same tables holding the same values, at different addresses; `layout.py` finds
+them in whatever DOL is open and rewrites the constants here, so treat them as
+the defaults rather than as fixed facts.
+
 Two 16-byte descriptor tables describe every playable character:
 
 * **Sub-files table** at 0x800F1D78 (DOL file offset 0xEED78): 54 slots x 19
@@ -145,6 +150,12 @@ HAND_TABLE_VA = 0x800F5D98
 HAND_TABLE_ROLES = ["left hand (batting)", "right hand (batting)", "left glove", "right glove",
                     "left hand (pitching)", "right hand (pitching)"]
 EVENT_SET_VA = 0x800EEB18
+# the event-track set each slot uses, as shipped (-1 = none); the same in every build
+EVENT_SETS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, -1, 14, -1, 15, 16, 17, 18, 19, 19, 19, 20, 20, 20, 21,
+              22, 13, 13, 13, 13, 23, 23, 23, 23, -1, -1, 25, 26, 27, 12, 18, -1, -1, -1, -1, 28, 28, 28, 28, 21, 21]
+assert len(EVENT_SETS) == SLOTS
+# the copy of the shared hand-pose event sets that lives outside the ARAM chunk
+EVENT_COPY_VA = 0x800F71D8
 
 
 def base_name(slot_name: str) -> str:

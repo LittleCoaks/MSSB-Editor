@@ -1,9 +1,11 @@
 # MSSB Editor
 
 Browse, view and extract the assets packed inside `ZZZZ.dat`, the 450 MB
-archive that holds nearly all of Mario Superstar Baseball's (GYQE01) data,
-with editing and custom-music support on the roadmap. Pure Python 3.10+; the
-only optional dependency is pywebview for the desktop window.
+archive that holds nearly all of Mario Superstar Baseball's data, with editing
+and custom-music support on the roadmap. Every release of the game works: the
+American (GYQE01), European (GYQP01) and Japanese (GYQJ01) discs and both
+kiosk demos - see [Versions of the game](#versions-of-the-game). Pure Python
+3.10+; the only optional dependency is pywebview for the desktop window.
 
 The archive has **no table of contents**. Most assets are described by a
 16-byte descriptor baked into `main.dol` or one of the RELs; this tool finds
@@ -24,17 +26,18 @@ It is organised for people who are not reverse engineers:
 
 - **Home** - game status in plain words and the three things people come for:
   browse assets, change the music, movies & sounds.
-- **Browse assets** - a catalog by *Characters*, *Stadiums*, *Menus & UI*,
-  *Props*, *Movies*, *Music*, *Sounds*, *Everything else* and *Unused data*, built from the
-  community names, the model names inside the files and the executable tables
-  they are loaded from. Cards show a representative texture; the detail panel
-  has a 3D model tab, texture gallery (with *Replace with PNG* on an extracted
-  game), audio player, details and hex.
+- **Browse assets** - every indexed file in one table with its offsets, sizes,
+  kind and the executable references it is loaded from, sortable and
+  filterable. The catalog narrows it: *Characters*, *Stadiums*, *Menus & UI*,
+  *Props*, *Movies*, *Music*, *Sounds*, *Everything else* and *Unused data*,
+  built from the community names, the model names inside the files and the
+  executable tables they are loaded from, then a second list for the group
+  within it (one character, one park). The detail panel has a 3D model tab,
+  texture gallery (with *Replace with PNG* on an extracted game), audio
+  player, details and hex.
 - **Music** - a three-step replace flow (pick a song, choose the track, install)
   with the original always restorable.
 - **Game** - drop / browse / explore to pick the ISO or folder, extract for editing.
-- **All files** - the raw entry table: every indexed file with offsets, sizes,
-  kind and the executable references it is loaded from; sortable and filterable.
 
 To work on the UI:
 
@@ -46,7 +49,7 @@ npm run build      # writes zzzzdat/ui/dist (commit the result)
 npm run check      # svelte-check / tsc
 ```
 
-**All files** also carries an archive map: a strip of ZZZZ.dat with every
+**Browse assets** also carries an archive map: a strip of ZZZZ.dat with every
 file drawn to scale and coloured by kind, gaps dark. Hovering names a block,
 clicking opens it, and the "archive order" tick lists the files in the order
 they sit in the archive with the unindexed gaps as rows, which is how a
@@ -81,6 +84,50 @@ Drag-and-drop of paths and the native Browse dialogs work in the desktop
 window; a plain browser tab cannot see dropped file paths, so it gets the
 in-page explorer instead.
 
+## Versions of the game
+
+The disc's six-character id names the build; both kiosk demos call themselves
+`RELSAB`, so they are told apart by the country code in `bi2.bin`:
+
+| id | key | what it is |
+| --- | --- | --- |
+| `GYQE01` | `GYQE01` | Mario Superstar Baseball (USA) |
+| `GYQP01` | `GYQP01` | Mario Superstar Baseball (Europe) |
+| `GYQJ01` | `GYQJ01` | Super Mario Stadium: Miracle Baseball (Japan) |
+| `RELSAB` | `RELSAB-US` | the US/EU kiosk demo (157 MB archive) |
+| `RELSAB` | `RELSAB-JP` | the Japanese kiosk demo |
+
+They are all the same engine: the same archive format, the same descriptor
+tables, the same 54 character slots. What differs is *where* those tables sit
+in `main.dol`, because the code around them is a different size in each
+region. Nothing is written down per version - `zzzzdat/layout.py` finds the
+tables in whatever DOL it is given (the RELs' descriptors in `aaaa.dat`, the
+ARAM chunk and the character sub-file table, the master, stadium and MusyX
+tables, the streamed-music table, and the small slot/glove/event tables, which
+hold the same values everywhere and so can simply be searched for). Run
+
+```bash
+python -m zzzzdat tables
+```
+
+to see what it found for the game you have selected.
+
+Only the American disc ships with an index, because it is the one the index
+in this repository was built from; point the editor at any other build and the
+Game page offers to build that build's index once (a few minutes; the demos
+take about two). It is kept in the data folder as `index/<key>.json` and
+reused from then on.
+
+Two things are American-only, and degrade quietly elsewhere:
+
+- **Community asset names.** `index/known_names.json` is a list of offsets in
+  the US `ZZZZ.dat`, which mean nothing in another build, so those entries are
+  named from their contents instead (embedded `.gpc` model names, the
+  character tables) rather than "First Found Mario".
+- **Decomp symbol names.** The decomp is of the US build, so on the others
+  entries are grouped by the descriptor table they sit in rather than by
+  symbol.
+
 ## Usage
 
 ```bash
@@ -97,22 +144,30 @@ python -m zzzzdat extract-all --png
 python -m zzzzdat textures 8       # only the PNGs
 python -m zzzzdat wav 10005        # decode audio to WAV (disc music, or DSP streams inside an entry)
 python -m zzzzdat extract 89 --wav
-python -m zzzzdat model 893 --format both   # glTF (.glb) and OBJ+MTL+PNG of "First Found Mario"
+python -m zzzzdat model 893 --format all    # glTF (.glb), COLLADA (.dae) and OBJ+MTL+PNG of "First Found Mario"
 python -m zzzzdat extract-all --model glb
+python -m zzzzdat soundfont 32     # the instrument bank as a SoundFont 2 bank (.sf2)
 python -m zzzzdat layout           # coverage map of the archive
-python -m zzzzdat index            # rebuild index/GYQE01.json (~3 min; --no-scan for ~40 s)
+python -m zzzzdat index            # rebuild this game's index (~3 min; --no-scan for ~40 s)
+python -m zzzzdat tables           # where this build keeps its descriptor tables
 ```
 
 Extracted files land in `extracted/` (git-ignored). Names are
 `<id>_<archive offset>_<embedded name>_<module>_<symbol>.<ext>` so an entry can
 always be traced back to the code that loads it. The embedded name (e.g.
 `stadium0`, `packun`, `taru_clash`) comes from `.gpc`/`.tpl` strings the game
-left inside the files; about half the entries carry one.
+left inside the files; about half the entries carry one. An extraction that
+asks for something decoded also writes the entry's own bytes, except for a
+MusyX group: its `.grp` says nothing the WAVs and the SoundFont do not, so it
+is left out (`--raw` and the "Raw file" download still write it).
 
 The web UI lists every entry with filters and sorting, and shows per entry:
 the descriptor, which executables reference it, the container's sections,
 every decoded texture (click for full size), a model tab with a textured 3D
-viewer (three.js, orbit/zoom/pan, wireframe), an audio tab with an in-page
+viewer (three.js, orbit/zoom/pan, W/A/S/D to fly the camera and its pivot
+together so it can go inside the stands, arrow keys to turn on the spot -
+dragging orbits the pivot, which is useless once the pivot is behind you -
+wireframe), an audio tab with an in-page
 player for each stream, a paged hex viewer, and buttons to download or extract
 (with PNGs / WAVs / models) into `extracted/`.
 
@@ -122,9 +177,10 @@ The program never carries game data. The repository and the built binary
 contain only the index (offsets, sizes, names) and the UI. Everything visual is
 produced from the user's own copy after a game is selected:
 
-- thumbnails are built in the background into `cache/<game>/thumbs/` (the
-  header shows progress; cards fill in as they finish, and a replaced entry's
-  thumbnail is rebuilt);
+- thumbnails are made the first time a page asks for one and kept in
+  `cache/<game>/thumbs/` (only the Characters and Stadiums lists show them, so
+  it is a few dozen images; a replaced entry's thumbnail is rebuilt, and
+  `zzzzdat thumbs` fills the whole cache up front if you want it warm);
 - full-size textures, WAVs and models are decoded on demand into `cache/`.
 
 `cache/` can be deleted at any time.
@@ -207,8 +263,8 @@ gloves, the bat (see below), the 17 animation banks labelled by their
 development file names and what they animate (click one to play its
 animations on the model), the voice group with a play button and WAV download
 per clip, and every file the tables tie to the character. "Export everything"
-writes the model as glTF with all animations, OBJ, textures per colour and
-the voice clips under `extracted/characters/<name>/`.
+writes the model as glTF and COLLADA with all animations, OBJ, textures per
+colour and the voice clips under `extracted/characters/<name>/`.
 
 **Where the bat is.** There is no bat file. Every hand container carries,
 after its GeoPalette, a section with version word 0x40001 holding complete
@@ -220,7 +276,7 @@ the bat, hidden). The animation event tracks (sub-items 4..6 of each slot,
 codes 0x64xx) choose the pose per frame. Goomba, Paragoomba and Petey, who
 have no hands, have the bat itself in their hand slots. The viewer's "with
 bat" attachment and the "with bat" equipment chips on the Characters page
-apply the bat pose (`pose=` on the `.glb`/`.obj` routes).
+apply the bat pose (`pose=` on the `.glb`/`.dae`/`.obj` routes).
 
 ### The Stadiums page
 
@@ -229,7 +285,7 @@ parks from the DOL's `StadiumFiles` table (21 descriptors, three per stadium
 in table order: Mario Stadium, Bowser Castle, Wario Palace, Yoshi Park,
 Peach's Garden, DK Jungle, Toy Field; a stadium with fewer files repeats one
 file across its slots). The viewer draws every model section of a file
-together (`/api/entry/<id>/model/all.glb`): the park, its sky dome drawn
+together (`/api/entry/<id>/model/all.glb`, or `all.dae`): the park, its sky dome drawn
 inside-out so the camera can look through it, and the sun-glare billboard
 (a mesh named 加算光, "additive light") blended additively. Mario Stadium's
 props from game.rel's `marioStadiumCDR` table are listed beside the file
@@ -240,7 +296,8 @@ still unknown. The night look is baked into the geometry: every stadium mesh
 carries per-vertex colours (GX RGB565/RGB8/RGBA4 arrays, now exported as
 glTF COLOR_0), and the night file's average about half the day file's, which
 is where the shadows and lighting live; the skeleton sections only differ in
-object positions. Each pack also has a collision mesh (`zzzzdat/collision.py`): a
+object positions. The collision overlay is off until asked for. Each pack also has a collision mesh
+(`zzzzdat/collision.py`): a
 `00 NN 43 00` section of NN records, each a run of GX-style primitives
 (u16 kind, u16 n: kind 1 = triangle strip of n triangles, kind 0 = triangle
 list of n triangles) whose points are (x, y, z, u16 surface tag, u16 0). The
@@ -313,9 +370,36 @@ MSSB-Export-Models: descriptors, display-object layouts, quantized
 position/normal/UV arrays, display-state lists and GX display-list primitives
 (quads, triangles, strips, fans). Every parseable section is exported as a
 binary glTF with its textures embedded (texture indices in the display states
-index the container's texture table), or as OBJ + MTL + PNGs. Skinning,
-bones and animations are not handled yet: character models come out in their
-bind pose, split into their named parts.
+index the container's texture table), as COLLADA (`zzzzdat/dae.py`) with the
+PNGs beside it, or as OBJ + MTL + PNGs.
+
+**Compositing.** The display states carry no blend mode - every draw in the game
+writes the same `0x1111` word - so how a surface wants compositing is read off
+the data instead (`gx.composite_kind`): a texture whose alpha is only ever 0 or
+255 is a cutout; one with values in between is a gradient that must not be
+alpha-tested into hard edges *where it is a layer over something else* (on a
+surface of its own that gradient is part of how the console shaded the
+texture, and blending it turns solid scenery see-through); one with nothing
+solid anywhere in it, or whose colour is flat while its alpha carries the
+picture, is an overlay with no sensible threshold to test against and is
+blended wherever it is drawn (Wario Palace's stonework is a grey ramp whose
+alpha peaks at 182 and dips in the middle, and testing it at half kept only
+the near-black end and hung black shapes over the palace); and a solid one
+that is mostly *pure* black is
+paint on a black ground, which the console added to what was underneath (the
+share of pure black rather than overall darkness is what separates those from an
+evenly dark surface). A draw whose own vertex colours carry alpha below 1 is
+faded, like the mown stripes on a field. The game also paints markings, scuffs
+and lettering as extra draws lying exactly in the surface below them and just
+obeys its own draw order; a depth buffer cannot separate identical depths, so
+`c3.decal_levels` records which layer each one is. All of that reaches the
+viewer as glTF material `extras` (`decal`, `blend`), which it turns into a
+polygon offset, a render order and additive blending. Without it a stadium's
+infield comes out under black blobs with the layers tearing into each other.
+
+glTF and COLLADA also carry the skeleton, the skin and the animation banks (see
+below); OBJ is geometry only, so it comes out in the bind pose split into its
+named parts.
 
 ## Audio
 
@@ -342,7 +426,9 @@ background thread and shows the UI in a native window through
 [pywebview](https://pywebview.flowrl.com/) (Edge WebView2 on Windows, WebKit
 elsewhere). Without pywebview installed it falls back to the browser. The page
 and the API are identical in both modes, so everything the browser tab can do,
-the window can do.
+the window can do - including downloads, which pywebview cancels unless
+`ALLOW_DOWNLOADS` is set (`zzzzdat/app.py` sets it, and each backend then asks
+where to save).
 
 To ship it as a standalone program:
 
@@ -384,8 +470,11 @@ and the cache go to `%APPDATA%\MSSB Editor`, exports to
 
 ## What is indexed
 
-`index/GYQE01.json` holds 2212 entries covering 447.8 MB of the 450 MB
-archive (the rest is 0x800 padding). Where they come from:
+`index/GYQE01.json`, the American disc's index, holds 2212 entries covering
+447.8 MB of the 450 MB archive (the rest is 0x800 padding). Other builds are
+indexed the same way, on the machine that has them; the Japanese kiosk demo,
+for instance, comes out at 1854 entries covering 156.3 of its 157.5 MB. Where
+they come from:
 
 | source (`refs`) | count | how |
 | --- | --- | --- |
@@ -397,7 +486,12 @@ archive (the rest is 0x800 padding). Where they come from:
 
 About 40% of the archive is never named by a descriptor. `zzzzdat/twins.py`
 works out what it is when the index is built (or with `python -m zzzzdat
-annotate`), and the catalog names and groups it accordingly:
+annotate`), and the catalog names and groups it accordingly. The offsets below
+are the US build's; they are not written down anywhere, but found as the
+unbroken runs of unreferenced files and then told apart by what is in them
+(the run that ends where the ARAM chunk begins is the mirror; the others by
+whether their banks carry prototype or per-character sequence names), so the
+same analysis runs on every build:
 
 * **Animation sources** (0x0F12C800-0x186A1800, 157 MB, 540 banks): one bank
   per character and category with the sequence names still in them
@@ -509,16 +603,34 @@ interleaved position array to bones by their pre-order index in the actor's
 tree, with source vertices equal to the rest pose, so it exports as ordinary
 glTF skinning. Hermite tangents are ignored (linear / slerp between keys).
 
+The lists tile the body's vertices in runs, but the runs do not quite meet:
+one to three vertices fall between each pair (Peach: 20 of the 912 she draws).
+Whatever the file means by that, they are real, drawn vertices, and binding
+them to bone 0 - the root - left them right in the bind pose and then tore them
+across the screen the moment an animation moved it. Each one sits within a few
+hundredths of the model's height of a vertex the run beside it covers, so
+`anim.fill_weight_gaps` gives it that vertex's bones; over five characters and
+forty animation frames that takes the worst drift from 190% of the model's
+height down to none at all.
+
 Hands, gloves and bats are separate models (per-slot items in the master
 table, or extra sections in menu packs) modelled from the wrist along +X.
-Every rig shares the same arm ids (16..20 right, 22..26 left), so the viewer
-can hang them from wrist bones 19 and 25 ("with hands / gloves / bat") and
+Every rig shares the same arm ids (16..20 left, 22..26 right - the character
+faces +Z, so bone 19 at +X is its left hand), so the viewer can hang them from
+wrist bones 19 and 25 ("with hands / gloves / bat") and
 they follow the animation.
 
 The model viewer plays them: pick a bank (sections of the file itself, then
 the character's standalone banks from the DOL sub-file table), then a
-sequence; `.glb` downloads carry the skeleton, skin and animations
-(`/api/entry/<id>/model/<sec>.glb?anim=<entry>:<section>`).
+sequence. About a third of the game's sequences hold the rest pose for their
+whole length (24 tracks, 40 frames, nothing changing); `anim.is_static` leaves
+those out of the exports and the picker, so a bank offers only what actually
+plays, and the counts beside it are of those. `.glb` and `.dae` downloads carry
+the skeleton, skin and animations
+(`/api/entry/<id>/model/<sec>.glb?anim=<entry>:<section>`, same query on the
+`.dae` route). COLLADA writes each sequence as an `<animation_clip>` over
+per-bone matrix channels and names its textures `<model>_tex<n>.png`, which
+"Export model" and `zzzzdat model --format dae` write beside the file.
 
 ### MusyX sound groups
 
@@ -532,8 +644,17 @@ gives each sample's offset, rate, base note, loop and DSP-ADPCM
 coefficients. The Audio tab lists every sample of a group with the effects
 that use it, and a button per effect plays its sample. Thirty-four of the
 groups are character voice sets (13 lines each); which character each
-belongs to is not yet known. Sequenced music (the instrument bank plus
-`.song` data elsewhere) is not rendered.
+belongs to is not yet known.
+
+Any group also downloads as a **SoundFont 2 bank** (`zzzzdat/sf2.py`,
+`/api/entry/<id>/soundfont.sf2`): the samples become the `smpl` chunk and the
+macro / layer / keymap graph becomes preset and instrument zones, so the game's
+instruments open in any sampler. A song group's normal pages land in bank 0 and
+its drum pages in bank 128; an sfx group gets one preset per FX-table entry.
+Pitch follows what the renderer plays - the sample's base note is the root key,
+`ADD_KEY` and layer/keymap transposes become `coarseTune`, and a macro whose
+`SET_KEY` pins the pitch gets `scaleTuning` 0 - and the macro's curve table
+becomes the volume envelope.
 
 ### Sampled music in the sound groups
 
@@ -617,8 +738,9 @@ Checked against a real Dolphin dump of this game: 100 of 104 dumped names
 reproduce exactly (the rest are textures the game composes at run time).
 "Export for Dolphin" on a file, "Dolphin texture pack" on a character or a
 stadium, and the "Zip (Dolphin names)" download all use these names, and the
-folder exports go to `extracted/dolphin/GYQE01/`, which drops straight into
-Dolphin's `Load/Textures/` as a custom-texture pack; a single texture's
+folder exports go to `extracted/dolphin/<disc id>/` (`GYQE01` for the American
+disc), which drops straight into Dolphin's `Load/Textures/` as a
+custom-texture pack; a single texture's
 Download PNG also saves under its Dolphin name. Edit the PNGs (same or larger
 size) and Dolphin loads them in place of the originals, no ISO change needed.
 
@@ -662,6 +784,8 @@ Tests: `pip install pytest` then `pytest` (unit tests on synthetic data; the
 ```
 zzzzdat/
   disc.py         find ZZZZ.dat (file or inside the ISO), FST parsing, decomp-repo path
+  versions.py     which build of the game a disc is (USA / Europe / Japan / the kiosk demos)
+  layout.py       find that build's descriptor tables in its main.dol
   lzss.py         decompressor
   descriptors.py  scan executables for descriptors, verify, build/load the index
   formats.py      identify contents: container / textures / HVQM4 / ADPCM / anim bank
@@ -671,9 +795,11 @@ zzzzdat/
   dsp.py          DSP-ADPCM and DTK audio decoding + WAV writer
   hvqm.py         HVQM4 movies through the native helper and the movie cache
   musyx.py        MusyX sound groups: sfx -> macro -> sample, sample decoding
+  sf2.py          MusyX groups -> SoundFont 2 banks
   song.py         MusyX sequenced songs -> MIDI
   render.py       plays songs with the instrument bank's samples (numpy)
   c3.py           C3 GeoPalette model parsing, actors, OBJ and glTF export (rigged)
+  dae.py          COLLADA export: geometry, skeleton, skin, animation clips
   anim.py         ANIM banks and skin files
   app.py          desktop window (pywebview) around the server
 build.py          PyInstaller one-folder build
@@ -688,6 +814,7 @@ pyproject.toml    package metadata; `pip install -e .` gives a `zzzzdat` command
   chars.py        the DOL character tables (54 slots x 19 sub-files, master descriptors)
   edit.py         replace / restore entries: LZSS encode, write, repoint descriptors, backups
   clone.py        character cloning on top of edit.py
-index/GYQE01.json the generated index (checked in; rebuild with `index`)
+index/GYQE01.json the US build's generated index (checked in; rebuild with `index`).
+                  Other builds' indexes are built on first use into the data folder
 extracted/        output folder (ignored)
 ```

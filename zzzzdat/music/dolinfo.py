@@ -8,7 +8,9 @@ filesystem.  It keeps a table of 16-byte records in the DOL:
 
 with one record per streamed music track.  In an unmodified GYQE01 DOL the
 table sits at 0x800E87B4 and every `size` field matches the corresponding .adp
-file byte for byte.
+file byte for byte.  Every other version keeps it somewhere else, so when that
+address does not hold the table `find_table` looks for it (`layout.py` also
+points TABLE_VA at the right place once a game is open).
 
 That matters when replacing a track: the streamer uses `size` from here, not the
 real file size.  Drop in a shorter file and the console keeps reading past the
@@ -24,7 +26,6 @@ import os
 import struct
 
 TABLE_VA = 0x800E87B4
-STRINGS_VA_LO = 0x800E63A0
 ENTRY_SIZE = 16
 MAX_ENTRIES = 15
 
@@ -85,6 +86,34 @@ def find_dol(root):
     return None
 
 
+def find_table(dol):
+    """The address of the streamed-music table, or None. Used when TABLE_VA is
+    not this build's address. A single word pointing at a track path proves
+    nothing -- code holds those too -- so this looks for the longest run of
+    16-byte records that all do."""
+    hits = []
+    for off, addr, size in dol.sections:
+        end = min(off + size, len(dol.data)) - ENTRY_SIZE
+        for i in range(off, end, 4):
+            ptr = struct.unpack('>I', dol.data[i:i + 4])[0]
+            if not 0x80000000 < ptr < 0x80400000:
+                continue
+            s = dol.read_cstr(ptr, 48)
+            if s and s.startswith('snd/my_snd_h/'):
+                hits.append(addr + (i - off))
+    best, best_len = None, 0
+    seen = set(hits)
+    for va in hits:
+        if va - ENTRY_SIZE in seen:
+            continue        # not the start of its run
+        n = 1
+        while va + n * ENTRY_SIZE in seen:
+            n += 1
+        if n > best_len:
+            best, best_len = va, n
+    return best if best_len >= 2 else None
+
+
 def read_table(root):
     """-> (dict filename -> info, dol_path) or ({}, path_or_None) if unreadable.
 
@@ -100,19 +129,22 @@ def read_table(root):
     except Exception:
         return {}, path
 
-    # Sanity-check before trusting the address: entry 0 must name a track.
-    first = dol.read_u32(TABLE_VA)
-    if first is None:
-        return {}, path
-    name = dol.read_cstr(first)
+    # Sanity-check before trusting the address: entry 0 must name a track. It
+    # is somewhere else in every version but the US one, and this may be called
+    # without a game open (the music commands do), so search for it if need be.
+    table_va = TABLE_VA
+    first = dol.read_u32(table_va)
+    name = dol.read_cstr(first) if first is not None else None
     if not name or not name.startswith('snd/my_snd_h/'):
-        return {}, path
+        table_va = find_table(dol)
+        if table_va is None:
+            return {}, path
 
     out = {}
     for i in range(MAX_ENTRIES):
-        va = TABLE_VA + i * ENTRY_SIZE
+        va = table_va + i * ENTRY_SIZE
         ptr = dol.read_u32(va)
-        if ptr is None or ptr < STRINGS_VA_LO:
+        if ptr is None or ptr < 0x80000000:
             break
         s = dol.read_cstr(ptr)
         if not s or not s.startswith('snd/my_snd_h/'):
@@ -120,6 +152,8 @@ def read_table(root):
         size = dol.read_u32(va + 4)
         loop_start = dol.read_u32(va + 8)
         loop_end = dol.read_u32(va + 12)
+        if os.path.basename(s) in out:
+            continue    # the demos point their unused slots at the first track
         out[os.path.basename(s)] = {
             'index': i,
             'entry_va': va,

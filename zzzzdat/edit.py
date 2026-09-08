@@ -23,13 +23,13 @@ import struct
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import chars, lzss
-from .descriptors import AAAA_ENTRIES, FLAG_COMPRESSED, RELATIVE_TABLES, REL_MODULES, Entry
+from . import chars, layout, lzss
+from .descriptors import FLAG_COMPRESSED, REL_MODULES, Entry
 from .disc import Game
 
 BACKUP_DIRNAME = "_mssb_editor_backup"
 SECTOR = 0x800
-REL_SIZES = {"menus.rel": 0x1027E4, "game.rel": 0x2220F8, "debug.rel": 0x5912C}
+REL_ORDER = ["menus", "game", "debug"]  # the order the RELs' descriptors sit in the DOL table
 REL_SECTION_INDEX = {".text": 1, ".ctors": 2, ".dtors": 3, ".rodata": 4, ".data": 5, ".bss": 6}
 
 
@@ -88,8 +88,13 @@ class Editor:
         self.backup_dir.mkdir(exist_ok=True)
         self.journal_path = self.backup_dir / "journal.json"
         self.journal = json.loads(self.journal_path.read_text(encoding="utf-8")) if self.journal_path.exists() else {}
+        self.layout = layout.current()
 
     # ------------------------------------------------------------ helpers --
+    def _rel_va(self, module: str) -> int:
+        """Where this REL's descriptor sits in the DOL's aaaa.dat table."""
+        return self.layout.rel_table_va + REL_ORDER.index(module) * 16
+
     def _save(self) -> None:
         self.journal_path.write_text(json.dumps(self.journal, indent=1), encoding="utf-8")
         ov = {k: v["current"] for k, v in self.journal.items() if not k.startswith("_") and v.get("current")}
@@ -106,16 +111,15 @@ class Editor:
         raise EditError(f"address {va:#x} is not in main.dol")
 
     def _rel_bytes(self, module: str) -> tuple[bytes, tuple[int, int]]:
-        fname = REL_MODULES[module]
-        off, stock_cs = next(((off, cs) for (off, cs), n in AAAA_ENTRIES.items() if n == fname))
+        off, stock_cs, size = self.layout.rels[module]
         # the current compressed size is in the DOL (it changes when we repack)
         d = self.dol.read_bytes()
-        o = self._dol_offset(0x800E8AA8 + ["menus", "game", "debug"].index(module) * 16)
+        o = self._dol_offset(self._rel_va(module))
         cs = struct.unpack_from(">I", d, o + 12)[0] or stock_cs
         with open(self.aaaa, "rb") as f:
             f.seek(off)
             comp = f.read(min(max(cs, stock_cs), self._rel_capacity(off)))
-        return bytes(lzss.decompress(comp, 0xB, 4, REL_SIZES[fname])), (off, cs)
+        return bytes(lzss.decompress(comp, 0xB, 4, size)), (off, cs)
 
     def _rel_section_offset(self, rel: bytes, section: str, addr: int) -> int:
         num, sec_off = struct.unpack(">II", rel[12:20])
@@ -192,12 +196,12 @@ class Editor:
         rb = self.journal.setdefault("_rels", {})
         if module in rb:
             return
-        off, _ = next(((off, cs) for (off, cs), n in AAAA_ENTRIES.items() if n == REL_MODULES[module]))
+        off = self.layout.rels[module][0]
         cap = self._rel_capacity(off)
         with open(self.aaaa, "rb") as f:
             f.seek(off)
             (self.backup_dir / f"{module}.rel.slot").write_bytes(f.read(cap))
-        va = 0x800E8AA8 + ["menus", "game", "debug"].index(module) * 16
+        va = self._rel_va(module)
         d = self.dol.read_bytes()
         o = self._dol_offset(va)
         rb[module] = {"offset": off, "descriptor": d[o:o + 16].hex()}
@@ -218,7 +222,7 @@ class Editor:
         with open(self.aaaa, "r+b") as f:
             f.seek(info["offset"])
             f.write(slot.read_bytes())
-        va = 0x800E8AA8 + ["menus", "game", "debug"].index(module) * 16
+        va = self._rel_va(module)
         d = bytearray(self.dol.read_bytes())
         o = self._dol_offset(va)
         d[o:o + 16] = bytes.fromhex(info["descriptor"])
@@ -227,13 +231,13 @@ class Editor:
 
     def _rel_capacity(self, off: int) -> int:
         """A REL may grow into the padding up to the next entry in aaaa.dat."""
-        starts = sorted(o2 for (o2, _c) in AAAA_ENTRIES)
+        starts = sorted(o2 for (o2, _c, _s) in self.layout.rels.values())
         nxt = next((o2 for o2 in starts if o2 > off), self.aaaa.stat().st_size)
         return nxt - off
 
     def _update_aaaa_descriptor(self, module: str, off: int, new_cs: int) -> None:
-        """The DOL table at 0x800E8AA8 holds the RELs' descriptors (menus, game, debug)."""
-        va = 0x800E8AA8 + ["menus", "game", "debug"].index(module) * 16
+        """The DOL's first descriptor table holds the RELs' (menus, game, debug)."""
+        va = self._rel_va(module)
         d = bytearray(self.dol.read_bytes())
         o = self._dol_offset(va)
         params, fs, doff, _cs = struct.unpack_from(">IIII", d, o)
@@ -245,7 +249,7 @@ class Editor:
     def _record(self, e: Entry, ref: Ref, offset: int, disc_size: int, size: int) -> bytes:
         rel_base = 0
         if ref.module == "dol":
-            for tva, (count, base) in RELATIVE_TABLES.items():
+            for tva, (count, base) in self.layout.relative_tables.items():
                 if tva <= ref.addr < tva + count * 16:
                     rel_base = base
         params = (e.repeat_bits << 8) | e.lookback_bits if e.compressed else 0
@@ -275,7 +279,8 @@ class Editor:
             self.journal[key] = entry
         orig = entry["original"]
         span = -(-orig["disc_size"] // SECTOR) * SECTOR
-        if len(blob) > span and any(r.module == "dol" and any(tva <= r.addr < tva + count * 16 for tva, (count, _b) in RELATIVE_TABLES.items()) for r in refs):
+        if len(blob) > span and any(r.module == "dol" and any(tva <= r.addr < tva + count * 16
+                                    for tva, (count, _b) in self.layout.relative_tables.items()) for r in refs):
             raise EditError(f"this file lives in the ARAM chunk the game loads whole, so it cannot grow: "
                             f"the replacement is {len(blob)} bytes, the slot holds {span}")
         if len(blob) <= span:

@@ -1,12 +1,11 @@
 """Application state shared by all routes: the Store for the selected game,
-the thumbnail builder, background jobs, the write lock and cached views."""
+background jobs, the write lock and cached views."""
 from __future__ import annotations
 
 import threading
 
 from .. import catalog
 from ..store import Store
-from ..thumbs import ThumbJob
 from .jobs import Jobs
 
 
@@ -14,7 +13,6 @@ class AppContext:
     def __init__(self):
         self.store: Store | None = None
         self.store_error = ""
-        self.thumbs = ThumbJob()
         self.jobs = Jobs()
         self.write_lock = threading.Lock()  # every mutation of the game runs under this
         self._catalog: dict | None = None
@@ -22,12 +20,10 @@ class AppContext:
 
     def load_store(self) -> None:
         """(Re)open the configured game. Called at start and after the game or its files change."""
-        self.thumbs.stop()
         self.invalidate()
         try:
             self.store = Store()
             self.store_error = ""
-            self.thumbs.start(self.store)
         except Exception as ex:
             self.store = None
             self.store_error = str(ex)

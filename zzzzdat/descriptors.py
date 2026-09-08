@@ -17,6 +17,12 @@ they are the only descriptors that do not point at ZZZZ.dat.
 
 This module scans the binaries for records of that shape, names each one after
 the nearest symbol in config/GYQE01/**/symbols.txt, and writes an index.
+
+Addresses here are the US build's. Every version keeps the same tables
+somewhere else, so which addresses to scan relative to -- the RELs' slots in
+aaaa.dat and the tables whose offsets are relative to a chunk of the archive
+-- comes from the `layout.Layout` passed in, and every build gets its own
+index file (`index_path_for`).
 """
 from __future__ import annotations
 
@@ -28,10 +34,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .disc import REPO_ROOT, Game, current_game
-from .paths import INDEX_DIR
+from .paths import DATA_DIR, INDEX_DIR
 
 # Symbol names come from the decomp repo when it is around; without it the
-# index still builds, entries are just named by address.
+# index still builds, entries are just named by address. The decomp is of the
+# US build, so its names are only used for that one.
 CONFIG_DIR = (REPO_ROOT / "config" / "GYQE01") if REPO_ROOT else None
 INDEX_PATH = INDEX_DIR / "GYQE01.json"
 
@@ -40,13 +47,6 @@ FLAG_COMPRESSED = 4
 # REL section numbering used by this game's RELs (see config/GYQE01/*/symbols.txt).
 REL_SECTION_NAMES = {1: ".text", 2: ".ctors", 3: ".dtors", 4: ".rodata", 5: ".data", 6: ".bss"}
 REL_MODULES = {"game": "game.rel", "menus": "menus.rel", "debug": "debug.rel"}
-
-# Tables whose offsets are relative to a chunk of the archive rather than
-# absolute: the DOL address of the table, (entry count, base offset).
-RELATIVE_TABLES = {0x800EFD38: (516, 0x1A15E800)}  # master character descriptors -> ARAM chunk
-
-# aaaa.dat entries: (offset, disc_size) -> file name
-AAAA_ENTRIES = {(0x800, 0x5A818): "menus.rel", (0x5B800, 0xF4450): "game.rel", (0x150000, 0x271C0): "debug.rel"}
 
 
 @dataclass
@@ -182,10 +182,31 @@ def load_rel_bytes(module: str, d: bytes) -> Binary:
     return Binary(module, path, d, secs)
 
 
-def load_binaries(game: Game | None = None) -> list[Binary]:
+def read_dol(game: Game) -> bytes:
+    """main.dol's bytes, from the game folder or straight out of the image."""
+    dol = game.dol_path()
+    if dol:
+        return dol.read_bytes()
+    if not game.iso:
+        return b""
+    with open(game.iso, "rb") as f:
+        f.seek(0x420)
+        dol_off = struct.unpack(">I", f.read(4))[0]
+        f.seek(dol_off)
+        hdr = f.read(0x100)
+        offs = struct.unpack(">18I", hdr[0:0x48])
+        sizes = struct.unpack(">18I", hdr[0x90:0xD8])
+        f.seek(dol_off)
+        return f.read(max((o + s for o, s in zip(offs, sizes) if s), default=0x100))
+
+
+def load_binaries(game: Game | None = None, layout=None) -> list[Binary]:
     """main.dol and the three RELs. The RELs are extracted files when the game
-    folder has them, otherwise they are decompressed out of aaaa.dat."""
+    folder has them, otherwise they are decompressed out of aaaa.dat, from the
+    descriptors `layout` found for this build."""
+    from . import layout as layout_mod
     from .lzss import decompress
+    layout = layout or layout_mod.current()
     game = game or current_game()
     bins = []
     dol = game.dol_path()
@@ -205,13 +226,12 @@ def load_binaries(game: Game | None = None) -> list[Binary]:
     aaaa = None
     for module, fname in REL_MODULES.items():
         data = game.read_file(fname)
-        if data is None:
+        if data is None and module in layout.rels:
             if aaaa is None:
                 aaaa = game.read_file("aaaa.dat") or b""
-            for (off, cs), name in AAAA_ENTRIES.items():
-                if name == fname and aaaa:
-                    size = {"menus.rel": 0x1027E4, "game.rel": 0x2220F8, "debug.rel": 0x5912C}[name]
-                    data = bytes(decompress(aaaa[off:off + cs], 0xB, 4, size))
+            off, cs, size = layout.rels[module]
+            if aaaa:
+                data = bytes(decompress(aaaa[off:off + cs], 0xB, 4, size))
         if data:
             bins.append(load_rel_bytes(module, data))
     return bins
@@ -247,8 +267,12 @@ def symbol_lookup_for(symtabs: dict, b: Binary, secname: str):
     return symtabs.get(b.module, {}).get(secname)
 
 
-def scan_binary(b: Binary, archive_size: int, symtabs: dict) -> list[tuple[tuple, str]]:
-    """Return [(descriptor tuple, ref string)] for each hit in the binary."""
+def scan_binary(b: Binary, archive_size: int, symtabs: dict,
+                relative_tables: dict | None = None) -> list[tuple[tuple, str]]:
+    """Return [(descriptor tuple, ref string)] for each hit in the binary.
+    `relative_tables` is {table address: (entry count, base offset)} for the
+    tables whose offsets are relative to a chunk of the archive."""
+    relative_tables = relative_tables or {}
     hits = []
     d = b.data
     cache = {}
@@ -264,7 +288,7 @@ def scan_binary(b: Binary, archive_size: int, symtabs: dict) -> list[tuple[tuple
             p, fs, off, cs = struct.unpack_from(">4I", d, i)
             addr = base + (i - fo)
             rel = None
-            for tva, (count, tbase) in RELATIVE_TABLES.items():
+            for tva, (count, tbase) in relative_tables.items():
                 if b.module == "dol" and tva <= addr < tva + count * 16 and (addr - tva) % 16 == 0:
                     rel = tbase
             if rel is not None:
@@ -378,21 +402,28 @@ def verify_entries(entries: list[Entry], archive, probe: int = 0x2000) -> list[E
     return keep
 
 
-def build_index(archive_size: int, game: Game | None = None) -> list[Entry]:
-    symtabs = {"dol": load_symbols(CONFIG_DIR / "symbols.txt") if CONFIG_DIR else {}}
+def build_index(archive_size: int, game: Game | None = None, layout=None) -> list[Entry]:
+    from . import layout as layout_mod
+    game = game or current_game()
+    layout = layout or layout_mod.current()
+    # the decomp's symbols name the US build's tables; on another build the
+    # same addresses mean something else, so the entries are named by address
+    use_symbols = CONFIG_DIR and (game.version is None or game.version.us)
+    symtabs = {"dol": load_symbols(CONFIG_DIR / "symbols.txt") if use_symbols else {}}
     for module in REL_MODULES:
-        symtabs[module] = load_symbols(CONFIG_DIR / module / "symbols.txt") if CONFIG_DIR else {}
+        symtabs[module] = load_symbols(CONFIG_DIR / module / "symbols.txt") if use_symbols else {}
+    aaaa_entries = layout.aaaa_entries
 
     seen: dict[tuple, Entry] = {}
-    for b in load_binaries(game):
-        for (p, fs, off, cs), ref in scan_binary(b, archive_size, symtabs):
+    for b in load_binaries(game, layout):
+        for (p, fs, off, cs), ref in scan_binary(b, archive_size, symtabs, layout.relative_tables):
             key = (off, cs, fs, p)
             e = seen.get(key)
             if e is None:
                 e = Entry(0, off, cs, fs & 0x0FFFFFFF, fs >> 28, p & 0xFF, (p >> 8) & 0xFF)
-                if (off, cs) in AAAA_ENTRIES:
+                if (off, cs) in aaaa_entries:
                     e.archive = "aaaa.dat"
-                    e.name = AAAA_ENTRIES[(off, cs)]
+                    e.name = aaaa_entries[(off, cs)]
                 seen[key] = e
             if ref not in e.refs:
                 e.refs.append(ref)
@@ -505,6 +536,15 @@ def load_known_names(path: Path) -> dict[int, str]:
 
 # ----------------------------------------------------------------- persist --
 
+def index_path_for(version=None) -> Path:
+    """Where one build's index lives. Only the US build ships with one; every
+    other build's is built on the user's machine and kept in the data folder
+    (which is writable even when the program is installed read-only)."""
+    key = version.key if version else "GYQE01"
+    shipped = INDEX_DIR / f"{key}.json"
+    return shipped if shipped.exists() else DATA_DIR / "index" / f"{key}.json"
+
+
 def save_index(entries: list[Entry], path: Path = INDEX_PATH, meta: dict | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     doc = {"meta": meta or {}, "entries": [asdict(e) for e in entries]}
@@ -514,6 +554,17 @@ def save_index(entries: list[Entry], path: Path = INDEX_PATH, meta: dict | None 
 def load_index(path: Path = INDEX_PATH) -> list[Entry]:
     doc = json.loads(path.read_text(encoding="utf-8"))
     return [Entry(**e) for e in doc["entries"]]
+
+
+def load_meta(path: Path = INDEX_PATH) -> dict:
+    """An index's header (archive size, when it was built, this build's layout)
+    without reading the entries. {} when there is no index yet."""
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("meta", {}) or {}
+    except (OSError, ValueError):
+        return {}
 
 
 def coverage(entries: list[Entry], archive_size: int) -> dict:

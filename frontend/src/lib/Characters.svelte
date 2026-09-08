@@ -35,7 +35,7 @@
   const model = $derived(d?.models.find(m => m.role === modelRole) ?? d?.parts.find(m => m.role === modelRole) ?? d?.models[0] ?? null)
   const isBody = $derived(!!d && d.models.some(m => m.role === modelRole))
   // the viewer takes the entry's own bank list; the roster's banks carry friendlier labels
-  const viewerBanks = $derived(d && isBody ? d.banks.map(b => ({ key: b.key, entry: b.entry, section: 0, label: b.label, sequences: b.sequences.length })) : [])
+  const viewerBanks = $derived(d && isBody ? d.banks.map(b => ({ key: b.key, entry: b.entry, section: 0, label: b.label, sequences: b.playable })) : [])
   const viewerVariants = $derived(d && isBody ? d.variants.filter(v => v.texture_entry !== null).map(v => ({ slot: v.slot, name: v.name, entry: v.texture_entry! })) : [])
   const viewerParts = $derived(d && isBody ? d.viewer_parts.flatMap(p => [`L_${p}`, `R_${p}`]) : [])
 
@@ -93,7 +93,7 @@
       {#each shown as c (c.id)}
         <li class:on={c.id === current}>
           <button onclick={() => pick(c.id)}>
-            <span class="face checker">{#if c.thumb !== null}<img loading="lazy" src="{urls.thumb(c.thumb)}&g={app.thumbGen}" alt="" onerror={e => ((e.target as HTMLImageElement).style.visibility = 'hidden')}>{/if}</span>
+            <span class="face checker">{#if c.thumb !== null}<img loading="lazy" src={urls.thumb(c.thumb)} alt="" onerror={e => ((e.target as HTMLImageElement).style.visibility = 'hidden')}>{/if}</span>
             <span class="who"><span class="nm">{c.name}</span>{#if c.variants > 1}<span class="dim sub">{c.variants} colours</span>{/if}</span>
           </button>
         </li>
@@ -113,7 +113,7 @@
           <div class="dim">character {d.id + 1} of 32 · roster slot {d.slot}{#if d.variants.length > 1} · {d.variants.length} colour variants{/if}</div>
         </div>
         <div class="row">
-          <button onclick={() => exportAll('models,textures,sounds')} disabled={exporting} title="Writes the model (glb with every animation, obj), textures, colour variants and voice clips into the extracted folder">Export everything</button>
+          <button onclick={() => exportAll('models,textures,sounds')} disabled={exporting} title="Writes the model (glb and dae with every animation, obj), textures, colour variants and voice clips into the extracted folder">Export everything</button>
           <button onclick={() => exportAll('dolphin')} disabled={exporting} title="Writes every texture of this character with Dolphin's dump names into extracted/dolphin/GYQE01, a folder you can drop into Dolphin's Load/Textures">Dolphin texture pack</button>
           {#if exportMsg}<span class="dim small">{exportMsg}</span>{/if}
         </div>
@@ -156,7 +156,7 @@
             <div class="banks">
               {#each d.banks as b}
                 <div class="bank" class:on={bank === b.key}>
-                  <button class="bankbtn" onclick={() => (bank = bank === b.key ? '' : b.key)}><b>{b.label}</b> <span class="dim">{b.sequences.length} animations</span></button>
+                  <button class="bankbtn" onclick={() => (bank = bank === b.key ? '' : b.key)}><b>{b.label}</b> <span class="dim">{b.playable} animations{#if b.playable < b.sequences.length} <span title="sequences that hold the rest pose for their whole length">(+{b.sequences.length - b.playable} empty)</span>{/if}</span></button>
                   {#if b.named}<div class="dim small seqs" title={b.sequences.join(', ')}>{b.sequences.join(' · ')}</div>{:else}<div class="dim small">names not recovered for this bank</div>{/if}
                   <a class="small" href={urls.data(b.entry)}>download bank</a>
                 </div>
@@ -179,7 +179,7 @@
           <div class="row" style="margin-top:12px">
             <button onclick={() => exportAll('sounds')} disabled={exporting}>Export all clips as WAV</button>
             <a class="btn" href={urls.data(d.sounds.entry)}>Download sound group</a>
-            <a href="#entry/{d.sounds.entry}" onclick={() => app.open(d!.sounds!.entry)} class="small">open in Browse</a>
+            <a href="#entry/{d.sounds.entry}" onclick={() => app.open(d!.sounds!.entry)} class="small">open in Browse assets</a>
           </div>
         {:else if section === 'files'}
           <p class="dim" style="margin-top:0">Every file the game's tables tie to this character. Download gives the decompressed file; Browse opens it with textures, hex and replacement.</p>

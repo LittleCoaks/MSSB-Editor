@@ -40,6 +40,20 @@ Details of what already works are in the README.
 - [x] The 37 no-character animation source banks.
 - [x] Entry 89's DSP-ADPCM stream ("Letters", Hikaru Utada).
 
+## Other versions of the game
+
+- [x] Load the European (GYQP01), Japanese (GYQJ01) and kiosk-demo discs as
+      well as the American one. The build is named from the disc header
+      (`zzzzdat/versions.py`) and its descriptor tables are found in its own
+      main.dol (`zzzzdat/layout.py`), so nothing is written down per version;
+      each build gets its own index, built on first use.
+- [ ] **Community names for the other builds.** `index/known_names.json` is a
+      list of offsets in the American ZZZZ.dat. The same files could be
+      matched across builds by content, so the names carry over.
+- [ ] **Mario Stadium's props** are only recognised on the American disc,
+      where the decomp names the `marioStadiumCDR` table; find that table by
+      shape instead.
+
 ## Animation fidelity
 
 - [ ] Hermite tangents are played as linear / slerp.

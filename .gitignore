@@ -7,3 +7,8 @@ decomp_path.txt
 *.spec
 cache/
 config.json
+# indexes built for other versions of the game on this machine
+/index/*.json
+!/index/GYQE01.json
+!/index/known_names.json
+!/index/editor_names.json

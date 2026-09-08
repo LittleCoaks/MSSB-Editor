@@ -22,7 +22,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 
-from . import chars
+from . import anim, chars
 from .descriptors import Entry
 from .twins import CATEGORIES, SEQ_RE
 
@@ -184,11 +184,14 @@ def _detail(store, cid: int) -> dict:
             continue
         lb = store.bank(f"{e.id}:0")
         names = [s.name for s in lb[1].sequences] if lb else []
+        # the placeholders that hold the rest pose for their whole length are
+        # listed but cannot be played, so the viewer offers only the rest
+        playable = sum(1 for s in lb[1].sequences if not anim.is_static(s)) if lb else 0
         cat = _bank_category(names)
         dev = chars.TRACK_FILES[t]
         banks.append({"key": f"{e.id}:0", "entry": e.id, "track": t - 1, "category": cat, "file": dev,
                       "label": f"{dev} · {cat}" if cat else dev,
-                      "sequences": names,
+                      "sequences": names, "playable": playable,
                       # sixteen copies of "other01" are a placeholder, not names
                       "named": not all(n.startswith("sequence ") for n in names) and len(set(names)) > 1})
         add_file(e, f"animations {t - 1} ({dev}" + (f", {cat})" if cat else ")"), base)
@@ -211,8 +214,8 @@ def _detail(store, cid: int) -> dict:
 
 
 def export(store, cid: int, dest, what: set[str]) -> list:
-    """Write a character's models (glb + obj), textures, sounds and animation
-    banks under `dest/<name>/`; returns the paths written."""
+    """Write a character's models (glb + dae + obj), textures, sounds and
+    animation banks under `dest/<name>/`; returns the paths written."""
     from pathlib import Path
     d = detail(store, cid)
     folder = Path(dest) / re.sub(r"[^A-Za-z0-9_.-]+", "_", d["name"])
@@ -227,6 +230,7 @@ def export(store, cid: int, dest, what: set[str]) -> list:
             keys = tuple(b["key"] for b in d["banks"]) if rig and m["role"] == "model" else ()
             p.write_bytes(store.glb(e, m["section"], rig=rig, bank_keys=keys))
             out.append(p)
+            out += store.write_collada(e, m["section"], folder / f"{stem}_dae", stem, rig=rig, bank_keys=keys)
             out += store.extract_models(e, folder / f"{stem}_obj", "obj")
         for v in d["variants"]:
             if v["texture_entry"] is not None and d["models"]:
@@ -243,7 +247,7 @@ def export(store, cid: int, dest, what: set[str]) -> list:
                                               folder / f"textures_{re.sub(r'[^A-Za-z0-9_.-]+', '_', v['name'])}")
     if "dolphin" in what:
         # every texture the character's files carry, named for a Dolphin custom-texture pack
-        pack = Path(dest) / "dolphin" / "GYQE01"
+        pack = Path(dest) / "dolphin" / store.dolphin_id
         for f in d["files"]:
             if f["textures"]:
                 out += store.extract_textures(store.get(f["entry"]), pack, dolphin_names=True)

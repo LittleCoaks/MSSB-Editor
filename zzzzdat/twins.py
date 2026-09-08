@@ -20,6 +20,13 @@ falls into a few blocks, each recognisable from its contents:
   chunk that the master table addresses at 0x1A15E800 - mostly byte-identical.
 * Small leftovers next to those blocks.
 
+The offsets above are the US build's. Nothing here is written down per
+version: the blocks are found as unbroken runs of unreferenced files (`_blocks`)
+and then named by what is in them -- the run that ends where the ARAM chunk
+begins is the mirror, and the rest are told apart by whether their banks carry
+prototype or per-character sequence names. On GYQE01 that reproduces the three
+ranges above exactly, and it works the same way on the other builds.
+
 `annotate` fills two Entry fields: `twin` (a referenced entry with identical
 content, or for a source bank the shipped bank it names) and `tag`
 (`animsrc:<base slot>:<category>`, `names:<source entry>`, `proto[:<category>]`,
@@ -31,22 +38,59 @@ import hashlib
 import re
 from collections import Counter, defaultdict
 
-from . import anim, chars
+from . import anim, chars, layout
 from .descriptors import Entry
-
-SOURCE_RUN = (0x0F12C800, 0x186A1800)
-PROTO_RUN = (0x0CE16800, 0x0E581000)
-MIRROR_RUN = (0x19A6F800, 0x1A15E800)
 
 # category letter of a sequence name -> what the animations are for
 CATEGORIES = {"b": "batting", "r": "running", "p": "pitching", "f": "fielding", "c": "catching",
               "e": "reactions", "o": "misc"}
 SEQ_RE = re.compile(r"^([a-z])(\d\d)_")
 PROTO_RE = re.compile(r"^([a-z])(?:_k)?_\d+$")   # b_05, f_k_01
+BLOCK_MIN = 1 << 20  # a run of unreferenced files this big is one of the blocks
 
 
-def _in(run: tuple[int, int], e: Entry) -> bool:
-    return run[0] <= e.offset < run[1]
+def _is_loose(e: Entry) -> bool:
+    return not e.refs or e.refs[0].startswith("scan:")
+
+
+def _blocks(zz: list[Entry]) -> list[list[Entry]]:
+    """The unbroken runs of unreferenced files, in archive order, big ones
+    only. A referenced file ends a run, and that is what separates the source
+    library from the prototype one and from the mirror of the character
+    chunk."""
+    out, cur = [], []
+    for e in sorted(zz, key=lambda e: e.offset):
+        if _is_loose(e):
+            cur.append(e)
+        else:
+            if cur:
+                out.append(cur)
+            cur = []
+    if cur:
+        out.append(cur)
+    return [b for b in out if b[-1].end - b[0].offset >= BLOCK_MIN]
+
+
+def _block_kinds(blocks: list[list[Entry]], parsed: dict[int, tuple]) -> list[str]:
+    """Name each block: "mirror" for the copy of the character chunk that sits
+    right in front of it, then "source" or "proto" for the animation libraries,
+    by whether their banks are named per character (`b00_wa_000`) or after the
+    placeholder rig (`f_k_01`)."""
+    aram = layout.current().aram_chunk
+    kinds = [""] * len(blocks)
+    below = [i for i, b in enumerate(blocks) if b[-1].end <= aram]
+    if below:
+        i = max(below, key=lambda i: blocks[i][-1].end)
+        if aram - blocks[i][-1].end < 0x10000:
+            kinds[i] = "mirror"
+    for i, b in enumerate(blocks):
+        if kinds[i]:
+            continue
+        proto = sum(1 for e in b if e.id in parsed and parsed[e.id][3])
+        source = sum(1 for e in b if e.id in parsed and parsed[e.id][1] and _is_named(parsed[e.id][0]))
+        if proto or source:
+            kinds[i] = "proto" if proto > source else "source"
+    return kinds
 
 
 def _sig(bank: anim.Bank) -> tuple:
@@ -62,8 +106,10 @@ def annotate(store, entries: list[Entry], log=lambda *a: None) -> None:
     for e in entries:
         e.twin, e.tag = -1, ""
     zz = [e for e in entries if e.archive == "ZZZZ.dat"]
-    referenced = [e for e in zz if e.refs and not e.refs[0].startswith("scan:")]
-    loose = [e for e in zz if e not in referenced]
+    referenced = [e for e in zz if not _is_loose(e)]
+    loose = [e for e in zz if _is_loose(e)]
+    blocks = _blocks(zz)
+    block_of = {e.id: i for i, b in enumerate(blocks) for e in b}
 
     # 1. identical content -> twin
     by_hash: dict[str, Entry] = {}
@@ -100,7 +146,9 @@ def annotate(store, entries: list[Entry], log=lambda *a: None) -> None:
         if b and b.sequences and not _is_named(b):
             shipped[c.get("slot") if c else None][_sig(b)] = e
     all_shipped = {k: v for d in shipped.values() for k, v in d.items()}
-    named = 0
+
+    # what each unreferenced bank says about itself, and so what each block is
+    parsed: dict[int, tuple] = {}
     for e in loose:
         if e.kind != "anim":
             continue
@@ -121,10 +169,24 @@ def annotate(store, entries: list[Entry], log=lambda *a: None) -> None:
             elif PROTO_RE.match(s.name):
                 cats[s.name[0]] += 1
                 proto += 1
+        parsed[e.id] = (b, ids, cats, proto)
+    kinds = _block_kinds(blocks, parsed)
+    log("  blocks: " + (", ".join(f"{b[0].offset:#x}-{b[-1].end:#x} {kinds[i] or 'unnamed'}"
+                                  for i, b in enumerate(blocks)) or "none"))
+
+    def block_kind(e: Entry) -> str:
+        i = block_of.get(e.id)
+        return kinds[i] if i is not None else ""
+
+    named = 0
+    for e in loose:
+        if e.id not in parsed:
+            continue
+        b, ids, cats, proto = parsed[e.id]
         cat = cats.most_common(1)[0][0] if cats else "o"
         if cat not in CATEGORIES:
             cat = "o"
-        if proto or _in(PROTO_RUN, e):
+        if proto or block_kind(e) == "proto":
             e.tag = f"proto:{cat}" if cats else "proto"
             continue
         if not _is_named(b):
@@ -146,7 +208,7 @@ def annotate(store, entries: list[Entry], log=lambda *a: None) -> None:
     last_slot = None
     placed = 0
     for e in sorted(loose, key=lambda x: x.offset):
-        if not _in(SOURCE_RUN, e) or e.kind != "anim":
+        if block_kind(e) != "source" or e.kind != "anim":
             continue
         parts = e.tag.split(":")
         if parts[0] == "animsrc" and parts[1] != "-":
@@ -154,10 +216,9 @@ def annotate(store, entries: list[Entry], log=lambda *a: None) -> None:
             continue
         if parts[0] != "animsrc":
             continue
-        try:
-            b = anim.parse_bank(store.data(e), 0)
-        except Exception:
+        if e.id not in parsed:
             continue
+        b = parsed[e.id][0]
         t = shipped[last_slot].get(_sig(b)) if (b and last_slot is not None) else None
         if t is not None:
             e.tag = f"animsrc:{last_slot}:{parts[2]}"
@@ -175,12 +236,7 @@ def annotate(store, entries: list[Entry], log=lambda *a: None) -> None:
     for e in loose:
         if e.tag:
             continue
-        if _in(MIRROR_RUN, e):
-            e.tag = "mirror"
-        elif _in(PROTO_RUN, e):
-            e.tag = "proto"
-        elif e.refs and e.refs[0].startswith("scan:") or not e.refs:
-            e.tag = "leftover"
+        e.tag = {"mirror": "mirror", "proto": "proto"}.get(block_kind(e), "leftover")
 
 
 def sequence_names(store, e: Entry) -> list[str] | None:

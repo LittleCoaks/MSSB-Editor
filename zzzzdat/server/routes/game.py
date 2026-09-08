@@ -1,4 +1,4 @@
-"""Game selection, extraction, file browser, jobs, thumbnails status."""
+"""Game selection, extraction, file browser, jobs."""
 from __future__ import annotations
 
 from ...disc import current_game, default_dump_dir, dump_iso, list_dir, set_game
@@ -11,8 +11,11 @@ def game_state(req: Request) -> dict:
     edit_ready = bool(g.files_dir and (g.files_dir / "ZZZZ.dat").exists() and (g.files_dir / "aaaa.dat").exists()
                       and g.dol_path())
     return {**g.describe(), "entries": len(st.entries) if st else 0, "edit_ready": edit_ready,
-            "thumbs": req.ctx.thumbs.state(), "error": req.ctx.store_error or None,
-            "default_dump": str(default_dump_dir(g)) if g.iso else None}
+            "error": req.ctx.store_error or None,
+            "default_dump": str(default_dump_dir(g)) if g.iso else None,
+            "indexed": bool(st and st.indexed), "index_stale": bool(st and st.index_stale),
+            "index_built": (st.meta.get("built") if st else None),
+            "index_path": str(st.index_path) if st else None}
 
 
 @router.get(r"/api/game")
@@ -30,6 +33,28 @@ def post_game(req: Request):
     with req.ctx.write_lock:
         req.ctx.load_store()
     req.json(game_state(req))
+
+
+@router.post(r"/api/game/index")
+def post_index(req: Request):
+    """Scan this build's executables and work out what is in its ZZZZ.dat.
+    Only the US build ships with an index ready-made; every other one is
+    indexed here, once, and the result is kept in the data folder."""
+    ctx = req.ctx
+    store = ctx.require_store()
+    lines: list[str] = []
+
+    def work(job):
+        def log(*a):
+            lines.append(" ".join(str(x) for x in a))
+            job.set_note(lines[-1])
+        with ctx.write_lock:
+            store.rebuild_index(log=log)
+            ctx.load_store()
+        return {"entries": len(store.entries), "path": str(store.index_path)}
+
+    job = ctx.jobs.start("index", work)
+    req.json({"job": job.id})
 
 
 @router.post(r"/api/game/dump")
@@ -63,7 +88,3 @@ def get_job(req: Request, job_id: str):
         raise HttpError(404, "no such job")
     req.json(job.to_dict())
 
-
-@router.get(r"/api/thumbs")
-def get_thumbs(req: Request):
-    req.json(req.ctx.thumbs.state())

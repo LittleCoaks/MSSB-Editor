@@ -60,11 +60,12 @@ class Request:
     def json(self, obj, status: int = 200) -> None:
         self._h.send_json(obj, status)
 
-    def bytes(self, body: bytes, ctype: str, filename: str | None = None, cache: str = "no-cache") -> None:
-        self._h.send_bytes(body, ctype, filename, cache)
+    def bytes(self, body: bytes, ctype: str, filename: str | None = None, cache: str = "no-cache",
+              inline: bool = False) -> None:
+        self._h.send_bytes(body, ctype, filename, cache, inline)
 
-    def stream(self, total: int, gen, ctype: str) -> None:
-        self._h.send_stream(total, gen, ctype)
+    def stream(self, total: int, gen, ctype: str, filename: str | None = None) -> None:
+        self._h.send_stream(total, gen, ctype, filename)
 
 
 Route = tuple[str, "re.Pattern[str]", Callable[..., None]]
@@ -138,17 +139,18 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def send_bytes(self, body: bytes, ctype: str, filename: str | None = None, cache: str = "no-cache") -> None:
+    def send_bytes(self, body: bytes, ctype: str, filename: str | None = None, cache: str = "no-cache",
+                   inline: bool = False) -> None:
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", cache)
         if filename:
-            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+            self.send_header("Content-Disposition", f'{"inline" if inline else "attachment"}; filename="{filename}"')
         self.end_headers()
         self.wfile.write(body)
 
-    def send_stream(self, total: int, gen, ctype: str) -> None:
+    def send_stream(self, total: int, gen, ctype: str, filename: str | None = None) -> None:
         """Stream a body of known length, honouring a single byte Range."""
         rng = self.headers.get("Range")
         start, end = 0, total - 1
@@ -162,6 +164,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Accept-Ranges", "bytes")
         self.send_header("Cache-Control", "no-cache")
+        if filename:
+            # `inline` still plays in the page; it only names the file when the
+            # viewer saves it from the player's own menu, which otherwise takes
+            # the name from the URL and calls every clip "0.wav"
+            self.send_header("Content-Disposition", f'inline; filename="{filename}"')
         if partial:
             self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
         self.send_header("Content-Length", str(end - start + 1))

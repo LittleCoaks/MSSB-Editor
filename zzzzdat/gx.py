@@ -203,6 +203,74 @@ def to_png(w: int, h: int, rgba: bytes) -> bytes:
             + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b""))
 
 
+# --------------------------------------------------------------- compositing --
+# The GeoPalette display states carry no blend mode (the whole game writes the
+# same 0x1111 word), so how a texture wants compositing is read off its own
+# pixels instead.
+
+MIN_PARTIAL = 0.005   # below this, stray part-alpha pixels are dithering, not a gradient
+FLAT_RGB = 32         # a colour that varies less than this carries no picture of its own
+ALPHA_RANGE = 64      # while an alpha that varies more than this does
+BLACK_LEVEL = 8       # 8-bit luminance of a pixel that is background, not paint
+BLACK_SHARE = 0.2     # of the image, for it to read as painted on a black ground
+DARK_LEVEL = 30
+DARK_SHARE = 0.45     # a uniformly dark surface has no pure black, so it fails the first test
+
+
+def composite_kind(rgba: bytes) -> str:
+    """How a decoded texture wants compositing:
+
+    * `opaque` - every pixel solid;
+    * `mask` - alpha is only ever 0 or 255, so a cutout (fences, nets, foliage);
+    * `alpha` - an overlay: nothing in it is solid, so there is no sensible
+      threshold to alpha-test against, and it has to be blended wherever it is
+      drawn. Wario Palace's stonework detail is a grey ramp whose alpha peaks at
+      182 and dips in the middle; testing it at half kept only the near-black
+      end and hung black shapes over the palace. Flat-coloured masks whose
+      picture is entirely in the alpha (shadow maps, glows) count too;
+    * `blend` - alpha has values in between, so a real gradient (the stadiums'
+      shadow and dirt overlays), which must not be alpha-tested into hard edges;
+    * `add` - solid, but paint on a black ground: what a decal laid over another
+      surface looks like when its black is meant to disappear (the infield scuff
+      marks, the outfield lettering, the shadows cast on the stands). The test
+      is the share of *pure* black rather than overall darkness, which is what
+      separates those from an evenly dark surface. Only meaningful where the
+      draw sits on another one, so `c3.to_glb` applies it to decals alone.
+    """
+    n = len(rgba) // 4
+    if not n:
+        return "opaque"
+    partial = zero = dark = black = seen = 0
+    lo = [255, 255, 255, 255]
+    hi = [0, 0, 0, 0]
+    for i in range(0, len(rgba), 4):
+        a = rgba[i + 3]
+        if a == 0:
+            zero += 1
+        elif a != 255:
+            partial += 1
+        lum = (rgba[i] * 299 + rgba[i + 1] * 587 + rgba[i + 2] * 114) // 1000
+        if lum < DARK_LEVEL:
+            dark += 1
+            if lum < BLACK_LEVEL:
+                black += 1
+        if a:                       # a fully clear pixel's colour is not part of the picture
+            seen += 1
+            for c in range(4):
+                v = rgba[i + c]
+                lo[c] = min(lo[c], v)
+                hi[c] = max(hi[c], v)
+    if seen and partial > seen * MIN_PARTIAL and (
+            hi[3] < 255                                        # never solid anywhere
+            or (max(hi[c] - lo[c] for c in range(3)) <= FLAT_RGB and hi[3] - lo[3] > ALPHA_RANGE)):
+        return "alpha"
+    if partial > n * MIN_PARTIAL:
+        return "blend"
+    if zero:
+        return "mask"
+    return "add" if black >= n * BLACK_SHARE and dark >= n * DARK_SHARE else "opaque"
+
+
 # ----------------------------------------------------------------- encoding --
 # Encoders for every format above. Lossless formats round-trip exactly once the
 # input has been quantised to the format's precision (decode(encode(x)) is a

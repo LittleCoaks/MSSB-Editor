@@ -29,7 +29,10 @@ cmd = [
     *(["--icon", str(ROOT / "zzzzdat" / "ui" / "icon.icns"), "--osx-bundle-identifier", "com.littlecoaks.mssbeditor"]
       if sys.platform == "darwin" and (ROOT / "zzzzdat" / "ui" / "icon.icns").exists() else []),
     "--add-data", f"{ROOT / 'zzzzdat' / 'ui'}{sep}zzzzdat/ui",
-    "--add-data", f"{ROOT / 'index'}{sep}index",
+    # only the files that are meant to ship: an index built here for another
+    # version of the game lives in the same folder and is not one of them
+    *sum((["--add-data", f"{ROOT / 'index' / n}{sep}index"]
+          for n in ("GYQE01.json", "known_names.json", "editor_names.json")), []),
     *(["--add-binary", f"{ROOT / 'native' / 'bin' / helper}{sep}."] if (ROOT / "native" / "bin" / helper).exists() else []),
     "--collect-all", "webview",
     "--collect-submodules", "zzzzdat",

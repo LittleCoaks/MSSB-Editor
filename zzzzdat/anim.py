@@ -176,6 +176,49 @@ def parse_skin(data: bytes, base: int) -> Skin | None:
     return sk
 
 
+def is_static(seq: Sequence, eps: float = 1e-4) -> bool:
+    """A sequence that never moves: every track holds the same value the whole
+    way through, so playing it only ever shows the rest pose. About a third of
+    the game's sequences are these placeholders - 24 tracks, 40 frames, nothing
+    changing - and they are not worth offering as something to play."""
+    for tr in seq.tracks:
+        if not tr.keys:
+            continue
+        first = tr.keys[0]
+        for k in tr.keys[1:]:
+            if first.quat and k.quat and any(abs(a - b) > eps for a, b in zip(k.quat, first.quat)):
+                return False
+            if first.trans and k.trans and any(abs(a - b) > eps for a, b in zip(k.trans, first.trans)):
+                return False
+    return True
+
+
+def fill_weight_gaps(sk: Skin, positions: list) -> dict:
+    """`sk.weights` with the vertices the skin lists leave uncovered filled in
+    from their nearest covered neighbour.
+
+    The lists tile the body's vertices in runs, but the runs do not quite meet:
+    one to three vertices fall between each pair (Peach: 20 of the 912 she
+    draws). Binding those to bone 0 instead - the root - leaves them right in
+    the bind pose and then tears them away from the body the moment an
+    animation moves it, which is where the spikes came from. Each one sits
+    within a few hundredths of the model's height of a vertex the run beside it
+    covers, and inherits that vertex's bones.
+    """
+    if not sk.weights or not positions:
+        return dict(sk.weights)
+    covered = [(v, positions[v]) for v in sk.weights if v < len(positions)]
+    if not covered:
+        return dict(sk.weights)
+    out = dict(sk.weights)
+    for v, p in enumerate(positions):
+        if v in out:
+            continue
+        best = min(covered, key=lambda c: sum((p[k] - c[1][k]) ** 2 for k in range(3)))
+        out[v] = list(sk.weights[best[0]])
+    return out
+
+
 def bone_order(bones: list[Bone]) -> list[Bone]:
     """Bones in pre-order traversal of the actor's tree (the SDK's bone array
     order, used by skin lists)."""

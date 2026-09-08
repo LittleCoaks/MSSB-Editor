@@ -7,10 +7,10 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import anim, c3, chars, collision, dolphin, dsp, formats, handpose, musyx, song
+from . import anim, c3, chars, collision, dae, dolphin, dsp, formats, gx, handpose, layout, musyx, song
 from .paths import EXTRACT_DIR as _EXTRACT_DIR  # noqa: F401
-from .descriptors import (INDEX_PATH, Entry, build_index, coverage, load_index, load_known_names, save_index,
-                          scan_adgc, scan_unreferenced, verify_entries)
+from .descriptors import (INDEX_PATH, Entry, build_index, coverage, index_path_for, load_index, load_known_names,
+                          load_meta, read_dol, save_index, scan_adgc, scan_unreferenced, verify_entries)
 from .disc import Archive, Game, current_game, find_archive
 from .paths import EXTRACT_DIR, INDEX_DIR
 from .lzss import decompress
@@ -28,11 +28,15 @@ def safe_name(s: str) -> str:
 
 
 class Store:
-    def __init__(self, index_path: Path = INDEX_PATH, archive: Archive | None = None, game: Game | None = None):
-        self.index_path = index_path
+    def __init__(self, index_path: Path | None = None, archive: Archive | None = None, game: Game | None = None):
         self.game = game or current_game()
+        self.version = self.game.version
         self.archive = archive or find_archive(self.game)
-        self.entries: list[Entry] = load_index(index_path) if index_path.exists() else []
+        self.index_path = Path(index_path) if index_path else index_path_for(self.version)
+        self.meta = load_meta(self.index_path)
+        self.layout = self.resolve_layout()
+        layout.use(self.layout)
+        self.entries: list[Entry] = load_index(self.index_path) if self.index_path.exists() else []
         self.apply_overrides()
         self.entries += self.disc_entries()
         self.by_id = {e.id: e for e in self.entries}
@@ -45,6 +49,53 @@ class Store:
         self._locks: dict[int, threading.Lock] = {}
         self._locks_guard = threading.Lock()
         self._cache_lock = threading.Lock()
+
+    # ------------------------------------------------------------- build --
+    def resolve_layout(self) -> "layout.Layout":
+        """This build's table addresses: the ones the index was built with when
+        it has them, otherwise found in the DOL now (a second of work, cached
+        into the index the next time it is built)."""
+        key = self.version.key if self.version else layout.US.key
+        saved = self.meta.get("layout")
+        if saved:
+            l = layout.Layout.from_dict(saved)
+            if l.key == key and l.resolved:
+                return l
+        dol = read_dol(self.game)
+        if not dol:
+            return layout.Layout(key=key)
+        try:
+            return layout.resolve(dol, self.archive.size, self.archive, key=key)
+        except Exception:
+            return layout.Layout(key=key)
+
+    @property
+    def indexed(self) -> bool:
+        """Whether this build's ZZZZ.dat has been indexed yet. A version the
+        user has just pointed at has not (the disc's own files -- the streamed
+        music -- are listed without an index, so `entries` is not the test)."""
+        return any(e.archive == "ZZZZ.dat" for e in self.entries)
+
+    @property
+    def index_stale(self) -> bool:
+        """The index does not describe the game in front of it, so its offsets
+        cannot be trusted. Either it was built from a bigger ZZZZ.dat (a dump
+        the editor has appended to is fine; a smaller archive is trouble), or
+        its tables are not where this executable keeps them -- which is how a
+        folder that kept no disc header, and so could not be told apart from
+        the American build, gives itself away."""
+        was = self.meta.get("archive_size")
+        if was and self.archive.size < was:
+            return True
+        if not self.layout.resolved:
+            return False
+        saved = self.meta.get("layout") or (layout.US.to_dict() if self.index_path == INDEX_PATH else None)
+        return bool(saved) and saved.get("subfiles_va") != self.layout.subfiles_va
+
+    @property
+    def dolphin_id(self) -> str:
+        """The disc id Dolphin names this build's texture folder after."""
+        return self.version.game_id if self.version else "GYQE01"
 
     def lock_for(self, e: Entry) -> threading.Lock:
         with self._locks_guard:
@@ -446,6 +497,15 @@ class Store:
                 return anim.parse_skin(data, s.offset)
         return None
 
+    def skin_weights(self, e: Entry, model: c3.Model, bones: list) -> dict | None:
+        """Per-vertex bone weights for the body mesh, with the vertices the skin
+        lists leave between their runs filled in (see `anim.fill_weight_gaps`)."""
+        sk = self.skin(e)
+        if not sk:
+            return None
+        mi = c3.skinned_mesh_index(model, bones) if bones else None
+        return anim.fill_weight_gaps(sk, model.meshes[mi].positions) if mi is not None else dict(sk.weights)
+
     def banks(self, e: Entry) -> list[dict]:
         """Animation banks usable with this entry's skeleton: ANIM sections in
         the file itself, then the character's standalone banks (same slot in
@@ -458,8 +518,9 @@ class Store:
             if s.magic == c3.ACT_VERSION and anim.is_bank(data, s.offset):
                 b = anim.parse_bank(data, s.offset)
                 if b and b.sequences:
+                    playable = sum(1 for q in b.sequences if not anim.is_static(q))
                     out.append({"key": f"{e.id}:{s.index}", "entry": e.id, "section": s.index,
-                                "label": f"in this file (section {s.index})", "sequences": len(b.sequences)})
+                                "label": f"in this file (section {s.index})", "sequences": playable})
         c = chars.classify_entry(e.refs)
         if c and c.get("slot") is not None:
             for x in self.entries:
@@ -512,11 +573,15 @@ class Store:
                 out.append({"slot": s, "name": chars.SLOT_NAMES[s], "entry": sets[s]})
         return out
 
-    # attached parts: mesh name -> wrist bone id (every character rig shares the
-    # Biped-style ids: 16..20 right arm, 22..26 left arm; the hand meshes are
-    # modelled from the wrist along +X)
-    PART_BONES = {"L_hand": 25, "R_hand": 19, "L_glove": 25, "R_glove": 19,
-                  "L_bat": 25, "R_bat": 19, "L_hand_bat": 25, "R_hand_bat": 19}
+    # attached parts: mesh name -> wrist bone id. Every character rig shares the
+    # same ids: 16..20 the left arm, 22..26 the right arm, with the hand meshes
+    # modelled from the wrist along +X and the thumb along local +Y. The sides
+    # are the character's own: bone 19 sits at +X and bone 25 at -X, and the
+    # model faces +Z, so +X is its left. The two wrists roll oppositely (bone
+    # 19's local +Y points forward, bone 25's back), which is why hanging a hand
+    # on the wrong one turns its thumb to face behind the character.
+    PART_BONES = {"L_hand": 19, "R_hand": 25, "L_glove": 19, "R_glove": 25,
+                  "L_bat": 19, "R_bat": 25, "L_hand_bat": 19, "R_hand_bat": 25}
     # 'bat' = the hands in their bat pose (handless characters' hand slots hold the bat itself)
     PART_SETS = {"hands": ("L_hand", "R_hand"), "gloves": ("L_glove", "R_glove"),
                  "bat": ("L_hand", "R_hand", "L_bat", "R_bat", "L_hand_bat", "R_hand_bat")}
@@ -562,27 +627,37 @@ class Store:
                 m.meshes[0].positions = list(hp.blocks[k])
         return (m.meshes if m else []), fi.all_textures(), data
 
-    def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = (),
-            parts: str = "", variant: int | None = None, pose: int | None = None) -> bytes:
-        key = (e.id, section, rig, bank_keys, parts, variant, pose)
-        if key in self._glb:
-            return self._glb[key]
+    @staticmethod
+    def _decode(texs, data, want) -> tuple[dict, dict]:
+        """({index: PNG}, {index: composite kind}) for the textures in `want`,
+        decoding each one only once."""
+        pngs, modes = {}, {}
+        for i, (_sec, t) in enumerate(texs):
+            if i in want:
+                rgba = t.decode_rgba(data)
+                pngs[i] = gx.to_png(t.width, t.height, rgba)
+                modes[i] = gx.composite_kind(rgba)
+        return pngs, modes
+
+    def export_model(self, e: Entry, section: int, rig: bool = False, parts: str = "",
+                     variant: int | None = None, pose: int | None = None) -> tuple:
+        """(model, {texture index: PNG}, {texture index: composite kind}, bones)
+        for one GeoPalette section, with the attached parts and colour variant
+        applied: what the glTF and COLLADA writers both start from."""
         bones = self.actor(e) if rig else None
         m = self.model(e, section, posed=not bones, pose=pose)
         data = self.data(e)
         texs = self.info(e).all_textures()
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
-        pngs = {i: t.decode_png(data) for i, (_sec, t) in enumerate(texs) if i in used}
+        pngs, modes = self._decode(texs, data, used)
         if variant is not None:
             # a colour variant: the same model drawn with the slot's texture set
             v = next((x for x in self.variants(e) if x["slot"] == variant), None)
             if v:
                 ve = self.get(v["entry"])
-                vdata = self.data(ve)
-                vtexs = self.info(ve).all_textures()
-                for i, (_sec, t) in enumerate(vtexs):
-                    if i in used:
-                        pngs[i] = t.decode_png(vdata)
+                vpngs, vmodes = self._decode(self.info(ve).all_textures(), self.data(ve), used)
+                pngs.update(vpngs)
+                modes.update(vmodes)
         if bones and parts:
             want = self.PART_SETS.get(parts, ())
             m = c3.Model(list(m.meshes))
@@ -596,26 +671,64 @@ class Store:
                                  [c3.Draw(None if d.texture is None else d.texture + next_tex, d.tris, d.matrix) for d in mm.draws],
                                  mm.tpl_names, attach=self.PART_BONES.get(mm.name))
                     m.meshes.append(mm)
-                for i, (_s, t) in enumerate(ptexs):
-                    pngs[next_tex + i] = t.decode_png(pdata)
+                ppngs, pmodes = self._decode(ptexs, pdata, set(range(len(ptexs))))
+                pngs.update({next_tex + i: v for i, v in ppngs.items()})
+                modes.update({next_tex + i: v for i, v in pmodes.items()})
                 next_tex += len(ptexs)
+        return m, pngs, modes, bones
+
+    def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = (),
+            parts: str = "", variant: int | None = None, pose: int | None = None) -> bytes:
+        key = (e.id, section, rig, bank_keys, parts, variant, pose)
+        if key in self._glb:
+            return self._glb[key]
+        m, pngs, modes, bones = self.export_model(e, section, rig, parts, variant, pose)
         if bones:
-            sk = self.skin(e)
             banks = [b for b in (self.bank(k) for k in bank_keys) if b]
-            g = c3.to_glb(m, pngs, bones=bones, skin_weights=sk.weights if sk else None, banks=banks)
+            g = c3.to_glb(m, pngs, bones=bones, skin_weights=self.skin_weights(e, m, bones), banks=banks,
+                          tex_modes=modes)
         else:
-            g = c3.to_glb(m, pngs)
+            g = c3.to_glb(m, pngs, tex_modes=modes)
         self._glb[key] = g
         while len(self._glb) > 8:
             self._glb.popitem(last=False)
         return g
 
-    def scene_glb(self, e: Entry) -> bytes:
-        """Every GeoPalette section of a pack in one glTF, each posed by its own
-        actor: a stadium is its field, sky and extras together."""
-        key = (e.id, "scene")
-        if key in self._glb:
-            return self._glb[key]
+    def collada(self, e: Entry, section: int, stem: str = "model", rig: bool = False,
+                bank_keys: tuple[str, ...] = (), parts: str = "", variant: int | None = None,
+                pose: int | None = None) -> tuple[str, dict]:
+        """(COLLADA document, {texture index: PNG}) for one section. The .dae
+        references the PNGs as `<stem>_tex<n>.png`, so they belong beside it."""
+        m, pngs, _modes, bones = self.export_model(e, section, rig, parts, variant, pose)
+        names = {i: f"{stem}_tex{i}.png" for i in pngs}
+        if bones:
+            banks = [b for b in (self.bank(k) for k in bank_keys) if b]
+            return dae.to_dae(m, names, bones=bones, skin_weights=self.skin_weights(e, m, bones),
+                              banks=banks), pngs
+        return dae.to_dae(m, names), pngs
+
+    def write_collada(self, e: Entry, section: int, dest: Path, stem: str, **kw) -> list[Path]:
+        """A .dae and the PNGs it names, written together into `dest`."""
+        xml, pngs = self.collada(e, section, stem, **kw)
+        dest.mkdir(parents=True, exist_ok=True)
+        p = dest / f"{stem}.dae"
+        p.write_text(xml, encoding="utf-8")
+        out = [p]
+        for i, png in pngs.items():
+            q = dest / f"{stem}_tex{i}.png"
+            q.write_bytes(png)
+            out.append(q)
+        return out
+
+    def scene_collada(self, e: Entry, stem: str = "scene") -> tuple[str, dict]:
+        """Every GeoPalette section of a pack in one COLLADA document."""
+        m, pngs, _modes = self.scene_model(e)
+        return dae.to_dae(m, {i: f"{stem}_tex{i}.png" for i in pngs}), pngs
+
+    def scene_model(self, e: Entry) -> tuple:
+        """(model, {texture index: PNG}, {texture index: composite kind}) for
+        every GeoPalette section of a pack at once, each posed by its own actor:
+        a stadium is its field, sky and extras together."""
         data = self.data(e)
         texs = self.info(e).all_textures()
         meshes: list[c3.Mesh] = []
@@ -638,8 +751,15 @@ class Store:
                 meshes.append(mm)
         m = c3.Model(meshes)
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
-        pngs = {i: t.decode_png(data) for i, (_sec, t) in enumerate(texs) if i in used}
-        g = c3.to_glb(m, pngs)
+        return (m, *self._decode(texs, data, used))
+
+    def scene_glb(self, e: Entry) -> bytes:
+        """Every GeoPalette section of a pack in one glTF."""
+        key = (e.id, "scene")
+        if key in self._glb:
+            return self._glb[key]
+        m, pngs, modes = self.scene_model(e)
+        g = c3.to_glb(m, pngs, tex_modes=modes)
         self._glb[key] = g
         while len(self._glb) > 8:
             self._glb.popitem(last=False)
@@ -647,7 +767,12 @@ class Store:
 
     def collision_mesh(self, e: Entry) -> dict:
         """The collision triangles of a stadium pack in the viewer's space (the
-        same 180-degree turn about X the static model export applies)."""
+        same 180-degree turn about X the static model export applies).
+
+        The table is already in the space the field is drawn in for most parks -
+        putting it through the actor's placement of the field geometry throws
+        Mario Stadium 80 units off - but Wario Palace's and Toy Field's panels
+        still sit above their pitch, and what moves those two is not yet known."""
         data = self.data(e)
         for s in self.info(e).sections:
             if collision.is_table(s.magic):
@@ -656,16 +781,22 @@ class Store:
                 return {"triangles": [[[x, -y, -z] for x, y, z in t] for t in tris], "tags": tags, "names": names, "problems": problems}
         return {"triangles": [], "tags": [], "names": {}, "problems": []}
 
+    MODEL_FORMATS = {"glb": ("glb",), "obj": ("obj",), "dae": ("dae",),
+                     "both": ("glb", "obj"), "all": ("glb", "obj", "dae")}
+
     def extract_models(self, e: Entry, dest: Path, fmt: str = "glb") -> list[Path]:
+        want = self.MODEL_FORMATS.get(fmt, (fmt,))
         out = []
         for md in self.models(e):
             dest.mkdir(parents=True, exist_ok=True)
             stem = f"s{md['section']}_{safe_name(md['meshes'][0])}"
-            if fmt in ("glb", "both"):
+            if "glb" in want:
                 p = dest / f"{stem}.glb"
                 p.write_bytes(self.glb(e, md["section"]))
                 out.append(p)
-            if fmt in ("obj", "both"):
+            if "dae" in want:
+                out += self.write_collada(e, md["section"], dest, stem)
+            if "obj" in want:
                 m = self.model(e, md["section"])
                 p = dest / f"{stem}.obj"
                 p.write_text(c3.to_obj(m, f"{stem}.mtl"), encoding="utf-8")
@@ -721,6 +852,32 @@ class Store:
             out.append(p)
         return out
 
+    def soundfont(self, e: Entry) -> bytes:
+        """The entry's MusyX group as a SoundFont 2 bank: its samples with the
+        page (or FX) table as presets. Cached, as the decode is not cheap."""
+        fi = self.info(e)
+        if fi.musyx is None:
+            raise KeyError(f"entry {e.id} is not a MusyX group")
+        key = (e.id, "sf2", 0)
+        if key in self._wav:
+            return self._wav[key]
+        from . import sf2
+        name = e.known or e.label or (fi.names[0] if fi.names else "") or f"MusyX group {fi.musyx.id}"
+        b = sf2.build(self.data(e), name)
+        with self._cache_lock:
+            self._wav[key] = b
+            while len(self._wav) > 8:
+                self._wav.popitem(last=False)
+        return b
+
+    def extract_soundfont(self, e: Entry, dest: Path) -> list[Path]:
+        if self.info(e).musyx is None:
+            return []
+        dest.mkdir(parents=True, exist_ok=True)
+        p = dest / (self.file_name(e).rsplit(".", 1)[0] + ".sf2")
+        p.write_bytes(self.soundfont(e))
+        return [p]
+
     # ------------------------------------------------------------- naming --
     def file_name(self, e: Entry, ext: str | None = None) -> str:
         ext = ext or EXT_BY_KIND.get(e.kind, "bin")
@@ -730,26 +887,34 @@ class Store:
 
     # ---------------------------------------------------------- extraction --
     def extract(self, e: Entry, dest: Path = EXTRACT_DIR, raw: bool = False, png: bool = False,
-                wav: bool = False, model: str | None = None, dolphin_pack: bool = False) -> list[Path]:
+                wav: bool = False, model: str | None = None, dolphin_pack: bool = False,
+                sf2: bool = False) -> list[Path]:
+        """Write an entry to `dest`: its own bytes plus whatever decoded forms
+        are asked for. A MusyX group's own `.grp` is left out once something
+        decoded was asked for - the WAVs and the SoundFont carry everything it
+        holds; `raw=True` and the Raw file download still write it."""
         dest.mkdir(parents=True, exist_ok=True)
         written = []
+        decoded = png or wav or model or dolphin_pack or sf2
         if raw:
             p = dest / self.file_name(e, "lz" if e.compressed else EXT_BY_KIND.get(e.kind, "bin"))
             p.write_bytes(self.raw(e))
             written.append(p)
-        else:
+        elif not (decoded and e.kind == "musyx"):
             p = dest / self.file_name(e)
             p.write_bytes(self.data(e))
             written.append(p)
         if png:
             written += self.extract_textures(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_tex"))
         if dolphin_pack:
-            written += self.extract_textures(e, dest / "dolphin" / "GYQE01", dolphin_names=True)
+            written += self.extract_textures(e, dest / "dolphin" / self.dolphin_id, dolphin_names=True)
         if wav:
             written += self.extract_audio(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_wav"))
             written += self.extract_midi(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_midi"))
         if model:
             written += self.extract_models(e, dest / (self.file_name(e).rsplit(".", 1)[0] + "_model"), model)
+        if sf2:
+            written += self.extract_soundfont(e, dest)
         return written
 
     def extract_textures(self, e: Entry, dest: Path, dolphin_names: bool = False) -> list[Path]:
@@ -798,7 +963,7 @@ class Store:
     # ---------------------------------------------------------- indexing --
     def rebuild_index(self, verify: bool = True, classify: bool = True, scan: bool = True, log=print) -> None:
         t0 = time.time()
-        ents = build_index(self.archive.size, self.game)
+        ents = build_index(self.archive.size, self.game, self.layout)
         log(f"scanned executables: {len(ents)} candidate descriptors")
         if verify:
             ents = verify_entries(ents, self.archive)
@@ -813,7 +978,9 @@ class Store:
             ents.sort(key=lambda e: (e.archive != "ZZZZ.dat", e.offset, e.disc_size))
             for i, e in enumerate(ents):
                 e.id = i
-        known = load_known_names(KNOWN_NAMES_PATH)
+        # the community's names are a list of offsets in the US ZZZZ.dat, so
+        # they mean nothing on another build
+        known = load_known_names(KNOWN_NAMES_PATH) if (self.version is None or self.version.us) else {}
         for e in ents:
             e.known = known.get(e.offset, "") if e.archive == "ZZZZ.dat" else ""
         if classify:
@@ -850,8 +1017,11 @@ class Store:
         cov = coverage(ents, self.archive.size)
         meta = {"archive": self.archive.path.name, "archive_size": self.archive.size,
                 "source": self.archive.source, "covered_bytes": cov["covered"],
+                "version": self.layout.key, "layout": self.layout.to_dict(),
                 "built": time.strftime("%Y-%m-%d %H:%M:%S")}
+        self.index_path.parent.mkdir(parents=True, exist_ok=True)
         save_index(ents, self.index_path, meta)
+        self.meta = meta
         self.entries = ents + self.disc_entries()
         self.by_id = {e.id: e for e in self.entries}
         self._data.clear()

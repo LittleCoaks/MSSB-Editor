@@ -50,9 +50,15 @@ class Bank:
         self.data = data
         self.group = musyx.parse_group(data)
         (po, ps), (so, ss), (lo, ls), (mo, ms) = musyx.sections(data)
-        _n, _gid, typ, _mac, _smp, _cv, _km, _ly, normpage, drumpage, _ms = struct.unpack_from(">IHHIIIIIIII", data, po)
+        _n, gid, typ, _mac, _smp, _cv, _km, _ly = struct.unpack_from(">IHHIIIII", data, po)
+        self.id, self.type = gid, typ
+        # only song groups carry the page tables and the channel setups; an sfx
+        # group has its FX table at 0x1C instead
+        normpage = drumpage = _ms = 0
+        if typ == 0 and ps >= 0x28:
+            normpage, drumpage, _ms = struct.unpack_from(">III", data, po + 0x1C)
         self.pages = self._pages(po, ps, normpage)
-        self.drum_pages = self._pages(po, ps, drumpage) if typ == 0 else {}
+        self.drum_pages = self._pages(po, ps, drumpage)
         macro_off, _curve_off, keymap_off, layer_off = struct.unpack_from(">4I", data, lo)
         self.macros = self._mem_list(lo, ls, macro_off)
         self.curves = {}
@@ -96,12 +102,15 @@ class Bank:
         return out
 
     # ------------------------------------------------------------ lookup --
-    def _macro_voice(self, mid: int, key: int, depth: int = 0) -> tuple[musyx.Sample, int, tuple] | None:
+    def _macro_voice(self, mid: int, key: int, depth: int = 0) -> tuple | None:
+        """(sample, key, adsr, fixed) for a macro id, or None; `fixed` marks a
+        macro whose SET_KEY pins the pitch so the played key does not move it."""
         span = self.macros.get(mid)
         if not span or depth > 4:
             return None
         a, b = span
         adsr = DEFAULT_ADSR
+        fixed = False
         for q in range(a, b, 8):
             w0, w1 = struct.unpack_from(">II", self.data, q)
             op = w0 & 0x7F
@@ -111,11 +120,12 @@ class Bank:
                 key += struct.unpack(">b", bytes([(w0 >> 8) & 0xFF]))[0]
             elif op == 0x19:                     # SET_KEY
                 key = (w0 >> 8) & 0xFF
+                fixed = True
             elif op == 0x0C:                     # SET_ADSR (curve table id)
                 adsr = self.curves.get((w0 >> 8) & 0xFFFF, adsr)
             elif op == 0x10:                     # START_SAMPLE
                 s = self.samples.get((w0 >> 8) & 0xFFFF)
-                return (s, key, adsr) if s else None
+                return (s, key, adsr, fixed) if s else None
             elif op == 0x08:                     # PLAY_MACRO (spawns another macro)
                 r = self._macro_voice((w0 >> 8) & 0xFFFF, key, depth + 1)
                 if r:

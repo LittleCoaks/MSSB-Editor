@@ -53,7 +53,7 @@
       {#each list as s (s.id)}
         <li class:on={s.id === current}>
           <button onclick={() => pick(s.id)}>
-            <span class="pic checker">{#if s.thumb !== null}<img loading="lazy" src="{urls.thumb(s.thumb)}&g={app.thumbGen}" alt="" onerror={e => ((e.target as HTMLImageElement).style.visibility = 'hidden')}>{/if}</span>
+            <span class="pic checker">{#if s.thumb !== null}<img loading="lazy" src={urls.thumb(s.thumb)} alt="" onerror={e => ((e.target as HTMLImageElement).style.visibility = 'hidden')}>{/if}</span>
             <span class="who"><span class="nm">{s.name}</span><span class="dim sub">{s.files.length} file{s.files.length === 1 ? '' : 's'}</span></span>
           </button>
         </li>

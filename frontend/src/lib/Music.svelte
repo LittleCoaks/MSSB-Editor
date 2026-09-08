@@ -126,7 +126,7 @@
 </div>
 
 <style>
-  .page { padding: 20px 24px; overflow: auto; max-width: 1100px; }
+  .page { padding: 20px 24px; overflow: auto; }
   .flow { margin-top: 10px; }
   .steps { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; }
   .step > b { display: block; margin-bottom: 8px; }

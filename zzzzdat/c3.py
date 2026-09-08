@@ -236,6 +236,65 @@ def parse_geopalette(data: bytes, base: int) -> Model | None:
     return Model(meshes)
 
 
+# ---------------------------------------------------------------- decals --
+# The game paints markings, scuffs, shadows and lettering as extra draws lying
+# exactly in the surface below them, in the order they should appear. GX just
+# obeys that order; a depth buffer cannot separate identical depths, so the
+# writer has to record which layer sits on top or the two tear into each other.
+
+
+def _plane_of(m: "Mesh", d: "Draw", eps: float):
+    """(normal, offset) when every vertex of a draw lies in one plane, else None.
+    The normal is sign-canonical so two coplanar draws compare equal whichever
+    way round they are wound."""
+    idx = {v[0] for tri in d.tris for v in tri if v[0] is not None and v[0] < len(m.positions)}
+    if len(idx) < 3:
+        return None
+    pts = [m.positions[i] for i in idx]
+    best, normal = 0.0, None
+    for tri in d.tris:
+        p = [m.positions[v[0]] for v in tri if v[0] is not None and v[0] < len(m.positions)]
+        if len(p) < 3:
+            continue
+        u = [p[1][k] - p[0][k] for k in range(3)]
+        v = [p[2][k] - p[0][k] for k in range(3)]
+        n = (u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0])
+        ln = (n[0] * n[0] + n[1] * n[1] + n[2] * n[2]) ** 0.5
+        if ln > best:
+            best, normal = ln, tuple(c / ln for c in n)
+    if normal is None or best <= 0:
+        return None
+    if next((c for c in normal if abs(c) > 1e-6), 1.0) < 0:
+        normal = tuple(-c for c in normal)
+    off = sum(normal[k] * pts[0][k] for k in range(3))
+    for q in pts:
+        if abs(sum(normal[k] * q[k] for k in range(3)) - off) > eps:
+            return None
+    return normal, off
+
+
+def decal_levels(m: "Mesh") -> list[int]:
+    """How many earlier draws of this mesh already lie in each draw's own plane:
+    0 for a surface, 1 upwards for the layers painted onto it."""
+    if not m.positions or len(m.draws) < 2:
+        return [0] * len(m.draws)
+    extent = max(max(p[k] for p in m.positions) - min(p[k] for p in m.positions) for k in range(3))
+    eps = max(extent, 1.0) * 1e-4
+    planes: list = []
+    out = []
+    for d in m.draws:
+        pl = _plane_of(m, d, eps) if d.tris else None
+        level = 0
+        if pl is not None:
+            n, off = pl
+            for pn, poff in planes:
+                if abs(sum(n[k] * pn[k] for k in range(3))) > 0.9999 and abs(off - poff) <= eps:
+                    level += 1
+            planes.append(pl)
+        out.append(level)
+    return out
+
+
 # ------------------------------------------------------------------ OBJ --
 
 def to_obj(model: Model, mtl_name: str | None = None) -> str:
@@ -257,7 +316,7 @@ def to_obj(model: Model, mtl_name: str | None = None) -> str:
                 lines.append(f"usemtl tex{d.texture}")
             for tri in d.tris:
                 parts = []
-                for p, n, t in tri:
+                for p, n, t, *_col in tri:   # the colour index is not an OBJ concept
                     if p is None:
                         break
                     s = str(p + 1 + vbase)
@@ -276,8 +335,17 @@ def to_obj(model: Model, mtl_name: str | None = None) -> str:
 
 # ----------------------------------------------------------------- glTF --
 
+def skinned_mesh_index(model: Model, bones: list) -> int | None:
+    """The mesh no bone carries and that actually draws: the body the skin file
+    deforms. Attached parts such as hands hang off a bone instead."""
+    attached = {b.geo for b in bones if b.geo is not None}
+    return next((i for i, m in enumerate(model.meshes)
+                 if i not in attached and m.positions and any(d.tris for d in m.draws)), None)
+
+
 def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list | None = None,
-           skin_weights: dict | None = None, banks: list | None = None) -> bytes:
+           skin_weights: dict | None = None, banks: list | None = None,
+           tex_modes: dict[int, str] | None = None) -> bytes:
     """Build a binary glTF 2.0 with one primitive per draw and embedded PNG textures.
 
     With `bones` (from `parse_actor`, unposed model) the file carries the
@@ -285,7 +353,13 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
     skinned mesh (per-vertex `skin_weights`, bone indices in pre-order, see
     anim.py) gets a glTF skin, and each (label, Bank) in `banks` becomes a set
     of glTF animations named "label / sequence". Without bones the meshes are
-    exported flat, as `apply_actor` left them."""
+    exported flat, as `apply_actor` left them.
+
+    `tex_modes` says how each texture wants compositing (`gx.composite_kind`),
+    which becomes the material's alphaMode; a draw lying in an earlier draw's
+    plane is a decal and carries its layer in `extras.decal` (plus
+    `extras.blend = "add"` for paint on a black ground), so a viewer can order
+    and blend the stack the way the console's draw order did."""
     textures = textures or {}
     bufs = bytearray()
     views = []
@@ -295,7 +369,9 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
     images = []
     gtextures = []
     materials = []
-    mat_for_tex: dict[int | None, int] = {}
+    mat_for: dict[tuple, int] = {}
+    tex_index: dict[int, int] = {}
+    tex_modes = tex_modes or {}
 
     def add_view(blob: bytes, target: int | None = None) -> int:
         while len(bufs) % 4:
@@ -311,30 +387,55 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
         accessors.append(acc)
         return len(accessors) - 1
 
-    def material(tex: int | None) -> int:
-        if tex in mat_for_tex:
-            return mat_for_tex[tex]
-        mat = {"name": f"tex{tex}" if tex is not None else "untextured", "doubleSided": True,
-               "pbrMetallicRoughness": {"metallicFactor": 0.0, "roughnessFactor": 1.0}}
-        if tex is not None and tex in textures:
-            view = add_view(textures[tex])
-            images.append({"bufferView": view, "mimeType": "image/png"})
+    def gltf_texture(tex: int) -> int:
+        if tex not in tex_index:
+            images.append({"bufferView": add_view(textures[tex]), "mimeType": "image/png"})
             gtextures.append({"source": len(images) - 1, "sampler": 0})
-            mat["pbrMetallicRoughness"]["baseColorTexture"] = {"index": len(gtextures) - 1}
-            mat["alphaMode"] = "MASK"
-            mat["alphaCutoff"] = 0.5
-        materials.append(mat)
-        mat_for_tex[tex] = len(materials) - 1
-        return mat_for_tex[tex]
+            tex_index[tex] = len(gtextures) - 1
+        return tex_index[tex]
 
-    skinned_mesh = None
-    if bones and skin_weights:
-        attached = {b.geo for b in bones if b.geo is not None}
-        skinned_mesh = next((i for i, m in enumerate(model.meshes) if i not in attached and m.positions), None)
+    def material(tex: int | None, decal: int = 0, see_through: bool = False) -> int:
+        """`see_through` when the draw's own vertex colours carry alpha below 1:
+        the game fades those polygons (the mown stripes on a field are painted at
+        a third of full strength), which an OPAQUE material would throw away."""
+        key = (tex, decal, see_through)
+        if key in mat_for:
+            return mat_for[key]
+        kind = tex_modes.get(tex, "opaque")
+        name = f"tex{tex}" if tex is not None else "untextured"
+        mat = {"name": name + (f"_decal{decal}" if decal else "") + ("_fade" if see_through else ""),
+               "doubleSided": True,
+               "pbrMetallicRoughness": {"metallicFactor": 0.0, "roughnessFactor": 1.0}}
+        if see_through:
+            mat["alphaMode"] = "BLEND"
+        if tex is not None and tex in textures:
+            mat["pbrMetallicRoughness"]["baseColorTexture"] = {"index": gltf_texture(tex)}
+            # a gradient in the alpha only means "see through me" on a layer laid
+            # over another surface. On a surface of its own it is part of how the
+            # console shaded the texture, and blending it turns solid scenery
+            # translucent - Wario Palace's statues are a greyscale atlas whose
+            # palette is two thirds part-alpha.
+            if kind == "alpha" or (kind in ("blend", "add") and decal):
+                mat["alphaMode"] = "BLEND"
+            elif kind == "mask" or (kind == "blend" and not see_through):
+                mat["alphaMode"], mat["alphaCutoff"] = "MASK", 0.5
+        extras = {}
+        if decal:
+            extras["decal"] = decal
+        if kind == "add" and decal:
+            extras["blend"] = "add"
+        if extras:
+            mat["extras"] = extras
+        materials.append(mat)
+        mat_for[key] = len(materials) - 1
+        return mat_for[key]
+
+    skinned_mesh = skinned_mesh_index(model, bones) if (bones and skin_weights) else None
     mesh_node_of: dict[int, int] = {}
     for mi, m in enumerate(model.meshes):
         prims = []
-        for d in m.draws:
+        levels = decal_levels(m)
+        for di, d in enumerate(m.draws):
             vmap: dict[tuple, int] = {}
             pos, nrm, uv, col, idx = [], [], [], [], []
             joints, weights = [], []
@@ -381,8 +482,9 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
                 attrs["JOINTS_0"] = add_accessor(add_view(b"".join(struct.pack("<4H", *j) for j in joints), 34962), len(joints), 5123, "VEC4")
                 attrs["WEIGHTS_0"] = add_accessor(add_view(b"".join(struct.pack("<4f", *w) for w in weights), 34962), len(weights), 5126, "VEC4")
             iblob = b"".join(struct.pack("<I", i) for i in idx)
+            faded = has_c and any(c[3] < 0.99 for c in col)
             prims.append({"attributes": attrs, "indices": add_accessor(add_view(iblob, 34963), len(idx), 5125, "SCALAR"),
-                          "material": material(d.texture), "mode": 4})
+                          "material": material(d.texture, levels[di], faded), "mode": 4})
         if prims:
             meshes.append({"name": m.name, "primitives": prims})
             nodes.append({"mesh": len(meshes) - 1, "name": m.name})
@@ -421,7 +523,7 @@ def _rig(nodes: list, bones: list, mesh_node_of: dict, skinned_mesh, banks: list
     """Append bone nodes (and a root that turns the actor upright) to `nodes`;
     return (scene root nodes, skins, animations). Bone node order is the
     pre-order traversal so skin joint indices need no remapping."""
-    from .anim import FRAME_RATE, bone_order
+    from .anim import FRAME_RATE, bone_order, is_static
     order = bone_order(bones)
     node_of: dict[int, int] = {}   # bone offset -> node index
     for b in order:
@@ -461,6 +563,8 @@ def _rig(nodes: list, bones: list, mesh_node_of: dict, skinned_mesh, banks: list
     animations = []
     for label, bank in banks:
         for seq in bank.sequences:
+            if is_static(seq):
+                continue          # a placeholder that holds the rest pose: nothing to play
             samplers, channels = [], []
             for tr in seq.tracks:
                 b = by_id.get(tr.bone)

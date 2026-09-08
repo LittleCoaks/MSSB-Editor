@@ -14,14 +14,18 @@ class Job:
         self.progress = 0.0
         self.error: str | None = None
         self.result = None
+        self.note = ""      # what the job is doing right now, for jobs with no percentage
         self.fields = fields
 
     def set_progress(self, done: int, total: int) -> None:
         self.progress = done / max(total, 1)
 
+    def set_note(self, note: str) -> None:
+        self.note = note
+
     def to_dict(self) -> dict:
         return {"id": self.id, "kind": self.kind, "state": self.state, "progress": self.progress,
-                "error": self.error, "result": self.result, **self.fields}
+                "note": self.note, "error": self.error, "result": self.result, **self.fields}
 
 
 class Jobs:
