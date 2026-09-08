@@ -5,7 +5,7 @@ when the UI asks (on start-up if the setting allows, or on the button).
 Nothing is downloaded until the person clicks Install. The asset is picked
 by platform:
 
-    Windows   "MSSB Editor Setup <version>.exe"   run; NSIS upgrades in place
+    Windows   "MSSB Editor Setup <version>.exe"   run elevated; NSIS upgrades in place
     macOS     "MSSB Editor <version>.dmg"         opened; drag to Applications
 
 Downloads land in the data folder under updates/ and are removed once the
@@ -102,9 +102,24 @@ def launch(installer: Path) -> str:
     if not FROZEN:
         return f"downloaded to {installer}; a development checkout is not replaced by an installer"
     if sys.platform == "win32":
-        # the NSIS installer asks for elevation itself and upgrades in place; the
-        # running program must quit before it can replace the files
-        subprocess.Popen([str(installer)], close_fds=True)
+        # The installer writes to Program Files, so its manifest asks for
+        # administrator. CreateProcess -- what subprocess.Popen uses -- cannot
+        # elevate and fails with "The requested operation requires elevation";
+        # ShellExecute is the call that puts up the UAC prompt, and it does not
+        # return until the person has answered it.
+        import ctypes
+        shell = ctypes.windll.shell32
+        shell.ShellExecuteW.restype = ctypes.c_void_p
+        rc = shell.ShellExecuteW(None, "runas", str(installer), None, str(installer.parent), 1)
+        rc = int(rc) if rc else 0
+        if rc <= 32:
+            if rc == 1223:  # ERROR_CANCELLED
+                raise RuntimeError("the installer needs administrator rights, and the prompt was declined. "
+                                   f"It is downloaded at {installer} if you would rather run it yourself.")
+            raise RuntimeError(f"could not start the installer (ShellExecute returned {rc}). "
+                               f"It is downloaded at {installer}.")
+        # it upgrades in place, so the running program must quit before the
+        # installer can replace its files
         threading.Timer(1.0, lambda: os._exit(0)).start()
         return "installer started; the editor closes now and the installer takes over"
     if sys.platform == "darwin":
