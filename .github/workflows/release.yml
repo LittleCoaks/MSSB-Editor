@@ -1,8 +1,10 @@
 name: Release
 
-# Tag a commit `vX.Y.Z` (matching zzzzdat/version.py) and push the tag: this
-# builds the Windows installer and the macOS disk image and publishes them as
-# a GitHub Release. The editor's updater looks at the newest release.
+# Tag a commit `vX.Y` or `vX.Y.Z` (matching zzzzdat/version.py) and push the
+# tag: this builds the Windows installer and the macOS disk image and
+# publishes them as a GitHub Release. The editor's updater looks at the newest
+# release. Bump zzzzdat/version.py and pyproject.toml *before* tagging -- the
+# first job checks they agree with the tag and stops if they do not.
 on:
   push:
     tags: ["v*"]

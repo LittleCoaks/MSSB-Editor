@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mssb-editor"
-version = "0.1.0"
+version = "0.2"
 description = "Browse, view and extract the assets in Mario Superstar Baseball's ZZZZ.dat"
 readme = "README.md"
 requires-python = ">=3.10"
