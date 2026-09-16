@@ -126,7 +126,7 @@ def test_clone_character_and_restore(store):
     target = next(s for s in (1, 5, 6, 4) if str(s) not in Cloner(ed).clones())  # a slot with its own body model
     r = Cloner(ed).clone(2, target, copy=True)  # Donkey Kong onto it
     assert r["copied"] == 22 and r["shared"] == 7 and len(r["inplace"]) == 2  # 19 sub-files + 3 menu packs
-    st2 = Store()
+    st2 = Store(game=store.game)
     e = st2.get(CLONE_ID_BASE + target * 64)  # track 0 now holds a copy of donkey00.gpc
     assert e.label == "donkey00.gpc" and len(st2.data(e)) == 119736
     with pytest.raises(EditError):
@@ -135,7 +135,7 @@ def test_clone_character_and_restore(store):
     assert hashlib.sha1(ed.dol.read_bytes()).hexdigest() == sha
     assert hashlib.sha1(ed.aaaa.read_bytes()).hexdigest() == sha_aaaa
     assert str(target) not in Editor(store.game).journal.get("_clones", {})
-    assert len(Store().entries) == len(store.entries)
+    assert len(Store(game=store.game).entries) == len(store.entries)
 
 
 def test_musyx_group(store):
@@ -254,7 +254,7 @@ def test_roster(store):
     assert [v["name"] for v in toad["variants"]] == ["Toad (red)", "Toad (blue)", "Toad (yellow)", "Toad (green)", "Toad (purple)"]
     assert toad["variants"][1]["texture_entry"] is not None
     goomba = roster.detail(store, 29)
-    assert goomba["parts"][0]["role"] == "left bat" and goomba["viewer_parts"] == ["bat", "glove", "hand"]
+    assert goomba["parts"][0]["role"] == "left bat" and goomba["viewer_parts"] == ["bat", "glove"]  # no hands: the hand slots hold the bat
     assert d["parts"][0]["bat_pose"] == 2 and "bat" in d["viewer_parts"]
     assert roster.detail(store, 0) is d  # cached
 
@@ -264,6 +264,12 @@ def test_hand_poses_hold_the_bat(store):
     hp = store.poses(e)
     assert hp and hp.count == 12 and hp.vertices == 284
     assert hp.extents[0] < 0.5 and hp.bat_pose() == 2 and hp.extents[2] > 1.7
+    # Donkey Kong's fist closes as the bat unfolds, so the whole mesh does not
+    # grow; the bat is found as the draw that unfolds from nothing. His hands
+    # have 327 vertices to the pose sets' 301 (the rest fill in).
+    dk = store.poses(store.get(2236), None)
+    assert dk is not None and dk.vertices == 327 and dk.bat_pose() == 2
+    assert store.poses(store.get(2238), None).bat_pose() is None   # his glove has no bat
     m = store.model(e, 1, pose=2)
     ys = [p[1] for p in m.meshes[0].positions]
     assert max(ys) - min(ys) > 1.5  # the bat, pulled out of the palm

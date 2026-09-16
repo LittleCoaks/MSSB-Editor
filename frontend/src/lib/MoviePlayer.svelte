@@ -9,6 +9,7 @@
   let msg = $state('')
   let progress = $state(0)
   let busy = $state(false)
+  let encoding = $state(false)
   let canvas: HTMLCanvasElement
   let audio: HTMLAudioElement
   let frame = $state(0)
@@ -19,6 +20,8 @@
   async function load() {
     try { info = await api.movie(entry) } catch (e: any) { msg = e.message }
     if (info?.job) watch(info.job)
+    else if (info?.mp4_job) { encoding = true; pollJob(info.mp4_job, api.job, j => (progress = j.progress))
+      .then(async () => { info = await api.movie(entry) }).finally(() => (encoding = false)) }
   }
   async function prepare() {
     busy = true; msg = 'decoding…'
@@ -39,6 +42,22 @@
     msg = 'exporting…'
     try { const r = await api.exportMovie(entry); msg = `saved ${r.written.length} files to ${r.dest}` } catch (e: any) { msg = e.message }
   }
+  // the MP4 is built once into the cache, like the decode is, then downloaded:
+  // encoding the 5,600-frame intro is not something to hold a click open for
+  async function downloadMp4() {
+    if (info?.mp4) { location.href = urls.movieMp4(entry); return }
+    encoding = true; msg = ''
+    try {
+      const r = await api.makeMovieMp4(entry)
+      if (r.job) {
+        const jb = await pollJob(r.job, api.job, j => (progress = j.progress))
+        if (jb.state === 'error') { msg = jb.error ?? 'failed'; return }
+      }
+      info = await api.movie(entry)
+      if (info?.mp4) location.href = urls.movieMp4(entry)
+    } catch (e: any) { msg = e.message } finally { encoding = false }
+  }
+  const mb = (n: number) => `${(n / 1048576).toFixed(n < 10485760 ? 1 : 0)} MB`
   function ensure(n: number) {
     if (!info?.frames || n < 0 || n >= info.frames || cache.has(n) || fetching.has(n)) return
     fetching.add(n)
@@ -77,7 +96,15 @@
 {:else}
   <div class="row" style="margin-bottom:8px">
     <span class="dim">{info.width}×{info.height} · {info.frames} frames · {info.fps?.toFixed(2)} fps · {info.sample_rate} Hz · frame {frame + 1}</span>
+    <button onclick={downloadMp4} disabled={encoding}
+            title={info.ffmpeg
+              ? 'H.264 and AAC through ffmpeg; built once, then cached'
+              : 'ffmpeg is not on PATH, so the frames are muxed as Motion JPEG: lossless and quick, but the file is as big as the frames and only a player like VLC will open it. Put ffmpeg on PATH for a small H.264 file.'}>
+      {encoding ? `${info.ffmpeg ? 'encoding' : 'muxing'}… ${Math.round(progress * 100)}%`
+                : info.mp4 ? `Download MP4${info.mp4_size ? ` (${mb(info.mp4_size)})` : ''}` : 'Download MP4'}
+    </button>
     <button onclick={exportFrames}>Export frames + WAV</button>
+    {#if !info.ffmpeg}<span class="dim" title="Motion JPEG, since ffmpeg was not found">MJPEG</span>{/if}
     {#if msg}<span class="dim">{msg}</span>{/if}
   </div>
   <canvas bind:this={canvas} style="width:100%;max-width:{info.width}px;display:block;background:#000;border-radius:6px"></canvas>

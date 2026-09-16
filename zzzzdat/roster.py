@@ -161,7 +161,6 @@ def _detail(store, cid: int) -> dict:
         e = _master(by_va, chars.ITEMS_BASE + base * 7 + k)
         m = _model_summary(store, e, role)
         if m:
-            attach.add(role.split(" ")[1])
             hp = store.poses(e, m["section"])
             m["poses"] = hp.count if hp else 0
             m["bat_pose"] = hp.bat_pose() if hp else None
@@ -169,7 +168,7 @@ def _detail(store, cid: int) -> dict:
                 attach.add("bat")
             if any("bat" in n.lower() for n in m["meshes"]):  # handless characters hold the bat directly
                 role = m["role"] = role.split(" ")[0] + " bat"
-                attach.add("bat")
+            attach.add(role.split(" ")[1])
             parts.append(m)
         add_file(e, role, base)
     for k, role in ITEM_ROLES.items():

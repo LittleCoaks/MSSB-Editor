@@ -147,7 +147,7 @@
               <ModelViewer entry={model.entry} models={model.models} banks={viewerBanks} parts={viewerParts} variants={viewerVariants} bind:bank height="56vh" {pose} />
             {/key}
             <p class="dim small" style="margin:8px 0 0">
-              {model.role}: {model.meshes.join(', ')} · {model.triangles.toLocaleString()} triangles · {model.textures} textures · {kb(model.size)}.
+              {model.role}: {model.meshes.join(', ')} · {model.triangles.toLocaleString()} triangles · {model.textures ? model.textures + ' textures' : 'drawn with the body textures'} · {kb(model.size)}.
               {#if isBody}Pick an animation bank above to play its animations; the colour dropdown draws the model with a variant's texture set; hands, gloves and the bat attach to the wrists. The bat is not a separate model: it is built into the batting hands and pulled out by a hand pose.{/if}
             </p>
           {/if}

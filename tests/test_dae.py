@@ -122,3 +122,76 @@ def test_empty_model_still_parses():
     root = ET.fromstring(dae.to_dae(c3.Model([c3.Mesh("m", [], [], [], [])])))
     assert not list(root.iter(NS + "library_effects"))
     assert next(root.iter(NS + "visual_scene")).get("id") == "scene"
+
+
+def _scaled_rig():
+    """A root, and a child bone that shrinks what hangs off it - the shape of
+    every character's head bone (Mario's is 0.1426)."""
+    root = c3.Bone(0x20, 0, 0, None, True, (1, 1, 1), (0, 0, 0, 1), (0, 0, 0))
+    head = c3.Bone(0x3C, 1, 0x20, 1, True, (0.25, 0.25, 0.25), (0, 0, 0, 1), (0, 4, 0))
+    tip = c3.Bone(0x58, 2, 0x3C, None, True, (1, 1, 1), (0, 0, 0, 1), (0, 8, 0))
+    bones = [root, head, tip]
+    c3._compute_world(bones)
+    return bones
+
+
+def _scale_of(m):
+    """The length of each column of the 3x3, read out of a row-major 4x4."""
+    return [math.sqrt(sum(m[r * 4 + c] ** 2 for r in range(3))) for c in range(3)]
+
+
+def _node_matrix(n):
+    return [float(v) for v in n.find(NS + "matrix").text.split()]
+
+
+def test_joints_carry_no_scale():
+    """A Blender armature bone is head/tail/roll and cannot hold a scale, so an
+    importer drops one that rides on a JOINT: the head inflates by 1/scale and
+    leaves the body. The scale goes on the geometry's own node instead, and is
+    accumulated into the child translations so the rest of the chain stays put."""
+    head_mesh = c3.Mesh("head", [(0.0, 0.0, 0.0)] * 3, [], [],
+                        [c3.Draw(None, [((0, None, None, None), (1, None, None, None),
+                                         (2, None, None, None))])])
+    root = ET.fromstring(dae.to_dae(c3.Model([_tri_mesh(), head_mesh]), bones=_scaled_rig()))
+    joints = {n.get("id"): n for n in root.iter(NS + "node") if n.get("type") == "JOINT"}
+    assert list(joints) == ["j0", "j1", "j2"]
+    for jid, n in joints.items():
+        assert _scale_of(_node_matrix(n)) == [1.0, 1.0, 1.0], f"{jid} still carries a scale"
+    # the mesh hangs off the scaled bone, so its own node takes the scale over
+    # (it follows the child joints, so pick it out rather than taking the first)
+    geo = next(n for n in joints["j1"] if n.tag == NS + "node"
+               and n.find(NS + "instance_geometry") is not None)
+    assert geo.find(NS + "instance_geometry").get("url") == "#geo1"
+    assert _scale_of(_node_matrix(geo)) == [0.25, 0.25, 0.25]
+    # j2's translation is measured in its parent's accumulated scale, so dropping
+    # the scale off j1 does not move it: 8 * 0.25 = 2 below a j1 still at y 4
+    assert _node_matrix(joints["j2"])[3::4] == [0.0, 2.0, 0.0, 1.0]
+    assert _node_matrix(joints["j1"])[3::4] == [0.0, 4.0, 0.0, 1.0]
+
+
+def test_animated_translation_is_scaled_like_the_rest_pose():
+    """A key's translation is a local one, so it lives in the same accumulated
+    scale the rest translation was rewritten into."""
+    bones = _scaled_rig()
+    seq = anim.Sequence("s", [anim.Track(2, [anim.Key(0.0, None, (0.0, 8.0, 0.0)),
+                                             anim.Key(30.0, None, (0.0, 16.0, 0.0))], 30.0)])
+    root = ET.fromstring(dae.to_dae(c3.Model([_tri_mesh()]), bones=bones,
+                                    banks=[("", anim.Bank([seq]))]))
+    m = _floats(root, "clip0-j2-out")
+    assert m[:16][3::4] == [0.0, 2.0, 0.0, 1.0]     # 8 * 0.25, matching the rest pose
+    assert m[16:][3::4] == [0.0, 4.0, 0.0, 1.0]     # 16 * 0.25
+    assert _scale_of(m[:16]) == [1.0, 1.0, 1.0]
+
+
+def test_inverse_binds_match_the_scale_free_skeleton():
+    """The bind pose has to be the skeleton as written, not as the game holds
+    it, or the skinned mesh comes apart at every scaled joint."""
+    bones = _scaled_rig()
+    root = ET.fromstring(dae.to_dae(c3.Model([_tri_mesh()]), bones=bones,
+                                    skin_weights={0: [(1, 1.0)], 1: [(1, 1.0)], 2: [(2, 1.0)]}))
+    ib = _floats(root, "ctrl0-bind")
+    assert len(ib) == 48                            # three joints
+    for k in range(3):
+        assert _scale_of(ib[k * 16:(k + 1) * 16]) == [1.0, 1.0, 1.0]
+    # j1 sits at y 4 with no scale, so its inverse bind translates by -4
+    assert ib[16:32][3::4] == [0.0, -4.0, 0.0, 1.0]

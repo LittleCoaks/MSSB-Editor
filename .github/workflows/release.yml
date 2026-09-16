@@ -65,6 +65,11 @@ jobs:
           ls -R assets
           if gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
             gh release upload "${{ github.ref_name }}" assets/windows-installer/* assets/macos-dmg/* --clobber --repo "${{ github.repository }}"
+            # GitHub turns a published release into a draft when the tag it
+            # points at is deleted, which is what moving a tag does, so the
+            # release found here may be one nobody can download until it is
+            # published again
+            gh release edit "${{ github.ref_name }}" --draft=false --repo "${{ github.repository }}"
           else
             gh release create "${{ github.ref_name }}" assets/windows-installer/* assets/macos-dmg/* --repo "${{ github.repository }}" --title "MSSB Editor ${{ github.ref_name }}" --generate-notes
           fi

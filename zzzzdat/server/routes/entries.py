@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import json
 
+from ... import presets, structview, text
 from ...paths import EXTRACT_DIR
-from .. import Request, router
+from .. import HttpError, Request, router
 
 
 def entry_summary(e) -> dict:
@@ -30,6 +31,8 @@ def entry_detail(store, e) -> dict:
     d["sfx"] = fi.sfx
     d["songs"] = fi.songs
     d["group"] = fi.group
+    d["text"] = fi.text
+    d["roster"] = fi.roster
     d["models"] = store.models(e) if fi.kind == "container" else []
     d["banks"] = store.banks(e) if d["models"] else []
     d["parts"] = sorted({p["name"] for p in store.parts(e)}) if d["models"] else []
@@ -116,3 +119,71 @@ def get_textures_zip(req: Request, eid: str):
     dolphin_names = not req.flag("plain")
     stem = st.file_name(e).rsplit(".", 1)[0]
     req.bytes(st.textures_zip(e, dolphin_names), "application/zip", f"{stem}_{'dolphin' if dolphin_names else 'textures'}.zip")
+
+
+@router.get(r"/api/entry/(?P<eid>\d+)/text(?:\.json)?")
+def get_text(req: Request, eid: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    data = st.data(e)
+    if not text.is_table(data):
+        raise HttpError(400, "not a text string table")
+    font = st.font()
+    req.json({"count": len(text.codes_of(data)), "strings": text.strings(data), "font": font is not None,
+              "colours": font.metrics.colour_css() if font else []})
+
+
+@router.get(r"/api/entry/(?P<eid>\d+)/text/(?P<n>\d+)\.png")
+def get_text_png(req: Request, eid: str, n: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    style = int(req.q("style", "0"))
+    colour = int(req.q("colour", "ffffffff"), 16)
+    try:
+        png = st.text_png(e, int(n), style if 0 <= style <= 3 else 0, colour)
+    except (ValueError, IndexError) as ex:
+        raise HttpError(404, str(ex))
+    req.bytes(png, "image/png", cache="max-age=3600")
+
+
+@router.get(r"/api/text/search")
+def get_text_search(req: Request):
+    st = req.ctx.require_store()
+    q = (req.q("q") or "").strip()
+    if len(q) < 2:
+        raise HttpError(400, "q must be at least 2 characters")
+    req.json({"q": q, "matches": st.text_search(q)})
+
+
+@router.get(r"/api/entry/(?P<eid>\d+)/text\.txt")
+def get_text_txt(req: Request, eid: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    data = st.data(e)
+    if not text.is_table(data):
+        raise HttpError(400, "not a text string table")
+    req.bytes(text.as_text(data).encode("utf-8"), "text/plain; charset=utf-8",
+              f"{st.file_name(e).rsplit('.', 1)[0]}_strings.txt", inline=not req.flag("download"))
+
+
+@router.get(r"/api/entry/(?P<eid>\d+)/roster(?:\.json)?")
+def get_roster(req: Request, eid: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    data = st.data(e)
+    if not presets.is_roster(data):
+        raise HttpError(400, "not a preset roster file")
+    req.json(presets.parse(data))
+
+
+@router.get(r"/api/entry/(?P<eid>\d+)/struct(?:\.json)?")
+def get_struct(req: Request, eid: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    data = st.data(e)
+    d = structview.describe(data)
+    stride = int(req.q("stride", "0"), 0)
+    if stride and stride % 4 == 0:
+        d["stride"] = stride
+        d["columns"] = structview.column_kinds(data, stride)
+    req.json(d)

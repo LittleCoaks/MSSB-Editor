@@ -12,9 +12,10 @@ else is derived from that by `Game.detect`:
 An ISO can be paired with an extracted folder ("files" in config.json, set by
 the dump command) so viewing reads the image while editing writes the folder.
 
-Resolution order for the game: config.json, the MSSB_GAME environment
-variable, then the decomp repo's orig/GYQE01 (sibling "MSSB Decomp" folder,
-MSSB_DECOMP or decomp_path.txt) for developers.
+Resolution order for the game: the MSSB_GAME environment variable (so a
+script or a test run can point at a build without touching the setting),
+then config.json, then the decomp repo's orig/GYQE01 (sibling "MSSB Decomp"
+folder, MSSB_DECOMP or decomp_path.txt) for developers.
 """
 from __future__ import annotations
 
@@ -241,11 +242,11 @@ class Game:
 
 
 def current_game() -> Game:
+    if os.environ.get("MSSB_GAME"):
+        return Game.detect(os.environ["MSSB_GAME"])
     cfg = load_config()
     if cfg.get("game"):
         return Game.detect(cfg["game"], cfg.get("files"))
-    if os.environ.get("MSSB_GAME"):
-        return Game.detect(os.environ["MSSB_GAME"])
     if REPO_ROOT and (REPO_ROOT / "orig" / "GYQE01").is_dir():
         return Game.detect(REPO_ROOT / "orig" / "GYQE01")
     return Game(None, problem="no game selected")

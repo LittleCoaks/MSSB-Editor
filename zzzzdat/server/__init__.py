@@ -64,8 +64,9 @@ class Request:
               inline: bool = False) -> None:
         self._h.send_bytes(body, ctype, filename, cache, inline)
 
-    def stream(self, total: int, gen, ctype: str, filename: str | None = None) -> None:
-        self._h.send_stream(total, gen, ctype, filename)
+    def stream(self, total: int, gen, ctype: str, filename: str | None = None,
+               inline: bool = True) -> None:
+        self._h.send_stream(total, gen, ctype, filename, inline)
 
 
 Route = tuple[str, "re.Pattern[str]", Callable[..., None]]
@@ -150,7 +151,8 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def send_stream(self, total: int, gen, ctype: str, filename: str | None = None) -> None:
+    def send_stream(self, total: int, gen, ctype: str, filename: str | None = None,
+                    inline: bool = True) -> None:
         """Stream a body of known length, honouring a single byte Range."""
         rng = self.headers.get("Range")
         start, end = 0, total - 1
@@ -167,8 +169,10 @@ class Handler(BaseHTTPRequestHandler):
         if filename:
             # `inline` still plays in the page; it only names the file when the
             # viewer saves it from the player's own menu, which otherwise takes
-            # the name from the URL and calls every clip "0.wav"
-            self.send_header("Content-Disposition", f'inline; filename="{filename}"')
+            # the name from the URL and calls every clip "0.wav". A download
+            # wants the attachment form so the browser saves it instead.
+            how = "inline" if inline else "attachment"
+            self.send_header("Content-Disposition", f'{how}; filename="{filename}"')
         if partial:
             self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
         self.send_header("Content-Length", str(end - start + 1))

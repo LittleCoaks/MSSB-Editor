@@ -11,12 +11,17 @@ export interface Section { index: number; offset: number; size: number; kind: st
 export interface AudioStream { pos: number; kind: string; rate: number; channels: number; seconds: number; samples: number; loop: boolean; label?: string; note?: number }
 export interface SfxInfo { id: number; macro: number; priority: number; streams: number[] }
 export interface SongInfo { n: number; offset: number; bpm: number; tracks: number; notes: number; seconds: number; tempo: number; channels: number[] }
+export interface TextString { n: number; text: string; tokens: [string, string][]; codes: number }
+export interface StatRow { char_id: number; name: string; fielding_flags: number; fielding_abilities: string[]; class_name: string; chemistry: number[]; spare: string; [field: string]: any }
+export interface Lineup { n: number; members: number[]; tail: string }
+export interface RosterData { stats: StatRow[]; lineups: Lineup[]; names: string[]; abilities: string[]; fields: string[] }
+export interface StructInfo { size: number; strides: { stride: number; score: number }[]; stride: number; columns: string[] }
 export interface GroupInfo { id: number; type: number; kind: string; samples: number; sfx: number }
 export interface ModelInfo { section: number; offset: number; meshes: string[]; triangles: number; textures: number[] }
 export interface BankInfo { key: string; entry: number; section: number; label: string; sequences: number | null }
 export interface EntryDetail extends EntrySummary {
   file_kind: string; hvqm4: Record<string, string | number> | null; sections: Section[]; textures: Texture[];
-  audio: AudioStream[]; sfx: SfxInfo[]; songs: SongInfo[]; group: GroupInfo | null; models: ModelInfo[]; banks: BankInfo[]; parts: string[]; variants: { slot: number; name: string; entry: number }[]; file_name: string;
+  audio: AudioStream[]; sfx: SfxInfo[]; songs: SongInfo[]; group: GroupInfo | null; text: { count: number } | null; roster: { rows: number; lineups: number } | null; models: ModelInfo[]; banks: BankInfo[]; parts: string[]; variants: { slot: number; name: string; entry: number }[]; file_name: string;
   dolphin_names: string[];
 }
 export interface IndexDoc { meta: Record<string, any>; archive: string | null; archive_size: number; entries: EntrySummary[]; error?: string }
@@ -41,7 +46,7 @@ export interface ReplaceResult { offset: number; disc_size: number; size: number
 export interface ReplacedTexture { n: number; width: number; height: number; fmt: string; levels: number; source_width: number; source_height: number; resized: boolean; palette: number; truncated: number }
 export interface SlotInfo { slot: number; name: string; clone_of: number | null; clone_of_name: string | null; copy: boolean | null; inplace: number }
 export interface CloneResult { source: number; target: number; copy: boolean; copied: number; inplace: string[]; shared: number; appended_bytes: number; source_name: string; target_name: string }
-export interface MovieInfo { ready: boolean; helper: boolean; job: string | null; width?: number; height?: number; frames?: number; fps?: number; sample_rate?: number }
+export interface MovieInfo { ready: boolean; helper: boolean; job: string | null; ffmpeg: boolean; mp4: boolean; mp4_job: string | null; mp4_size?: number; width?: number; height?: number; frames?: number; fps?: number; sample_rate?: number }
 export interface FsListing { path: string; parent: string | null; dirs: string[]; files: { name: string; size: number }[]; layout: string }
 export interface RosterSlot { slot: number; name: string }
 export interface RosterEntry { id: number; name: string; slot: number; slots: RosterSlot[]; thumb: number | null; model_entry: number | null; sound_entry: number | null; variants: number }
@@ -77,6 +82,10 @@ export const api = {
   job: (id: string) => j<Job>('/api/job/' + id),
   catalog: () => j<Catalog>('/api/catalog'),
   entry: (id: number) => j<EntryDetail>('/api/entry/' + id),
+  text: (id: number) => j<{ count: number; strings: TextString[]; font: boolean; colours: string[] }>(`/api/entry/${id}/text`),
+  textSearch: (q: string) => j<{ q: string; matches: { entry: number; n: number; text: string }[] }>(`/api/text/search?q=${encodeURIComponent(q)}`),
+  rosterData: (id: number) => j<RosterData>(`/api/entry/${id}/roster`),
+  struct: (id: number, stride?: number) => j<StructInfo>(`/api/entry/${id}/struct${stride ? '?stride=' + stride : ''}`),
   hex: (id: number, offset: number, length = 4096) => j<{ offset: number; total: number; hex: string }>(`/api/entry/${id}/hex?offset=${offset}&length=${length}`),
   extract: (id: number, opts: { png?: boolean; wav?: boolean; model?: string; dolphin?: boolean; sf2?: boolean }) =>
     j<{ written: string[]; dolphin_pack: string }>(`/api/entry/${id}/extract?${opts.png ? 'png=1' : ''}${opts.wav ? '&wav=1' : ''}${opts.model ? '&model=' + opts.model : ''}${opts.dolphin ? '&dolphin=1' : ''}${opts.sf2 ? '&sf2=1' : ''}`),
@@ -92,6 +101,7 @@ export const api = {
   movie: (id: number) => j<MovieInfo>(`/api/entry/${id}/movie`),
   prepareMovie: (id: number) => j<{ ready?: boolean; job?: string }>(`/api/entry/${id}/movie/prepare`, { method: 'POST' }),
   exportMovie: (id: number) => j<{ written: string[]; dest: string }>(`/api/entry/${id}/movie/export`),
+  makeMovieMp4: (id: number) => j<{ ready?: boolean; job?: string }>(`/api/entry/${id}/movie/mp4`, { method: 'POST' }),
   characters: () => j<{ slots: SlotInfo[]; editable: boolean }>('/api/characters'),
   cloneCharacter: (source: number, target: number, copy: boolean) => j<CloneResult>(`/api/characters/clone?source=${source}&target=${target}&copy=${copy ? 1 : 0}`, { method: 'POST' }),
   restoreCharacter: (target: number) => j<{ ok: boolean }>(`/api/characters/restore?target=${target}`, { method: 'POST' }),
@@ -117,14 +127,20 @@ export const urls = {
   songMix: (id: number, ns: number[], loops = 1) => `/api/entry/${id}/song/mix.wav?songs=${ns.join(',')}&loops=${loops}`,
   movieFrame: (id: number, n: number) => `/api/entry/${id}/movie/frame/${n}.jpg`,
   movieAudio: (id: number) => `/api/entry/${id}/movie/audio.wav`,
+  movieMp4: (id: number) => `/api/entry/${id}/movie.mp4`,
   glb: (id: number, sec: number, anim?: string, parts?: string, variant?: number, pose?: number) => `/api/entry/${id}/model/${sec}.glb?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}${pose !== undefined ? '&pose=' + pose : ''}`,
   scene: (id: number) => `/api/entry/${id}/model/all.glb`,
   sceneDae: (id: number) => `/api/entry/${id}/model/all.dae`,
+  sceneDaeZip: (id: number) => `/api/entry/${id}/model/all.dae.zip`,
   dae: (id: number, sec: number, anim?: string, parts?: string, variant?: number, pose?: number) => `/api/entry/${id}/model/${sec}.dae?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}${pose !== undefined ? '&pose=' + pose : ''}`,
   soundfont: (id: number) => `/api/entry/${id}/soundfont.sf2`,
   collision: (id: number) => `/api/entry/${id}/collision.json`,
+  // a .dae names its textures by file name, so the download has to be the zip
+  daeZip: (id: number, sec: number, anim?: string, parts?: string, variant?: number, pose?: number) => `/api/entry/${id}/model/${sec}.dae.zip?anim=${encodeURIComponent(anim ?? '')}&parts=${parts ?? ''}${variant !== undefined ? '&variant=' + variant : ''}${pose !== undefined ? '&pose=' + pose : ''}`,
   obj: (id: number, sec: number, pose?: number) => `/api/entry/${id}/model/${sec}.obj${pose !== undefined ? '?pose=' + pose : ''}`,
   data: (id: number) => `/api/entry/${id}/data`,
+  textTxt: (id: number) => `/api/entry/${id}/text.txt?download=1`,
+  textPng: (id: number, n: number, style = 0) => `/api/entry/${id}/text/${n}.png?style=${style}`,
   texturesZip: (id: number, dolphin = true) => `/api/entry/${id}/textures.zip${dolphin ? '' : '?plain=1'}`,
   raw: (id: number) => `/api/entry/${id}/raw`,
 }
@@ -138,7 +154,7 @@ export const hex = (n: number, w = 8) => '0x' + n.toString(16).padStart(w, '0')
 
 export const KIND_LABEL: Record<string, string> = {
   container: 'asset pack', textures: 'textures', anim: 'animation', hvqm4: 'movie', adgc: 'sound bank',
-  'dsp-adpcm': 'sound', 'dtk-adpcm': 'music', musyx: 'sound effects', songs: 'sequenced music', text: 'text', geopalette: 'model', unknown: 'data', rel: 'code',
+  'dsp-adpcm': 'sound', 'dtk-adpcm': 'music', musyx: 'sound effects', songs: 'sequenced music', text: 'text', roster: 'game data', geopalette: 'model', unknown: 'data', rel: 'code',
 }
 
 export let catalogNames: Record<string, string> = {}

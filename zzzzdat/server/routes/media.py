@@ -44,6 +44,29 @@ def get_scene_dae(req: Request, eid: str):
     req.bytes(xml.encode(), "model/vnd.collada+xml", stem + ".dae")
 
 
+@router.get(r"/api/entry/(?P<eid>\d+)/model/all\.dae\.zip")
+def get_scene_dae_zip(req: Request, eid: str):
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    stem = f"{st.file_name(e).rsplit('.', 1)[0]}_scene"
+    req.bytes(st.scene_collada_zip(e, stem), "application/zip", stem + "_dae.zip")
+
+
+@router.get(r"/api/entry/(?P<eid>\d+)/model/(?P<sec>\d+)\.dae\.zip")
+def get_model_dae_zip(req: Request, eid: str, sec: str):
+    """The .dae with the PNGs it names, which the bare .dae route cannot carry."""
+    st = req.ctx.require_store()
+    e = st.get(eid)
+    stem = f"{st.file_name(e).rsplit('.', 1)[0]}_s{sec}"
+    banks = tuple(k for k in (req.q("anim") or "").split(",") if k)
+    parts = req.q("parts") or ""
+    variant = int(req.q("variant")) if (req.q("variant") or "").isdigit() else None
+    pose = int(req.q("pose")) if (req.q("pose") or "").isdigit() else None
+    req.bytes(st.collada_zip(e, int(sec), stem, rig=bool(banks) or bool(parts) or req.flag("rig"),
+                             bank_keys=banks, parts=parts, variant=variant, pose=pose),
+              "application/zip", stem + "_dae.zip")
+
+
 @router.get(r"/api/entry/(?P<eid>\d+)/model/(?P<sec>\d+)\.(?P<ext>glb|obj|dae)")
 def get_model(req: Request, eid: str, sec: str, ext: str):
     st = req.ctx.require_store()

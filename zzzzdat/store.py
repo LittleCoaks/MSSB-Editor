@@ -49,6 +49,7 @@ class Store:
         self._locks: dict[int, threading.Lock] = {}
         self._locks_guard = threading.Lock()
         self._cache_lock = threading.Lock()
+        self.refine_kinds()
 
     # ------------------------------------------------------------- build --
     def resolve_layout(self) -> "layout.Layout":
@@ -127,6 +128,19 @@ class Store:
                 e.offset, e.disc_size, e.size = cur["offset"], cur["disc_size"], cur["size"]
         self._clone_ids: set[int] = set()
         self.apply_clones()
+
+    def refine_kinds(self) -> None:
+        """Kinds an older index did not know: the character stat file is the
+        one 18,144-byte entry among the "unknown" ones, cheap to check here
+        rather than waiting for the index to be rebuilt."""
+        from . import presets
+        for e in self.entries:
+            if e.kind == "unknown" and e.size == presets.SIZE and e.archive == "ZZZZ.dat":
+                try:
+                    if presets.is_roster(self.data(e)):
+                        e.kind = "roster"
+                except Exception:
+                    pass
 
     def apply_clones(self) -> None:
         """Reflect cloned slots in the index: the slot's own files lose their
@@ -265,6 +279,78 @@ class Store:
             self._info[e.id] = fi
         return fi
 
+    # -------------------------------------------------------------- text --
+    def text_bank0(self) -> "Entry | None":
+        """The text table the engine reads its own font data from."""
+        from . import text
+        for e in self.entries:
+            if e.kind == "text" and e.archive == "ZZZZ.dat" and text.is_bank0(text.codes_of(self.data(e))):
+                return e
+        return None
+
+    def _neighbour_by_ref(self, e: "Entry", delta: int) -> "Entry | None":
+        """The entry whose descriptor sits `delta` bytes from this one's in the same table."""
+        for r in e.refs:
+            head = r.split(" ")[0]
+            parts = head.split(":")
+            if len(parts) != 3 or parts[0] in ("scan", "disc"):
+                continue
+            want = f"{parts[0]}:{parts[1]}:{int(parts[2], 16) + delta:#x}"
+            for o in self.entries:
+                if any(x.split(" ")[0] == want for x in o.refs):
+                    return o
+        return None
+
+    def font(self) -> "textrender.Font | None":
+        """The text engine's font: pages, icons, metrics, remap. Built once."""
+        from . import text, textrender
+        from .descriptors import read_dol
+        if "_font" in self.__dict__:
+            return self.__dict__["_font"]
+        font = None
+        bank0 = self.text_bank0()
+        pages_e = self._neighbour_by_ref(bank0, -0x10) if bank0 else None
+        icons_e = self._neighbour_by_ref(bank0, 0x10) if bank0 else None
+        dol = read_dol(self.game) if bank0 else b""
+        metrics = textrender.Metrics.find(dol) if dol else None
+        if bank0 and pages_e and icons_e and metrics:
+            def images(e):
+                data = self.data(e)
+                out = []
+                for _sec, t in self.info(e).all_textures():
+                    out.append(textrender.Image(t.width, t.height, bytearray(t.decode_rgba(data))))
+                return out
+            pages, icons = images(pages_e), images(icons_e)
+            strings = text.codes_of(self.data(bank0))
+            if len(pages) >= 4 and len(icons) >= 9:
+                font = textrender.Font(pages[:4], icons[:9], metrics, text.remap_table(strings), strings[1], strings[5][0] & 0x7FFF)
+        self.__dict__["_font"] = font
+        return font
+
+    def text_png(self, e: "Entry", n: int, style: int = 0, colour: int = 0xFFFFFFFF) -> bytes:
+        from . import text, textrender
+        font = self.font()
+        if font is None:
+            raise ValueError("the font pages or metrics for this build were not found")
+        codes = text.codes_of(self.data(e))[n]
+        return textrender.render(font, codes, style, colour).png()
+
+    def text_search(self, q: str, limit: int = 200) -> list[dict]:
+        """Strings containing q (case-insensitive) across every text table."""
+        from . import text
+        ql = q.lower()
+        out = []
+        for e in self.entries:
+            if e.kind != "text" or e.archive != "ZZZZ.dat":
+                continue
+            for n, codes in enumerate(text.codes_of(self.data(e))):
+                t = text.plain(codes)
+                if ql in t.lower():
+                    out.append({"entry": e.id, "n": n, "text": t})
+                    if len(out) >= limit:
+                        return out
+        return out
+
     # ------------------------------------------------------------ images --
     def texture_png(self, e: Entry, n: int) -> bytes:
         """A texture as PNG, cached on disk per game."""
@@ -372,7 +458,10 @@ class Store:
             return None
         m = c3.parse_geopalette(data, geo.offset)
         rest = m.meshes[0].positions if m and m.meshes else None
-        return handpose.parse_poses(data, ps.offset, rest)
+        hp = handpose.parse_poses(data, ps.offset, rest)
+        if hp and m and m.meshes:
+            hp.groups = [sorted({t[0] for tri in d.tris for t in tri}) for d in m.meshes[0].draws]
+        return hp
 
     def model(self, e: Entry, section: int, posed: bool = True, pose: int | None = None) -> c3.Model:
         data = self.data(e)
@@ -586,6 +675,27 @@ class Store:
     PART_SETS = {"hands": ("L_hand", "R_hand"), "gloves": ("L_glove", "R_glove"),
                  "bat": ("L_hand", "R_hand", "L_bat", "R_bat", "L_hand_bat", "R_hand_bat")}
 
+    @staticmethod
+    def part_choices(parts: str) -> dict[str, bool]:
+        """The `parts` request -> {mesh name: in its bat pose}. Accepts the
+        whole-body sets (hands / gloves / bat) and per-side choices joined by
+        commas: L_hand, R_glove, L_bat (the left hand holding the bat)."""
+        want: dict[str, bool] = {}
+        for tok in parts.split(","):
+            tok = tok.strip()
+            if not tok:
+                continue
+            if tok in Store.PART_SETS:
+                for n in Store.PART_SETS[tok]:
+                    want[n] = tok == "bat"
+            elif tok.endswith("_bat"):
+                side = tok[:-4]
+                for n in (f"{side}_hand", f"{side}_bat", f"{side}_hand_bat"):
+                    want[n] = True
+            elif tok in Store.PART_BONES:
+                want[tok] = False
+        return want
+
     def parts(self, e: Entry) -> list[dict]:
         """Attachable parts for a character model: hand/glove containers in the
         same file, else the slot's items from the master table."""
@@ -610,6 +720,45 @@ class Store:
                             if name in self.PART_BONES:
                                 out.append({"entry": x.id, "section": None, "name": name})
         return out
+
+    def texture_base(self, e: Entry, section: int) -> int:
+        """Where GeoPalette `section`'s texture indices start in the file's
+        `all_textures()` list. Usually 0 (one table for the whole pack, the
+        stadiums' second small table is never indexed past the first), but in
+        the prop packs every object is followed by its own table and its
+        draws count from there; that table is the section right after the
+        GeoPalette when every index the draws use fits in it (teamstar.gpc has
+        such a table too, but its draws index past it, so it stays global)."""
+        fi = self.info(e)
+        secs = fi.sections
+        if section + 1 >= len(secs) or secs[section + 1].kind != "textures":
+            return 0
+        own = secs[section + 1]
+        m = c3.parse_geopalette(self.data(e), secs[section].offset)
+        if not m:
+            return 0
+        mx = max([-1] + [d.texture for mm in m.meshes for d in mm.draws if d.texture is not None])
+        if mx >= len(own.textures):
+            return 0
+        base = len(fi.textures)
+        for s in secs:
+            if s is own:
+                return base
+            base += len(s.textures)
+        return 0
+
+    def texture_donor(self, e: Entry) -> Entry | None:
+        """The body model pack whose texture set a textureless equipment file
+        (a slot's hand or glove) draws with."""
+        c = chars.classify_entry(e.refs)
+        if not c or c.get("slot") is None or c["table"] not in ("master", "hands"):
+            return None
+        want = chars.SUBFILES_VA + (c["slot"] * chars.TRACKS) * 16
+        for x in self.entries:
+            for r in x.refs:
+                if r.startswith("dol:.data:") and int(r.split(":")[2].split(" ")[0], 16) == want:
+                    return x
+        return None
 
     def _part_meshes(self, part: dict, bat: bool = False) -> tuple[list[c3.Mesh], list, bytes]:
         x = self.get(part["entry"])
@@ -648,8 +797,22 @@ class Store:
         m = self.model(e, section, posed=not bones, pose=pose)
         data = self.data(e)
         texs = self.info(e).all_textures()
+        tex_data = data
+        if not texs:
+            # hands and gloves carry no textures: they draw with their
+            # character's body texture set, so borrow it when viewed alone
+            donor = self.texture_donor(e)
+            if donor is not None:
+                texs, tex_data = self.info(donor).all_textures(), self.data(donor)
+        base = self.texture_base(e, section)
+        if base:
+            # a prop pack (ball.gpc, ball_kage.gpc): each object is followed by
+            # its own texture table, and its draws count from that table
+            m = c3.Model([c3.Mesh(mm.name, mm.positions, mm.normals, mm.uvs,
+                                  [c3.Draw(None if d.texture is None else d.texture + base, d.tris, d.matrix) for d in mm.draws],
+                                  mm.tpl_names, attach=mm.attach) for mm in m.meshes])
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
-        pngs, modes = self._decode(texs, data, used)
+        pngs, modes = self._decode(texs, tex_data, used)
         if variant is not None:
             # a colour variant: the same model drawn with the slot's texture set
             v = next((x for x in self.variants(e) if x["slot"] == variant), None)
@@ -659,22 +822,31 @@ class Store:
                 pngs.update(vpngs)
                 modes.update(vmodes)
         if bones and parts:
-            want = self.PART_SETS.get(parts, ())
+            want = self.part_choices(parts)
             m = c3.Model(list(m.meshes))
             next_tex = len(texs)
             for p in self.parts(e):
                 if p["name"] not in want:
                     continue
-                meshes, ptexs, pdata = self._part_meshes(p, bat=(parts == "bat"))
+                meshes, ptexs, pdata = self._part_meshes(p, bat=want[p["name"]])
+                # hands and gloves carry no textures of their own: their draws
+                # index the character's body texture set (skin, glove leather)
+                shift = next_tex if ptexs else 0
                 for mm in meshes:
                     mm = c3.Mesh(mm.name, mm.positions, mm.normals, mm.uvs,
-                                 [c3.Draw(None if d.texture is None else d.texture + next_tex, d.tris, d.matrix) for d in mm.draws],
+                                 [c3.Draw(None if d.texture is None else d.texture + shift, d.tris, d.matrix) for d in mm.draws],
                                  mm.tpl_names, attach=self.PART_BONES.get(mm.name))
                     m.meshes.append(mm)
-                ppngs, pmodes = self._decode(ptexs, pdata, set(range(len(ptexs))))
-                pngs.update({next_tex + i: v for i, v in ppngs.items()})
-                modes.update({next_tex + i: v for i, v in pmodes.items()})
-                next_tex += len(ptexs)
+                if ptexs:
+                    ppngs, pmodes = self._decode(ptexs, pdata, set(range(len(ptexs))))
+                    pngs.update({next_tex + i: v for i, v in ppngs.items()})
+                    modes.update({next_tex + i: v for i, v in pmodes.items()})
+                    next_tex += len(ptexs)
+                else:
+                    want_tex = {d.texture for mm in meshes for d in mm.draws if d.texture is not None} - set(pngs)
+                    bpngs, bmodes = self._decode(texs, tex_data, want_tex)
+                    pngs.update(bpngs)
+                    modes.update(bmodes)
         return m, pngs, modes, bones
 
     def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = (),
@@ -706,6 +878,27 @@ class Store:
             return dae.to_dae(m, names, bones=bones, skin_weights=self.skin_weights(e, m, bones),
                               banks=banks), pngs
         return dae.to_dae(m, names), pngs
+
+    def collada_zip(self, e: Entry, section: int, stem: str = "model", **kw) -> bytes:
+        """The .dae and the PNGs it names, in one zip. A COLLADA document points
+        at its textures by file name, so on its own - as a browser download of
+        the .dae alone used to be - it always opens untextured."""
+        return self._dae_zip(stem, *self.collada(e, section, stem, **kw))
+
+    def scene_collada_zip(self, e: Entry, stem: str = "scene") -> bytes:
+        """The whole-pack .dae with its PNGs, as `collada_zip` does for one section."""
+        return self._dae_zip(stem, *self.scene_collada(e, stem))
+
+    @staticmethod
+    def _dae_zip(stem: str, xml: str, pngs: dict) -> bytes:
+        import io
+        import zipfile
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            z.writestr(f"{stem}.dae", xml)
+            for i, png in pngs.items():
+                z.writestr(f"{stem}_tex{i}.png", png)
+        return buf.getvalue()
 
     def write_collada(self, e: Entry, section: int, dest: Path, stem: str, **kw) -> list[Path]:
         """A .dae and the PNGs it names, written together into `dest`."""

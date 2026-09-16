@@ -39,7 +39,7 @@ import re
 import struct
 from dataclasses import dataclass, field
 
-from . import dsp, gx, musyx, song
+from . import dsp, gx, musyx, presets, song, text
 
 
 @dataclass
@@ -142,11 +142,16 @@ def parse_container(data: bytes) -> list[Section] | None:
         if o >= len(data) or o & 3:
             return None
         used.append(o)
-    if used != sorted(used) or len(set(used)) != len(used):
+    # the table is usually in file order, but a prop pack (ball.gpc: ball,
+    # shadow, bat, banana, egg...) lists shared sections more than once and
+    # out of order, so each section runs to the next distinct offset after it
+    starts = sorted(set(used))
+    if len(starts) < len(used) // 2:
         return None
     secs = []
     for i, o in enumerate(used):
-        end = used[i + 1] if i + 1 < len(used) else len(data)
+        k = starts.index(o)
+        end = starts[k + 1] if k + 1 < len(starts) else len(data)
         s = Section(i, o, end - o)
         s.magic = struct.unpack_from(">I", data, o)[0] if o + 4 <= len(data) else 0
         s.textures = parse_texture_table(data, o)
@@ -235,6 +240,7 @@ class FileInfo:
     sfx: list[dict] = field(default_factory=list)    # MusyX groups: {id, macro, samples (stream numbers)}
     songs: list[dict] = field(default_factory=list)  # sequenced songs: {n, bpm, tracks, notes, seconds, tempo}
     text: dict | None = None                         # text string tables: {count}
+    roster: dict | None = None                       # character stats + line-ups: {rows, lineups}
     group: dict | None = None                        # MusyX groups: {id, type, kind}
     musyx: "musyx.Group | None" = None
 
@@ -262,13 +268,17 @@ def identify(data: bytes) -> FileInfo:
         fi = FileInfo("text", text={"count": n})
         fi.names = [f"Text strings ({n})"]
         return fi
+    if presets.is_roster(data):
+        fi = FileInfo("roster", roster=presets.summary(data))
+        fi.names = [f"Character stats ({fi.roster['rows']}) and line-ups ({fi.roster['lineups']})"]
+        return fi
     texs = parse_texture_table(data)
     if texs:
         fi = FileInfo("textures", textures=texs)
     else:
         secs = parse_container(data)
         fi = FileInfo("container", sections=secs) if secs else FileInfo(classify_blob(data))
-    if fi.kind not in ("dsp-adpcm", "musyx", "songs", "text"):
+    if fi.kind not in ("dsp-adpcm", "musyx", "songs", "text", "roster"):
         fi.names = find_names(data)
     for pos, h in dsp.find_dsp_streams(data):
         fi.audio.append({"pos": pos, "kind": "dsp-adpcm", "rate": h.sample_rate, "channels": 1,
@@ -277,15 +287,8 @@ def identify(data: bytes) -> FileInfo:
 
 
 def is_text_table(data: bytes) -> bool:
-    """The string tables of menus.rel / game.rel: u16 count, u16 0x0131, then
-    `count` ascending u32 offsets to short records of 16-bit glyph codes."""
-    if len(data) < 16:
-        return False
-    n, ver = struct.unpack_from(">HH", data, 0)
-    if ver not in (0x131, 0x132) or n == 0 or 4 + n * 4 > len(data):
-        return False
-    offs = struct.unpack_from(f">{n}I", data, 4)
-    return offs[0] == 4 + n * 4 and all(a < b <= len(data) for a, b in zip(offs, offs[1:]))
+    """The string tables of menus.rel / game.rel (see text.py)."""
+    return text.is_table(data)
 
 
 def songs_info(data: bytes) -> FileInfo:

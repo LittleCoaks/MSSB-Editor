@@ -8,16 +8,21 @@
   let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false, overlay = undefined }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean; overlay?: string } = $props()
   let showLines = $state(false)   // the collision overlay hides the stadium; ask for it
   let lines: THREE.Group | null = null
-  let part = $state('')          // '', 'hands' or 'gloves'
+  let left = $state('')          // what hangs on each wrist: '', 'hand', 'glove' or 'bat'
+  let right = $state('')
+  // the request: per-side mesh names joined by commas (L_hand,R_bat), '' for the body alone
+  const part = $derived([left && `L_${left}`, right && `R_${right}`].filter(Boolean).join(','))
+  const choices = (side: 'L' | 'R') => (['hand', 'glove', 'bat'] as const).filter(c => parts.includes(`${side}_${c}`))
   let variant = $state<number | undefined>(undefined)  // colour variant slot
   let canvas: HTMLCanvasElement
   let section = $state(models[0]?.section ?? 0)
   let wire = $state(false)
+  let fmt = $state<'glb' | 'obj' | 'dae'>('glb')   // download format; glb is the only one that carries the rig and the textures together
   // `bank`: animation bank key, '' = static export (bindable so a page can drive it)
   let clips = $state<THREE.AnimationClip[]>([])
   let clip = $state('')
   let playing = $state(true)
-  let speed = $state(1)
+  let speed = $state(0.5)           // the game plays these at about half the exported 60 fps
   let frame = $state(0)
   let msg = $state('')
   let renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, controls: OrbitControls
@@ -146,7 +151,7 @@
   // dependency on the first pass and the collision overlay then never hides
   $effect(() => { const on = showLines; if (lines) lines.visible = on })
   let lastEntry = entry
-  $effect(() => { if (entry !== lastEntry) { lastEntry = entry; bank = ''; part = ''; variant = undefined } })
+  $effect(() => { if (entry !== lastEntry) { lastEntry = entry; bank = ''; left = ''; right = ''; variant = undefined } })
 
   function load(e: number, s: number, b: string, p: string, v?: number, k?: number) {
     msg = 'loading…'
@@ -233,6 +238,12 @@
     controls.target.copy(c); controls.update()
   }
   const duration = $derived(clips.find(x => x.name === clip)?.duration ?? 0)
+  // the whole-scene routes only do glb and dae, so obj is not offered there
+  const downloadUrl = $derived(whole
+    ? (fmt === 'dae' ? urls.sceneDaeZip(entry) : urls.scene(entry))
+    : fmt === 'obj' ? urls.obj(entry, section, pose)
+    : fmt === 'dae' ? urls.daeZip(entry, section, bank || undefined, part || undefined, variant, pose)
+    : urls.glb(entry, section, bank || undefined, part || undefined, variant, pose))
   $effect(() => { if (action) action.paused = !playing })
 </script>
 
@@ -255,21 +266,25 @@
     </select>
   {/if}
   {#if parts.length}
-    <select bind:value={part} title="Attached parts">
-      <option value="">body only</option>
-      {#if parts.some(p => p.endsWith('hand'))}<option value="hands">with hands</option>{/if}
-      {#if parts.some(p => p.endsWith('glove'))}<option value="gloves">with gloves</option>{/if}
-      {#if parts.some(p => p.endsWith('bat'))}<option value="bat">with bat</option>{/if}
-    </select>
+    {#each [['L', 'left'], ['R', 'right']] as [side, name]}
+      {#if choices(side as 'L' | 'R').length}
+        <select value={side === 'L' ? left : right} onchange={e => { const v = (e.target as HTMLSelectElement).value; if (side === 'L') left = v; else right = v }} title="What the {name} hand holds (the game's left is on the viewer's right)">
+          <option value="">{name}: none</option>
+          {#each choices(side as 'L' | 'R') as c}<option value={c}>{name}: {c === 'bat' ? 'bat' : c}</option>{/each}
+        </select>
+      {/if}
+    {/each}
   {/if}
   <label><input type="checkbox" bind:checked={wire}> wireframe</label>
   {#if overlay}<label title="the stadium's collision panels: fences, walls, dugouts"><input type="checkbox" bind:checked={showLines}> collision</label>{/if}
   {#if overlay && showLines && tagLegend.length}<span class="legend">{#each tagLegend as l}<span title="{l.n} triangles"><i style="background:{l.css}"></i>{tagName(l.tag)}</span>{/each}</span>{/if}
   <button onclick={reset}>Reset view</button>
-  {#if whole}<a class="btn" href={urls.scene(entry)}>Download .glb (whole scene)</a>
-  <a class="btn" href={urls.sceneDae(entry)} title="COLLADA; the textures come from the Textures tab's zip">Download .dae (whole scene)</a>{:else}<a class="btn" href={urls.glb(entry, section, bank || undefined, part || undefined, variant, pose)}>Download .glb</a>
-  <a class="btn" href={urls.dae(entry, section, bank || undefined, part || undefined, variant, pose)} title="COLLADA, with the skeleton and the selected animation bank; it names its textures <model>_tex<n>.png, which Export model writes beside it">Download .dae</a>
-  <a class="btn" href={urls.obj(entry, section, pose)}>Download .obj</a>{/if}
+  <select bind:value={fmt} title="Download format">
+    <option value="glb" title="glTF binary: the skeleton, the selected animation bank and the textures, all in one file">.glb</option>
+    {#if !whole}<option value="obj" title="Wavefront OBJ: geometry in the current pose only - no skeleton, no animation, no vertex colours">.obj</option>{/if}
+    <option value="dae" title="COLLADA, with the skeleton and the selected animation bank; downloads as a zip, because the document names its textures as files beside it">.dae (zip)</option>
+  </select>
+  <a class="btn" href={downloadUrl}>Download{whole ? ' (whole scene)' : ''}</a>
   <span class="dim">{msg}</span>
 </div>
 {#if clips.length}

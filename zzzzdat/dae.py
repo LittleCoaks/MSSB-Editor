@@ -14,12 +14,15 @@ PNGs live beside the .dae; `Store.extract_models` writes them there.
 Matrices are serialised row-major, which is what COLLADA's column-vector
 convention wants, and UVs are flipped (COLLADA's origin is bottom-left,
 the GX arrays' is top-left).
+
+The joints go out rigid: see `_scale_free` for why a bone's scale cannot ride
+on the `<node type="JOINT">` it belongs to.
 """
 from __future__ import annotations
 
 from xml.sax.saxutils import escape, quoteattr
 
-from .c3 import Mesh, Model, _invert
+from .c3 import Mesh, Model, _invert, _mul
 
 FLIP = [[1.0, 0.0, 0.0, 0.0], [0.0, -1.0, 0.0, 0.0], [0.0, 0.0, -1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
 IDENTITY = [[1.0 if r == c else 0.0 for c in range(4)] for r in range(4)]
@@ -42,6 +45,44 @@ def _compose(scale: tuple, quat: tuple, trans: tuple) -> list:
     m = [[r[i][0] * sx, r[i][1] * sy, r[i][2] * sz, trans[i]] for i in range(3)]
     m.append([0.0, 0.0, 0.0, 1.0])
     return m
+
+
+def _scale_free(order: list) -> tuple[dict, dict, dict]:
+    """Joint transforms with the scale taken out of them.
+
+    A C3 bone carries a scale - Mario's head bone is 0.1426, and the head
+    geometry is authored about 7x oversized to match - but a Blender armature
+    bone is head/tail/roll and has nowhere to keep one, so an importer drops it
+    and the mesh inflates and flies off the skeleton. The scale therefore goes
+    where a bone does not have to hold it: accumulated down the chain into the
+    child translations, and onto a plain `<node>` wrapped around whatever
+    geometry hangs off the bone.
+
+    Returns ({bone offset: accumulated scale}, {offset: local matrix},
+    {offset: world matrix}), the matrices scale-free. `order` is the pre-order
+    from `anim.bone_order`, so a parent is always resolved before its children.
+
+    Exact while the scale is uniform, which is what the actors nearly always
+    use; a non-uniform scale with a rotation under it does not survive being
+    pushed down a chain, whoever does it."""
+    unit = (1.0, 1.0, 1.0)
+    sacc: dict = {}
+    local: dict = {}
+    world: dict = {}
+    for b in order:
+        ps = sacc.get(b.parent, unit) if (b.inherit and b.parent) else unit
+        sacc[b.offset] = tuple(ps[i] * b.scale[i] for i in range(3))
+        local[b.offset] = _compose(unit, b.quat, tuple(ps[i] * b.trans[i] for i in range(3)))
+        pw = world.get(b.parent) if (b.inherit and b.parent) else None
+        world[b.offset] = _mul(pw, local[b.offset]) if pw is not None else local[b.offset]
+    return sacc, local, world
+
+
+def _parent_scale(order: list, sacc: dict) -> dict:
+    """{bone offset: the accumulated scale its parent imposes}, which is what a
+    local translation - a rest one or an animated one - has to be measured in."""
+    unit = (1.0, 1.0, 1.0)
+    return {b.offset: (sacc.get(b.parent, unit) if (b.inherit and b.parent) else unit) for b in order}
 
 
 def _mat(tex: int | None) -> str:
@@ -144,18 +185,22 @@ def to_dae(model: Model, texture_names: dict | None = None, bones: list | None =
     d.add("</library_geometries>")
 
     order, joint_of, skinned = [], {}, None
+    sacc: dict = {}
+    local: dict = {}
+    world: dict = {}
     if bones:
         from .anim import bone_order
         from .c3 import skinned_mesh_index
         order = bone_order(bones)
         joint_of = {b.offset: f"j{i}" for i, b in enumerate(order)}
+        sacc, local, world = _scale_free(order)
         if skin_weights:
             skinned = skinned_mesh_index(model, bones)
     if skinned is not None:
-        _controller(d, model.meshes[skinned], skinned, order, joint_of, skin_weights)
+        _controller(d, model.meshes[skinned], skinned, order, joint_of, skin_weights, world)
 
-    clips = _animations(d, order, joint_of, banks) if (bones and banks) else []
-    _scene(d, model, drawn, bones, order, joint_of, skinned, texture_names)
+    clips = _animations(d, order, joint_of, banks, sacc) if (bones and banks) else []
+    _scene(d, model, drawn, bones, order, joint_of, skinned, texture_names, sacc, local)
     if clips:
         d.add("<library_animation_clips>")
         for cid, name, dur in clips:
@@ -208,13 +253,16 @@ def _geometry(d: _Doc, mi: int, m: Mesh) -> None:
     d.add("</mesh></geometry>")
 
 
-def _controller(d: _Doc, m: Mesh, mi: int, order: list, joint_of: dict, skin_weights: dict) -> None:
+def _controller(d: _Doc, m: Mesh, mi: int, order: list, joint_of: dict, skin_weights: dict,
+                world: dict) -> None:
     """A <skin> over the body mesh's position array: skin weights are keyed by
     position index, which is exactly what COLLADA's <vertex_weights> wants."""
     d.add(f'<library_controllers><controller id="ctrl{mi}" name="skin"><skin source="#geo{mi}">')
     d.add(f"<bind_shape_matrix>{_mtx(IDENTITY)}</bind_shape_matrix>")
     d.name_source(f"ctrl{mi}-joints", [joint_of[b.offset] for b in order], "JOINT")
-    d.matrix_source(f"ctrl{mi}-bind", [_invert(b.world) for b in order])
+    # the bind pose has to be the skeleton as written, not as the game holds it:
+    # scale-free joints want scale-free inverse binds or the mesh comes apart
+    d.matrix_source(f"ctrl{mi}-bind", [_invert(world[b.offset]) for b in order])
     weights: list = []
     windex: dict = {}
     vcount, v = [], []
@@ -252,13 +300,19 @@ def _bind_material(m: Mesh, texture_names: dict) -> str:
     return "".join(out)
 
 
-def _geo_node(m: Mesh, mi: int, texture_names: dict) -> str:
-    return (f'<node id="node{mi}" name={quoteattr(m.name)} type="NODE"><instance_geometry url="#geo{mi}">'
+def _geo_node(m: Mesh, mi: int, texture_names: dict, scale: tuple | None = None) -> str:
+    """A plain NODE around one mesh. `scale` is the accumulated scale of the
+    bone it hangs off, which the joint itself cannot carry (see `_scale_free`);
+    an ordinary node can, so it goes here."""
+    mtx = ""
+    if scale is not None and any(abs(v - 1.0) > 1e-6 for v in scale):
+        mtx = f'<matrix sid="transform">{_mtx(_compose(scale, (0.0, 0.0, 0.0, 1.0), (0.0, 0.0, 0.0)))}</matrix>'
+    return (f'<node id="node{mi}" name={quoteattr(m.name)} type="NODE">{mtx}<instance_geometry url="#geo{mi}">'
             f"{_bind_material(m, texture_names)}</instance_geometry></node>")
 
 
 def _scene(d: _Doc, model: Model, drawn: list, bones: list | None, order: list, joint_of: dict,
-           skinned: int | None, texture_names: dict) -> None:
+           skinned: int | None, texture_names: dict, sacc: dict, local: dict) -> None:
     d.add('<library_visual_scenes><visual_scene id="scene" name="scene">')
     if not bones:
         for mi, m in drawn:
@@ -286,11 +340,11 @@ def _scene(d: _Doc, model: Model, drawn: list, bones: list | None, order: list, 
 
     def node(b) -> None:
         d.add(f'<node id="{joint_of[b.offset]}" sid="{joint_of[b.offset]}" name="bone{b.id}" type="JOINT">')
-        d.add(f'<matrix sid="transform">{_mtx(_compose(b.scale, b.quat, b.trans))}</matrix>')
+        d.add(f'<matrix sid="transform">{_mtx(local[b.offset])}</matrix>')
         for c in children[b.offset]:
             node(c)
         for mi in hang.get(b.offset, []):
-            d.add(_geo_node(model.meshes[mi], mi, texture_names))
+            d.add(_geo_node(model.meshes[mi], mi, texture_names, sacc[b.offset]))
         d.add("</node>")
 
     for b in roots:
@@ -309,11 +363,15 @@ def _scene(d: _Doc, model: Model, drawn: list, bones: list | None, order: list, 
     d.add("</visual_scene></library_visual_scenes>")
 
 
-def _animations(d: _Doc, order: list, joint_of: dict, banks: list) -> list:
+def _animations(d: _Doc, order: list, joint_of: dict, banks: list, sacc: dict) -> list:
     """One <animation> per sequence holding a matrix channel per animated bone;
     each becomes an <animation_clip> so the sequences stay apart."""
     from .anim import FRAME_RATE, is_static
     by_id = {b.id: b for b in order}
+    # a key's translation is a local one, so it is measured in the parent's
+    # accumulated scale exactly as the rest translation is
+    pscale = _parent_scale(order, sacc)
+    unit = (1.0, 1.0, 1.0)
     clips = []
     d.add("<library_animations>")
     for label, bank in banks:
@@ -329,8 +387,11 @@ def _animations(d: _Doc, order: list, joint_of: dict, banks: list) -> list:
                 sid = f"{cid}-{joint_of[b.offset]}"
                 body.add(f'<animation id="{sid}">')
                 body.float_source(f"{sid}-in", [(k.time / FRAME_RATE,) for k in tr.keys], ("TIME",))
-                body.matrix_source(f"{sid}-out", [_compose(b.scale, k.quat or b.quat, k.trans or b.trans)
-                                                  for k in tr.keys])
+                ps = pscale[b.offset]
+                body.matrix_source(f"{sid}-out",
+                                   [_compose(unit, k.quat or b.quat,
+                                             tuple(ps[i] * (k.trans or b.trans)[i] for i in range(3)))
+                                    for k in tr.keys])
                 body.name_source(f"{sid}-interp", ["LINEAR"] * len(tr.keys), "INTERPOLATION")
                 body.add(f'<sampler id="{sid}-samp"><input semantic="INPUT" source="#{sid}-in"/>'
                          f'<input semantic="OUTPUT" source="#{sid}-out"/>'

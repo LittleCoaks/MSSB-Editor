@@ -13,6 +13,11 @@ listed in its header). It is built into a small command-line helper,
 The helper is looked for next to the package (native/bin/), in the frozen
 bundle, or on PATH. Without it movies can still be identified and their raw
 .h4m exported, just not played.
+
+`Movie.make_mp4` turns a decoded movie into one file. With ffmpeg on PATH that
+is H.264 and AAC, which plays anywhere; without it the frames are muxed as they
+are by mp4.py - lossless and quick, but Motion JPEG, so it is as large as the
+frames and a browser will not play it.
 """
 from __future__ import annotations
 
@@ -27,6 +32,7 @@ from pathlib import Path
 from .paths import CACHE_DIR, FROZEN, PACKAGE_DATA
 
 HELPER = "hvqm4dec.exe" if sys.platform == "win32" else "hvqm4dec"
+FFMPEG = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
 
 
 def helper_path() -> Path | None:
@@ -42,6 +48,20 @@ def helper_path() -> Path | None:
         if c.is_file():
             return c
     found = shutil.which(HELPER)
+    return Path(found) if found else None
+
+
+def ffmpeg_path() -> Path | None:
+    """ffmpeg, if it is bundled beside the helper or anywhere on PATH."""
+    for c in (PACKAGE_DATA / "native" / "bin" / FFMPEG,
+              Path(__file__).resolve().parents[1] / "native" / "bin" / FFMPEG):
+        if c.is_file():
+            return c
+    if FROZEN:
+        beside = Path(sys.executable).resolve().parent / FFMPEG
+        if beside.is_file():
+            return beside
+    found = shutil.which(FFMPEG)
     return Path(found) if found else None
 
 
@@ -66,6 +86,68 @@ class Movie:
 
     def audio(self) -> Path:
         return self.folder / "audio.wav"
+
+    def mp4_path(self) -> Path:
+        return self.folder / "movie.mp4"
+
+    def has_mp4(self) -> bool:
+        p = self.mp4_path()
+        return p.exists() and p.stat().st_size > 0
+
+    def make_mp4(self, progress=None) -> Path:
+        """The movie as one file, cached beside the frames. H.264/AAC when
+        ffmpeg is available, otherwise the frames muxed as Motion JPEG."""
+        dest = self.mp4_path()
+        if self.has_mp4():
+            return dest
+        tmp = dest.with_suffix(".part")
+        tmp.unlink(missing_ok=True)
+        exe = ffmpeg_path()
+        if exe is not None:
+            self._ffmpeg(exe, tmp, progress)
+        else:
+            from . import mp4
+            mp4.write(tmp, self.folder / "frames.mjpg", self.index,
+                      int(self.info["usec_per_frame"]), int(self.info["width"]),
+                      int(self.info["height"]), self.audio(), progress=progress)
+        tmp.replace(dest)
+        return dest
+
+    def ffmpeg_cmd(self, exe: Path, dest: Path) -> list[str]:
+        """Re-encode to H.264/AAC. The frame rate goes in as the exact ratio the
+        movie was decoded at - 1000000/33333, not a rounded 30.0 - so the video
+        does not drift away from the audio over a five-minute intro."""
+        usec = int(self.info["usec_per_frame"])
+        return [str(exe), "-y", "-nostdin",
+               "-f", "mjpeg", "-framerate", f"1000000/{usec}", "-i", str(self.folder / "frames.mjpg"),
+               "-i", str(self.audio()),
+               "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+               # AAC has a fixed list of rates and the game's 32028 Hz is not on
+               # it, so say what to resample to rather than letting it guess
+               "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
+               "-shortest", "-movflags", "+faststart",
+               "-progress", "pipe:1", "-nostats", "-loglevel", "error", str(dest)]
+
+    def _ffmpeg(self, exe: Path, dest: Path, progress=None) -> None:
+        total = len(self.index)
+        proc = subprocess.Popen(self.ffmpeg_cmd(exe, dest), stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, text=True,
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+        tail = []
+        for line in proc.stdout:
+            line = line.strip()
+            if line.startswith("frame=") and progress and total:
+                try:
+                    progress(min(int(line[6:]), total), total)
+                except ValueError:
+                    pass
+            elif line and not line.startswith(("out_time", "total_size", "bitrate", "speed",
+                                               "fps=", "stream_", "dup_frames", "drop_frames",
+                                               "progress=")):
+                tail.append(line)
+        if proc.wait() != 0:
+            dest.unlink(missing_ok=True)
+            raise RuntimeError("ffmpeg failed: " + (" / ".join(tail[-3:]) or "no output"))
 
     def export(self, dest: Path) -> list[Path]:
         """Numbered JPEGs and the WAV, for ffmpeg or an editor."""

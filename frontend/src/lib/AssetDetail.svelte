@@ -4,6 +4,9 @@
   import { app } from './state.svelte'
   import ModelViewer from './ModelViewer.svelte'
   import MoviePlayer from './MoviePlayer.svelte'
+  import TextView from './TextView.svelte'
+  import StatsView from './StatsView.svelte'
+  import DataView from './DataView.svelte'
 
   let { id, onclose }: { id: number; onclose: () => void } = $props()
   let d = $state<EntryDetail | null>(null)
@@ -59,7 +62,7 @@
   $effect(() => {
     const cur = id
     d = null; msg = ''; bigTex = null; playing = null; songPlaying = null
-    api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : x.songs.length ? 'songs' : x.hvqm4 ? 'movie' : 'details' } })
+    api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : x.songs.length ? 'songs' : x.hvqm4 ? 'movie' : x.text ? 'text' : x.roster ? 'stats' : x.kind === 'unknown' ? 'data' : 'details' } })
   })
   $effect(() => { if (tab === 'hex' && d) loadHex() })
 
@@ -128,7 +131,7 @@
         <h2>{app.nameOf(d)}</h2>
         <div class="dim">
           <span class="badge {kindLabel(d.kind).replace(' ', '-')}">{d.archive === 'disc' ? 'music' : kindLabel(d.kind)}</span>
-          {#if d.textures.length} · {d.textures.length} textures{/if}{#if d.models.length} · {d.models.reduce((s, m) => s + m.triangles, 0).toLocaleString()} triangles{/if}{#if d.audio.length} · {d.audio.map(a => a.seconds + ' s').join(', ')}{/if}
+          {#if d.text} · {d.text.count} strings{/if}{#if d.roster} · {d.roster.rows} characters, {d.roster.lineups} line-ups{/if}{#if d.textures.length} · {d.textures.length} textures{/if}{#if d.models.length} · {d.models.reduce((s, m) => s + m.triangles, 0).toLocaleString()} triangles{/if}{#if d.audio.length} · {d.audio.map(a => a.seconds + ' s').join(', ')}{/if}
           · {kb(d.size)}
         </div>
       </div>
@@ -141,6 +144,9 @@
       {#if d.audio.length}<button class:on={tab === 'audio'} onclick={() => (tab = 'audio')}>Audio</button>{/if}
       {#if d.songs.length}<button class:on={tab === 'songs'} onclick={() => (tab = 'songs')}>Songs</button>{/if}
       {#if d.hvqm4}<button class:on={tab === 'movie'} onclick={() => (tab = 'movie')}>Movie</button>{/if}
+      {#if d.text}<button class:on={tab === 'text'} onclick={() => (tab = 'text')}>Text</button>{/if}
+      {#if d.roster}<button class:on={tab === 'stats'} onclick={() => (tab = 'stats')}>Stats &amp; line-ups</button>{/if}
+      {#if d.archive === 'ZZZZ.dat' && !d.hvqm4 && !d.songs.length && !d.group}<button class:on={tab === 'data'} onclick={() => (tab = 'data')} title="the bytes laid out as a table, for files nothing decodes yet">Data</button>{/if}
       <button class:on={tab === 'details'} onclick={() => (tab = 'details')}>Details</button>
       <button class:on={tab === 'hex'} onclick={() => (tab = 'hex')}>Hex</button>
       <span style="flex:1"></span>
@@ -214,6 +220,12 @@
         {/each}
       {:else if tab === 'movie'}
         <MoviePlayer entry={d.id} />
+      {:else if tab === 'text'}
+        <TextView entry={d.id} />
+      {:else if tab === 'stats'}
+        <StatsView entry={d.id} />
+      {:else if tab === 'data'}
+        <DataView entry={d.id} size={d.size} />
       {:else if tab === 'songs'}
         <p class="dim" style="margin-top:0">Sequenced music played by the game's synthesizer on the instrument bank (sound group 31): jingles, results and menu themes. Play renders the song with the bank's own samples (a preview without the game's envelopes and effects); the MIDI download keeps the notes, with instrument numbers as the bank's program slots.</p>
         <table>

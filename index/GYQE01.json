@@ -244,12 +244,12 @@
     "menus:.data:0xc8 lbl_2_data_C8"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "unknown",
+   "kind": "roster",
    "ntex": 0,
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "Preset team rosters (12 x 1440-byte team records, 6 used; copied to inMemRoster by game.rel)",
+   "known": "Character stats and preset line-ups (54 CharacterStats rows game.rel copies into inMemRoster, then 528 18-byte line-up records, 48 filled)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
@@ -2087,7 +2087,7 @@
    "names": [
     "Sound effects group 32"
    ],
-   "known": "Sound effects group 32 (with a 76.6 s looping left/right music pair, probably the main menu)",
+   "known": "Sound effects group 32 (with the main menu music: a 76.6 s looping left/right pair, samples 34+35)",
    "naud": 36,
    "thumb": 0,
    "twin": -1,
@@ -2380,7 +2380,7 @@
    "nsec": 4,
    "label": "",
    "names": [],
-   "known": "Title screen text (press start)",
+   "known": "Menu font pages (large, small, small, large; row 0 is the fixed-grid ASCII font)",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
@@ -2684,7 +2684,7 @@
    "nsec": 0,
    "label": "",
    "names": [],
-   "known": "Letters (Hikaru Utada) - leftover song, not used by the game",
+   "known": "Letters (Hikaru Utada)",
    "naud": 1,
    "thumb": 0,
    "twin": -1,
@@ -20671,9 +20671,9 @@
     "debug:.data:0xa3d8 lbl_1_data_2398+0x8040"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "unknown",
-   "ntex": 0,
-   "nsec": 0,
+   "kind": "container",
+   "ntex": 111,
+   "nsec": 80,
    "label": "ball.gpc",
    "names": [
     "ball.gpc",
@@ -20695,7 +20695,7 @@
    ],
    "known": "",
    "naud": 0,
-   "thumb": 0,
+   "thumb": 109,
    "twin": -1,
    "tag": ""
   },
@@ -20713,9 +20713,9 @@
     "debug:.data:0xa3e8 lbl_1_data_2398+0x8050"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "unknown",
-   "ntex": 0,
-   "nsec": 0,
+   "kind": "container",
+   "ntex": 112,
+   "nsec": 80,
    "label": "toy_ball.gpc",
    "names": [
     "toy_ball.gpc",
@@ -20737,7 +20737,7 @@
    ],
    "known": "",
    "naud": 0,
-   "thumb": 0,
+   "thumb": 110,
    "twin": -1,
    "tag": ""
   },
@@ -37686,9 +37686,9 @@
     "scan:lzss-probe"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "unknown",
-   "ntex": 0,
-   "nsec": 0,
+   "kind": "container",
+   "ntex": 33,
+   "nsec": 6,
    "label": "test.gpc",
    "names": [
     "test.gpc",
@@ -37713,9 +37713,9 @@
     "scan:lzss-probe"
    ],
    "archive": "ZZZZ.dat",
-   "kind": "unknown",
-   "ntex": 0,
-   "nsec": 0,
+   "kind": "container",
+   "ntex": 33,
+   "nsec": 6,
    "label": "test.gpc",
    "names": [
     "test.gpc",

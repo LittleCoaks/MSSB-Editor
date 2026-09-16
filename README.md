@@ -531,7 +531,8 @@ Index entries are classified by content:
 | `rel` | 3 | `menus.rel`, `game.rel`, `debug.rel` in `aaaa.dat` (listed for completeness) |
 | `adgc` | 1 | the DSP-ADPCM sound bank |
 | `songs` | 2 | MusyX song containers (19 + 1 sequenced songs), exported as MIDI |
-| `text` | 3 | text string tables from menus.rel and game.rel |
+| `text` | 6 | text string tables, decoded to strings (see below) |
+| `roster` | 1 | the character stat table and preset line-ups |
 | `musyx` | 48 | MusyX sound groups from the `lbl_800EF508` table: 47 sound-effect groups (875 effects, 1,300 samples) and one instrument bank |
 | `unknown` | 175 | |
 | `dtk-adpcm` | 17 | disc `.adp` music (not in the archive; ids 10000+) |
@@ -660,8 +661,8 @@ becomes the volume envelope.
 
 Three MusyX groups carry music as plain samples rather than sequences, stored
 as separate left and right samples of equal length: group 0 is the
-Dictionary music (a 34.7 s loop), group 32 holds a 76.6 s loop (probably the
-main menu) and group 53 a 20.7 s pair plus a 4 s jingle pair. The Audio tab
+Dictionary music (a 34.7 s loop), group 32 holds the main menu music (a
+76.6 s loop, samples 34+35) and group 53 a 20.7 s pair plus a 4 s jingle pair. The Audio tab
 shows such a pair as one stereo player with a stereo WAV download
 (`/api/entry/<id>/audio/<n>/stereo.wav`).
 
@@ -680,11 +681,23 @@ python native/build_hvqm4.py     # needs clang or gcc; on Windows the LLVM
 The helper (`native/bin/hvqm4dec`) decodes a movie once into the cache as
 back-to-back JPEG frames (TinyJPEG, public domain) with an index, plus the
 audio as WAV; the Movie tab then plays it with the audio element as the
-clock and frames drawn on a canvas, and *Export frames + WAV* writes
-numbered JPEGs for ffmpeg (`ffmpeg -framerate 30 -i frame_%05d.jpg -i
-audio.wav movie.mp4`). Without the helper the movies are still listed and
-their raw `.h4m` can be exported. The Windows build ships the helper beside
-the exe.
+clock and frames drawn on a canvas.
+
+*Download MP4* turns the decoded movie into one file, built once into the
+cache and then served. With ffmpeg on PATH that is H.264 and AAC, which
+plays anywhere; the frame rate goes in as the exact ratio the decoder
+reported (`1000000/33333`, not a rounded 30.0) so a five-minute intro does
+not drift out of sync, and the audio is resampled to 48 kHz because AAC will
+not take the game's 32028 Hz. Without ffmpeg the frames are muxed as they
+are into a Motion JPEG MP4 - lossless and quick, since nothing is
+re-encoded, but the file is as big as the frames (a bit over 200 KB each, so
+the intro runs past a gigabyte) and only a player like VLC will open it, not
+a browser. The button says MJPEG when that is what you will get.
+
+*Export frames + WAV* still writes numbered JPEGs for a manual encode
+(`ffmpeg -framerate 30 -i frame_%05d.jpg -i audio.wav movie.mp4`) or for an
+editor. Without the helper the movies are still listed and their raw `.h4m`
+can be exported. The Windows build ships the helper beside the exe.
 
 ### Sequenced songs
 
@@ -705,9 +718,52 @@ volume and pan (numpy required). Envelopes and effects are not modelled,
 so it is a faithful-enough preview rather than the game's mixer. Each song
 also downloads as MIDI or WAV; *Export MIDI* writes them all.
 
-The two small tables from menus.rel and game.rel that an earlier heuristic
-called ADPCM are the games text string tables (u16 count, version 0x131,
-offsets to records of 16-bit glyph codes) and are now labelled as such.
+### Text strings
+
+Six files are the game's string tables (u16 count, version 0x131, offsets
+to strings of 16-bit words ended by 0x4000): 790 menu strings (bank 0, the
+one the text engine also keeps its own data in), the 954 challenge-mode
+lines and 599 more from menus.rel, 168 from game.rel and two small ones from
+main.dol. The decomp's text engine (`src/text/text_draw.c`) settles what the
+words mean: bit 14 marks a control word (line break, space, wide space,
+colour 1-9 from a table in the DOL, inserted numbers and strings, the nine
+controller icons, large-font and grid-font switches, typing speed,
+challenge-mode sound cues); anything else is a glyph. With the grid font on,
+which nearly every string switches on first, a word is `ASCII - 0x21` into
+an 11-px grid in ASCII order; with the proportional font, words go through
+bank 0's remap table (its string 7) or, at 0x8000 and above, name a 22-px
+cell directly. `zzzzdat/text.py` decodes them; `zzzzdat/textrender.py`
+draws them with the game's own font pages (the four textures of entry 78,
+once mislabelled a title-screen pack), the icon pack after bank 0, and the
+width, offset and colour tables found in main.dol by their contents. The
+Text tab shows every string decoded with the control words as tags or drawn
+as the game draws it in any of the four styles, searches this table or all
+of them, and downloads a .txt (`/api/entry/<id>/text`, `/text/<n>.png`,
+`/text.txt`, `/api/text/search?q=`). Inserted values draw as 0 and
+inserted strings are left out, since a menu supplies those at run time.
+
+### Character stats and line-ups
+
+The first file game.rel loads (`lbl_3_data_0`, 18,144 bytes) is the master
+stat table: 54 `CharacterStats` rows of 0xA0 bytes in roster order, the
+struct the decomp gives for `inMemRoster` (pitching speeds and curve,
+fielding-ability flags, batting contact and power, trajectory, speed, arm,
+class, weight, captain and star flags, the four menu stat bars, then a
+54-byte chemistry table, one byte per teammate). After the rows come 528
+18-byte line-up records (nine character ids, 0xFF empty, then nine 0x0A
+bytes); 48 are filled, in groups of four per captain in challenge-mode
+order: the full nine, shorter squads, the captain alone, an empty one.
+`zzzzdat/presets.py` parses both; the Stats & line-ups tab shows the stat
+table, the chemistry grid and the line-ups (`/api/entry/<id>/roster`).
+
+### Data tab
+
+Every ZZZZ.dat file that is not media gets a Data tab: the bytes in rows of
+a stride guessed from where they repeat (usually a table's record size,
+`zzzzdat/structview.py`), each 4-byte column read as floats when every row
+parses as one, else shorts, else bytes; the stride and the reading can be
+changed by hand. It is for looking at the files nothing decodes yet (the
+camera sets, the hand-pose event sets) rather than an answer about them.
 
 ### Texture table
 
@@ -778,8 +834,12 @@ root during development and, when frozen, in the platform's app-data folder
 read-only data (the index, the built UI) comes from the bundle. See
 `zzzzdat/paths.py`.
 
-Tests: `pip install pytest` then `pytest` (unit tests on synthetic data; the
-`game`-marked tests use the configured game and skip without one).
+Tests: `pip install pytest` then `pytest`. Unit tests use synthetic data;
+the `game`-marked tests need the American retail build (their entry ids are
+that disc's) and look for it in `MSSB_TEST_GAME`, then the decomp repo's
+`orig/GYQE01`, then the configured game when it is GYQE01, skipping with the
+reason otherwise. `MSSB_GAME=<iso or folder>` overrides config.json for any
+run of the program or a script, without changing the saved setting.
 
 ```
 zzzzdat/
@@ -797,6 +857,9 @@ zzzzdat/
   musyx.py        MusyX sound groups: sfx -> macro -> sample, sample decoding
   sf2.py          MusyX groups -> SoundFont 2 banks
   song.py         MusyX sequenced songs -> MIDI
+  text.py         text string tables -> strings (glyph codes and control words)
+  presets.py      the character stat table and preset line-ups
+  structview.py   stride and column guesses for undecoded files (the Data tab)
   render.py       plays songs with the instrument bank's samples (numpy)
   c3.py           C3 GeoPalette model parsing, actors, OBJ and glTF export (rigged)
   dae.py          COLLADA export: geometry, skeleton, skin, animation clips

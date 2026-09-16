@@ -3,7 +3,7 @@
  "names": {
   "0x6c96000": "Title screen (logo and artwork)",
   "0x6cc3000": "Title screen (Mario and DK artwork)",
-  "0x8e77000": "Title screen text (press start)",
+  "0x8e77000": "Menu font pages (large, small, small, large; row 0 is the fixed-grid ASCII font)",
   "0x8e8b800": "Text strings (790, menus)",
   "0x8e97000": "Controller button icons",
   "0x8e98000": "Text strings (11)",
@@ -81,7 +81,7 @@
   "0xeae1800": "Debug menu icons 5",
   "0x6c7b000": "Boot screens (health warning, Nintendo logo)",
   "0x0": "Hand and glove textures (vsSituations)",
-  "0x6cf8800": "Preset team rosters (12 x 1440-byte team records, 6 used; copied to inMemRoster by game.rel)",
+  "0x6cf8800": "Character stats and preset line-ups (54 CharacterStats rows game.rel copies into inMemRoster, then 528 18-byte line-up records, 48 filled)",
   "0x18ac7000": "Camera data sets (18 keyframe records + float tables, loaded into g_Camera by game.rel when its mode flag is set)",
   "0x18e3f000": "Challenge mode map and speech bubbles",
   "0x18e92800": "Challenge mode backgrounds (stadium, Bowser flag)",
@@ -92,14 +92,14 @@
   "0x190bc000": "Captain artwork - Yoshi",
   "0x190e7800": "Captain artwork - Bowser",
   "0x19135800": "Menu font, Nintendo logo and frames",
-  "0x8f2e808": "Letters (Hikaru Utada) - leftover song, not used by the game",
+  "0x8f2e808": "Letters (Hikaru Utada)",
   "0x17fc4000": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
   "0x183a9800": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
   "0x18682000": "Prototype Bowser batting animations (Kuppa_B: bunt, swing, take-back, watch, return, idle)",
   "0x1801e000": "Prototype test animations (test, f_h_01)",
   "0x180bf800": "Prototype test animations (test, f_h_01)",
   "0x7f24800": "Dictionary music (MusyX group 0: one 34.7 s loop as a left/right sample pair)",
-  "0x84f1800": "Sound effects group 32 (with a 76.6 s looping left/right music pair, probably the main menu)",
+  "0x84f1800": "Sound effects group 32 (with the main menu music: a 76.6 s looping left/right pair, samples 34+35)",
   "0x8d8b000": "Sound effects group 53 (a 20.7 s left/right music pair and a 4 s jingle pair)"
  }
 }
