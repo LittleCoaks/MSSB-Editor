@@ -23,7 +23,7 @@
     ['batting_stance', 'bats', '0 right, 1 left'], ['fielding_arm', 'throws', '0 right, 1 left'],
     ['captain_star_hit_pitch', 'capt★', 'captain star hit / pitch'], ['star_swing', '★swing', 'non-captain star swing'], ['star_pitch', '★pitch', 'non-captain star pitch'],
   ]
-  const chem = (v: number) => v >= 80 ? 'good' : v <= 25 ? 'bad' : ''
+  const chem = (v: number) => v >= 90 ? 'good' : v <= 10 ? 'bad' : ''   // 90+ positive chemistry, 10- anti-chemistry
 </script>
 
 {#if !d}
@@ -56,7 +56,7 @@
       </table>
     </div>
   {:else if view === 'chem'}
-    <p class="dim" style="margin:0 0 8px">Each row's 54 chemistry bytes, one per teammate in roster order (row = the character, column = the teammate). High values are good chemistry, low values bad.</p>
+    <p class="dim" style="margin:0 0 8px">Each row's 54 chemistry bytes, one per teammate in roster order (row = the character, column = the teammate). 90 and up is positive chemistry (green), 10 and down is anti-chemistry (red).</p>
     <div style="overflow:auto">
       <table class="chem">
         <thead><tr><th></th>{#each d.stats as q}<th title={q.name}><div class="rot">{q.name}</div></th>{/each}</tr></thead>
