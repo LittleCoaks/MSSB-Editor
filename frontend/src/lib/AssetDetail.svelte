@@ -130,7 +130,7 @@
       <div>
         <h2>{app.nameOf(d)}</h2>
         <div class="dim">
-          <span class="badge {kindLabel(d.kind).replace(' ', '-')}">{d.archive === 'disc' ? 'music' : kindLabel(d.kind)}</span>
+          <span class="badge {(d.category || kindLabel(d.kind)).replace(/ /g, '-')}">{d.archive === 'disc' ? 'music' : (d.category || kindLabel(d.kind))}</span>
           {#if d.text} · {d.text.count} strings{/if}{#if d.roster} · {d.roster.rows} characters, {d.roster.lineups} line-ups{/if}{#if d.textures.length} · {d.textures.length} textures{/if}{#if d.models.length} · {d.models.reduce((s, m) => s + m.triangles, 0).toLocaleString()} triangles{/if}{#if d.audio.length} · {d.audio.map(a => a.seconds + ' s').join(', ')}{/if}
           · {kb(d.size)}
         </div>

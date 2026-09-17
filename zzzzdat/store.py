@@ -7,7 +7,7 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
-from . import anim, c3, chars, collision, dae, dolphin, dsp, formats, gx, handpose, layout, musyx, song
+from . import anim, c3, catalog, chars, collision, dae, dolphin, dsp, formats, gx, handpose, layout, musyx, song
 from .paths import EXTRACT_DIR as _EXTRACT_DIR  # noqa: F401
 from .descriptors import (INDEX_PATH, Entry, build_index, coverage, index_path_for, load_index, load_known_names,
                           load_meta, read_dol, save_index, scan_adgc, scan_unreferenced, verify_entries)
@@ -39,6 +39,10 @@ class Store:
         self.entries: list[Entry] = load_index(self.index_path) if self.index_path.exists() else []
         self.apply_overrides()
         self.entries += self.disc_entries()
+        runs = catalog.ref_runs(self.entries)
+        for e in self.entries:
+            if not e.category:   # an index written before categories existed
+                e.category = catalog.categorise(e, None, runs)
         self.by_id = {e.id: e for e in self.entries}
         self._data: OrderedDict[int, bytes] = OrderedDict()
         self._info: dict[int, formats.FileInfo] = {}
@@ -1197,6 +1201,7 @@ class Store:
                 e.nsec = len(fi.sections)
                 e.label = fi.label
                 e.names = fi.names[:16]
+                e.category = catalog.categorise(e, fi)
                 if i % 100 == 0:
                     log(f"  classified {i}/{len(ents)} ({time.time() - t0:.0f}s)")
         if classify:

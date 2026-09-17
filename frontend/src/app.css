@@ -24,7 +24,7 @@ pre { background: #0f1115; padding: 10px; border-radius: 6px; overflow: auto; fo
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; background: #3a3f4a; color: var(--fg); white-space: nowrap; }
-.badge.model, .badge.asset-pack { background: #2f4a6a; } .badge.textures { background: #2f5d3a; } .badge.movie { background: #6a2f5d; }
+.badge.model, .badge.asset-pack, .badge.character-model, .badge.hand-model, .badge.glove-model, .badge.prop-model { background: #2f4a6a; } .badge.stadium { background: #2f5a5a; } .badge.texture-set { background: #3d5d2f; } .badge.textures { background: #2f5d3a; } .badge.movie { background: #6a2f5d; }
 .badge.animation { background: #6a4f2f; } .badge.sound, .badge.music, .badge.sound-bank { background: #5d5d2f; }
 .bar { height: 8px; background: #2a2e36; border-radius: 4px; overflow: hidden; width: 100%; max-width: 420px; }
 .bar i { display: block; height: 100%; background: var(--acc); transition: width .2s; }

@@ -33,13 +33,13 @@
     return null
   })
   const all = $derived([...app.entries.values()])
-  const kinds = $derived([...new Set(all.map(e => e.kind))].sort())
+  const kinds = $derived([...new Set(all.map(e => e.category || e.kind))].sort())
   const archives = $derived([...new Set(all.map(e => e.archive))].sort())
   const q = $derived(filter.trim().toLowerCase())
   const rows = $derived.by(() => {
     let list = all
     if (scope) list = list.filter(e => scope.has(e.id))
-    if (kind) list = list.filter(e => e.kind === kind)
+    if (kind) list = list.filter(e => (e.category || e.kind) === kind)
     if (archive) list = list.filter(e => e.archive === archive)
     if (onlyModified) list = list.filter(e => app.modified.includes(e.id))
     if (q) {
@@ -77,7 +77,7 @@
     const i = placed.findIndex(r => 'e' in r && r.e.id === id); if (i >= shown) shown = i + 200
     queueMicrotask(() => document.getElementById('file-' + id)?.scrollIntoView({ block: 'center' })) }
   function sortBy(k: Col['key']) { if (sortKey === k) sortDesc = !sortDesc; else { sortKey = k; sortDesc = false } }
-  const kindLabel = (e: EntrySummary) => e.archive === 'disc' ? 'music' : (KIND_LABEL[e.kind] ?? e.kind)
+  const kindLabel = (e: EntrySummary) => e.archive === 'disc' ? 'music' : (e.category || KIND_LABEL[e.kind] || e.kind)
 </script>
 
 <div class="files">
@@ -94,7 +94,7 @@
           {#each cat.groups as g}<option value={g.id}>{g.name} ({g.items.length})</option>{/each}
         </select>
       {/if}
-      <select bind:value={kind}><option value="">all kinds</option>{#each kinds as k}<option value={k}>{k}</option>{/each}</select>
+      <select bind:value={kind} title="What the file is"><option value="">all types</option>{#each kinds as k}<option value={k}>{k}</option>{/each}</select>
       <select bind:value={archive}><option value="">all archives</option>{#each archives as a}<option value={a}>{a}</option>{/each}</select>
       <label><input type="checkbox" bind:checked={onlyModified}> replaced only</label>
       <label title="ZZZZ.dat in the order the files sit in it, gaps included"><input type="checkbox" bind:checked={byPlace}> archive order</label>
@@ -117,7 +117,7 @@
               <td class="num mono">{hex(e.offset)}</td>
               <td class="num" title={hex(e.size)}>{kb(e.size)}</td>
               <td class="num" title={e.compressed ? `LZSS L=${e.lookback_bits} R=${e.repeat_bits}` : 'stored'}>{e.compressed ? kb(e.disc_size) : '–'}</td>
-              <td><span class="badge {kindLabel(e).replace(' ', '-')}">{kindLabel(e)}</span></td>
+              <td><span class="badge {kindLabel(e).replace(/ /g, '-')}">{kindLabel(e)}</span></td>
               <td class="num">{e.ntex || ''}</td>
               <td class="num">{e.naud || ''}</td>
               <td>{#if app.modified.includes(e.id)}<span class="ok" title="replaced">● </span>{/if}{app.nameOf(e)}</td>

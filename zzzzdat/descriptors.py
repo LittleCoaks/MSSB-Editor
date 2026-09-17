@@ -71,6 +71,7 @@ class Entry:
     thumb: int = 0        # index of the texture that best represents the entry
     twin: int = -1        # a referenced entry with the same content (twins.py)
     tag: str = ""         # what an unreferenced file is (twins.py)
+    category: str = ""    # what the file is for people (catalog.categorise): "character model", "stadium", ...
 
     @property
     def symbol(self) -> str:

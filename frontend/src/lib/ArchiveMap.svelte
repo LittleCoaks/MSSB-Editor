@@ -75,7 +75,7 @@
     const b = at(ev.clientX - r.left)
     if (b?.e) onpick(b.e.id)
   }
-  const kindLabel = (e: EntrySummary) => KIND_LABEL[e.kind] ?? e.kind
+  const kindLabel = (e: EntrySummary) => e.category || KIND_LABEL[e.kind] || e.kind
   const legend = $derived([...new Set(entries.map(e => e.kind))].sort())
 </script>
 

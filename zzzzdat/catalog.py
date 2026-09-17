@@ -185,6 +185,61 @@ def thumb_for(e: Entry) -> str | None:
     return f"/api/entry/{e.id}/tex/{e.thumb}.png" if e.ntex else None
 
 
+# kind -> the plain word for it; containers get something more specific below
+KIND_CATEGORY = {"textures": "textures", "anim": "animation", "hvqm4": "movie", "adgc": "sound bank",
+                 "dsp-adpcm": "sound", "dtk-adpcm": "music", "musyx": "sound effects", "songs": "sequenced music",
+                 "text": "text", "roster": "game data", "rel": "code", "error": "data"}
+
+
+def categorise(e: Entry, fi=None, runs: dict[str, str] | None = None) -> str:
+    """What an entry is, in the words the asset browser filters by: a container
+    is a "character model", "hand model", "glove model", "texture set",
+    "stadium", "prop model", plain "textures" (a pack of images) or "model";
+    other kinds map straight from KIND_CATEGORY. `fi` (the parsed file) tells
+    an image pack from a model pack; without it the section counts decide."""
+    if e.archive == "disc":
+        return "music"
+    if e.kind != "container":
+        if e.kind == "unknown":
+            cc = chars.classify_entry(e.refs)
+            role = (cc or {}).get("role", "")
+            if "hand-pose" in role or "event set" in role:
+                return "hand-pose track"
+            if e.known and "Camera" in e.known:
+                return "camera data"
+            return "data"
+        if e.kind == "musyx" and "effects" not in (e.label or ""):
+            return "instrument bank"
+        if e.kind == "textures" and ((chars.classify_entry(e.refs) or {}).get("role", "")).startswith("textures"):
+            return "texture set"   # a colour variant's textures for a character's body model
+        return KIND_CATEGORY.get(e.kind, e.kind)
+    cc = chars.classify_entry(e.refs)
+    role = (cc or {}).get("role", "")
+    label = (e.label or "").lower()
+    if role.endswith("hand") or label.startswith(("l_hand", "r_hand")):
+        return "hand model"
+    if role.endswith("glove") or label.startswith(("l_glove", "r_glove")):
+        return "glove model"
+    if role.startswith("textures"):
+        return "texture set"
+    if role in ("model", "low-detail model") or role.startswith("body model"):
+        return "character model"
+    if cc and cc.get("table") == "subfiles":
+        return "character model"
+    tbl = table_of(e, runs) if runs is not None else ""
+    if tbl in ("stadiums", "marioStadiumCDR") or (e.known and ("Stadium" in e.known or "Park" in e.known)) or label.startswith("stadium"):
+        return "stadium"
+    if fi is not None:
+        has_model = any(s.kind == "geopalette" for s in fi.sections)
+    else:
+        has_model = e.nsec > 0 and e.ntex < e.nsec   # sections that are not texture tables
+    if not has_model:
+        return "textures"
+    if label.endswith(".gpc"):
+        return "prop model"
+    return "model"
+
+
 def build_catalog(entries: list[Entry]) -> dict:
     cats: dict[str, dict] = {}
     names: dict[int, str] = {}
