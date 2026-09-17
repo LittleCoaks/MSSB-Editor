@@ -88,7 +88,7 @@ def test_skeleton_skin_and_clips():
     assert clips[0].find(NS + "instance_animation").get("url") == "#clip0-a"
     assert [c.get("target") for c in root.iter(NS + "channel")] == ["j1/transform"]
     assert len(_floats(root, "clip0-j1-out")) == 32  # two keys as 4x4 matrices
-    assert _floats(root, "clip0-j1-in") == [0.0, 0.5]  # frames at 60 fps
+    assert _floats(root, "clip0-j1-in") == [0.0, 30.0 / anim.FRAME_RATE]  # the fixture keys frames 0 and 30
 
 
 def test_animation_matrix_carries_the_key_translation():

@@ -26,7 +26,8 @@
   let clips = $state<THREE.AnimationClip[]>([])
   let clip = $state('')
   let playing = $state(true)
-  let speed = $state(0.5)           // the game plays these at about half the exported 60 fps
+  const FPS = 30                    // the banks' key times are frames, stepped at 30 a second (anim.FRAME_RATE)
+  let speed = $state(1)
   let frame = $state(0)
   let msg = $state('')
   let renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, controls: OrbitControls
@@ -55,15 +56,14 @@
     canvas.addEventListener('keydown', e => key(e, true))
     canvas.addEventListener('keyup', e => key(e, false))
     canvas.addEventListener('blur', () => held.clear())
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.1))
-    const dir = new THREE.DirectionalLight(0xffffff, 0.6); dir.position.set(1, 2, 1.5); scene.add(dir)
+    // no lights: materials are unlit (see dress)
     grid = new THREE.GridHelper(1000, 20, 0x334455, 0x223344); scene.add(grid)
     const tick = () => {
       if (!alive) return
       const w = canvas.clientWidth, h = canvas.clientHeight
       if (w && h && (canvas.width !== w * devicePixelRatio || canvas.height !== h * devicePixelRatio)) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix() }
       const dt = clock.getDelta()
-      if (mixer && playing) { mixer.update(dt * speed); if (action) frame = Math.round(action.time * 60) }
+      if (mixer && playing) { mixer.update(dt * speed); if (action) frame = Math.round(action.time * FPS) }
       fly(dt)
       // a stadium spans thousands of units, so a fixed near plane leaves the depth
       // buffer too coarse to keep the field's painted layers apart: tie it to how
@@ -123,7 +123,7 @@
 
   $effect(() => { if (bank && !shownBanks.some(b => b.key === bank)) bank = '' })
   $effect(() => { const s = section, e = entry, b = bank, p = part, v = variant, k = pose; if (renderer) load(e, s, b, p, v, k) })
-  $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshStandardMaterial).wireframe = w }) })
+  $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).wireframe = w }) })
   $effect(() => { const c = clip; if (mixer) play(c) })
   // field lines: fences, walls and base paths from the stadium's collision table
   $effect(() => {
@@ -196,7 +196,13 @@
         const m = o as THREE.Mesh
         if (!m.isMesh) return
         tris += m.geometry.index ? m.geometry.index.count / 3 : 0
-        const mat = m.material as THREE.MeshStandardMaterial
+        // unlit: the game's shading is in the textures and vertex colours, and a
+        // light on top of it turned the far side of every character chalky
+        const std = m.material as THREE.MeshStandardMaterial
+        const mat = new THREE.MeshBasicMaterial({ map: std.map, color: std.color, vertexColors: std.vertexColors, transparent: std.transparent,
+                                                  opacity: std.opacity, alphaTest: std.alphaTest, alphaMap: std.alphaMap, name: std.name })
+        mat.userData = std.userData
+        m.material = mat
         mat.side = isSky(m) ? THREE.BackSide : THREE.DoubleSide
         if (isGlare(m)) m.visible = false   // the sun-glare billboard is a screen effect, not scenery
         mat.wireframe = wire
@@ -241,7 +247,7 @@
     action = mixer.clipAction(c); action.reset().play()
     frame = 0
   }
-  function seek(f: number) { if (action) { action.paused = false; action.time = f / 60; playing = false; action.paused = true; frame = f } }
+  function seek(f: number) { if (action) { action.paused = false; action.time = f / FPS; playing = false; action.paused = true; frame = f } }
   function reset() {
     if (!root) return
     if (mixer) mixer.update(0)
@@ -316,11 +322,11 @@
 {#if clips.length}
   <div class="tools anim">
     <select bind:value={clip}>
-      {#each clips as c}<option value={c.name}>{c.name} ({Math.round(c.duration * 60)} frames)</option>{/each}
+      {#each clips as c}<option value={c.name}>{c.name} ({Math.round(c.duration * FPS)} frames)</option>{/each}
     </select>
     <button onclick={() => (playing = !playing)}>{playing ? '⏸ pause' : '▶ play'}</button>
-    <input type="range" min="0" max={Math.max(1, Math.round(duration * 60))} value={frame} oninput={e => seek(+(e.target as HTMLInputElement).value)} style="flex:1;min-width:120px">
-    <span class="dim mono">frame {frame} / {Math.round(duration * 60)}</span>
+    <input type="range" min="0" max={Math.max(1, Math.round(duration * FPS))} value={frame} oninput={e => seek(+(e.target as HTMLInputElement).value)} style="flex:1;min-width:120px">
+    <span class="dim mono">frame {frame} / {Math.round(duration * FPS)}</span>
     <select bind:value={speed} title="speed">
       <option value={0.25}>¼×</option><option value={0.5}>½×</option><option value={1}>1×</option><option value={2}>2×</option>
     </select>

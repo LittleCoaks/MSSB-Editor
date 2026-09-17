@@ -440,6 +440,22 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
         return mat_for[key]
 
     skinned_mesh = skinned_mesh_index(model, bones) if (bones and skin_weights) else None
+    if skinned_mesh is not None:
+        # a few vertices of every body sit in no skin table (18 of Mario's
+        # 628); bound to the root they stretch to the origin as the body
+        # moves, so give each the weights of its nearest weighted vertex
+        m0 = model.meshes[skinned_mesh]
+        covered = [v for v in range(len(m0.positions)) if v in skin_weights]
+        if covered:
+            fill: dict[int, list] = {}
+            for v in range(len(m0.positions)):
+                if v in skin_weights:
+                    continue
+                p = m0.positions[v]
+                near = min(covered, key=lambda c: sum((m0.positions[c][k] - p[k]) ** 2 for k in range(3)))
+                fill[v] = skin_weights[near]
+            if fill:
+                skin_weights = {**skin_weights, **fill}
     mesh_node_of: dict[int, int] = {}
     for mi, m in enumerate(model.meshes):
         prims = []

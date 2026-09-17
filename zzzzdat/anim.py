@@ -41,7 +41,7 @@ from dataclasses import dataclass, field
 from .c3 import ACT_VERSION, Bone, _cstr, is_actor
 
 QUAT_SCALE = 16384.0
-FRAME_RATE = 60.0
+FRAME_RATE = 30.0   # key times are frames; the game steps them at 30 a second (checked against play by the testers)
 
 
 @dataclass
@@ -142,6 +142,13 @@ def is_skin(data: bytes, base: int) -> bool:
 def parse_skin(data: bytes, base: int) -> Skin | None:
     if not is_skin(data, base):
         return None
+    try:
+        return _parse_skin(data, base)
+    except (struct.error, IndexError, ValueError):
+        return None   # the hand packs carry a section with the skin's magic and none of its tables
+
+
+def _parse_skin(data: bytes, base: int) -> Skin | None:
     n1, n2, na, _shift, _pad, p1, p2, pa = struct.unpack_from(">HHHBBIII", data, base)
     sk = Skin()
 

@@ -151,18 +151,6 @@
               {#if isBody}Pick an animation bank above to play its animations; the colour dropdown draws the model with a variant's texture set; hands, gloves and the bat attach to the wrists. The bat is not a separate model: it is built into the batting hands and pulled out by a hand pose.{/if}
             </p>
           {/if}
-          {#if isBody && d.banks.length}
-            <h3 style="margin-top:16px">Animation banks <span class="dim" style="font-weight:400;text-transform:none;letter-spacing:0">· click one to play its animations in the viewer</span></h3>
-            <div class="banks">
-              {#each d.banks as b}
-                <div class="bank" class:on={bank === b.key}>
-                  <button class="bankbtn" onclick={() => (bank = bank === b.key ? '' : b.key)}><b>{b.label}</b> <span class="dim">{b.playable} animations{#if b.playable < b.sequences.length} <span title="sequences that hold the rest pose for their whole length">(+{b.sequences.length - b.playable} empty)</span>{/if}</span></button>
-                  {#if b.named}<div class="dim small seqs" title={b.sequences.join(', ')}>{b.sequences.join(' · ')}</div>{:else}<div class="dim small">names not recovered for this bank</div>{/if}
-                  <a class="small" href={urls.data(b.entry)}>download bank</a>
-                </div>
-              {/each}
-            </div>
-          {/if}
         {:else if section === 'sounds' && d.sounds}
           <p class="dim" style="margin-top:0">The character's voice group (MusyX sound-effect group {d.sounds.group}): every clip the game plays for them. Click to play; each one downloads as a WAV.</p>
           <div class="clips">
