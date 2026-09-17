@@ -26,8 +26,14 @@ Details of what already works are in the README.
 - [x] Collision surface tags: game.rel's `BALL_COLLISION_TYPE` (grass, wall,
       structure, foul line, dirt, pit, water, Chain Chomp hazard...; 0x80 =
       foul territory); the overlay is coloured by type with a legend.
-- [ ] **Stadium prop placement.** Mario Stadium's props are listed but not
-      positioned in the scene; their positions live in game code.
+- [ ] **Stadium prop placement.** Each park has one prop pack (the seven
+      `marioStadiumCDR` files, in park order: waves, Bowser's parts, Chain
+      Chomps and the sandstorm, Piranha Plants, garden parts, barrels with
+      the Klaptrap and river, toy parts). Since 2026-09-17 the Stadiums page
+      draws the pack in the scene (toggle, on by default) where its actors
+      place the objects: scenery like the waves, river and smoke carries
+      world positions; instanced props (barrels, Piranha Plants, Chain
+      Chomps) sit at the origin because the game positions those in code.
 - [x] Animation event keys: (code, frame) pairs; the frame's high byte marks
       bat contact (0x80), pitch release (0x50), the catch (0x40),
       follow-through (0x60), last frame (0x20). Inferred from where they fall

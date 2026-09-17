@@ -282,7 +282,7 @@ def test_stadiums(store):
     s = stadiums.summary(store)
     assert [x["name"] for x in s][:3] == ["Mario Stadium", "Bowser Castle", "Wario Palace"] and len(s) == 7
     d = stadiums.detail(store, 0)
-    assert len(d["files"]) == 3 and len(d["props"]) == 7
+    assert len(d["files"]) == 3 and [p["name"] for p in d["props"]] == ["sea00"]   # each park has one prop pack: Mario Stadium's is the waves
     wario = stadiums.detail(store, 2)
     assert wario["files"][0]["triangles"] > 12000   # the version-0 GeoPalette field pack parses
     glb = store.scene_glb(store.get(wario["files"][0]["entry"]))

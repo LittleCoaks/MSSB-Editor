@@ -12,6 +12,7 @@
   let section = $state<'scene' | 'textures' | 'files'>('scene')
   let entry = $state<number | null>(null)     // the file shown in the viewer (a variant or a prop)
   let msg = $state('')
+  let showProps = $state(true)   // draw the park's prop pack in the scene (waves, Chain Chomps, barrels...)
 
   async function load() {
     try { list = (await api.stadiums()).stadiums; err = '' } catch (e: any) { err = e.message }
@@ -94,13 +95,15 @@
           {#if d.props.length}
             <div class="group">
               <span class="lbl">Props</span>
+              <label title="draw the park's props in the stadium scene, where the pack places them (some sit at the origin: the game positions those in code)"><input type="checkbox" bind:checked={showProps}> in scene</label>
               {#each d.props as p}<button class="chip" class:on={entry === p.entry} onclick={() => (entry = p.entry)} title={`${p.triangles.toLocaleString()} triangles · ${p.textures} textures`}>{p.name}</button>{/each}
             </div>
           {/if}
         </div>
         {#if section === 'scene' && entry !== null && shown}
           {#key entry}
-            <ModelViewer {entry} models={shown.models ?? []} whole={true} height="62vh" overlay={shownFile ? urls.collision(entry) : undefined} />
+            <ModelViewer {entry} models={shown.models ?? []} whole={true} height="62vh" overlay={shownFile ? urls.collision(entry) : undefined}
+                         extras={shownFile && showProps ? d.props.map(p => urls.scene(p.entry)) : []} />
           {/key}
           <p class="dim small" style="margin:8px 0 0">
             Every model section of the file drawn together{#if shown.models}: {shown.models.map(m => `${m.meshes.join(', ')} (${m.triangles.toLocaleString()})`).join(' · ')}{/if}.

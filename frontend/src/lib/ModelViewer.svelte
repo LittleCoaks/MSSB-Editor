@@ -5,7 +5,9 @@
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
   import { urls, type BankInfo, type ModelInfo } from './api'
 
-  let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false, overlay = undefined }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean; overlay?: string } = $props()
+  let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false, overlay = undefined, extras = [] }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean; overlay?: string; extras?: string[] } = $props()
+  // banks that animate the shown model: a prop pack's banks each belong to one of its models
+  const shownBanks = $derived(banks.filter(b => b.model === undefined || b.model === null || b.model === section))
   let showLines = $state(false)   // the collision overlay hides the stadium; ask for it
   let lines: THREE.Group | null = null
   // what hangs on each wrist: '', 'hand', 'glove' or 'bat'; a character starts with its hands on
@@ -119,6 +121,7 @@
     controls.target.add(MOVE)
   }
 
+  $effect(() => { if (bank && !shownBanks.some(b => b.key === bank)) bank = '' })
   $effect(() => { const s = section, e = entry, b = bank, p = part, v = variant, k = pose; if (renderer) load(e, s, b, p, v, k) })
   $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshStandardMaterial).wireframe = w }) })
   $effect(() => { const c = clip; if (mixer) play(c) })
@@ -162,6 +165,32 @@
     new GLTFLoader().load(whole ? urls.scene(e) : urls.glb(e, s, b || undefined, p || undefined, v, k), g => {
       if (root) scene.remove(root)
       root = g.scene; scene.add(root)
+      const tris = dress(root)
+      mixer = g.animations.length ? new THREE.AnimationMixer(root) : null
+      action = null
+      clips = g.animations
+      clip = g.animations[0]?.name ?? ''
+      if (mixer) play(clip)
+      reset()
+      msg = `${Math.round(tris).toLocaleString()} triangles` + (g.animations.length ? ` · ${g.animations.length} animations` : '') + ' · drag to orbit, wheel to zoom, right-drag to pan · W/A/S/D flies (Q/E down/up), arrow keys turn, shift faster'
+    }, undefined, err => (msg = 'could not load model: ' + err))
+  }
+
+  // extra scenes drawn with the model (a stadium's props): loaded once each, dropped when no longer asked for
+  const extraRoots = new Map<string, THREE.Group>()
+  $effect(() => {
+    const want = extras
+    if (!renderer) return
+    for (const [u, g] of extraRoots) if (!want.includes(u)) { scene.remove(g); extraRoots.delete(u) }
+    for (const u of want) {
+      if (extraRoots.has(u)) continue
+      const holder = new THREE.Group(); extraRoots.set(u, holder); scene.add(holder)
+      new GLTFLoader().load(u, g => { if (extraRoots.get(u) === holder) { dress(g.scene); holder.add(g.scene) } }, undefined, () => {})
+    }
+  })
+
+  /** Material fixes the game's scenes need; returns the triangle count. */
+  function dress(root: THREE.Object3D): number {
       let tris = 0
       root.traverse(o => {
         const m = o as THREE.Mesh
@@ -189,14 +218,7 @@
           mat.depthWrite = false
         }
       })
-      mixer = g.animations.length ? new THREE.AnimationMixer(root) : null
-      action = null
-      clips = g.animations
-      clip = g.animations[0]?.name ?? ''
-      if (mixer) play(clip)
-      reset()
-      msg = `${Math.round(tris).toLocaleString()} triangles` + (g.animations.length ? ` · ${g.animations.length} animations` : '') + ' · drag to orbit, wheel to zoom, right-drag to pan · W/A/S/D flies (Q/E down/up), arrow keys turn, shift faster'
-    }, undefined, err => (msg = 'could not load model: ' + err))
+      return tris
   }
   // a stadium's sky dome encloses the park: draw it inside-out so the orbit camera looks through it
   const isSky = (m: THREE.Object3D) => /sky|cloud|enkei/i.test(m.name) || /sky|cloud/i.test(m.parent?.name ?? '')
@@ -260,7 +282,7 @@
   {#if banks.length}
     <select bind:value={bank} title="Animation bank">
       <option value="">no animation</option>
-      {#each banks as b}<option value={b.key}>{b.label}{b.sequences ? ` · ${b.sequences} animations` : ''}</option>{/each}
+      {#each shownBanks as b}<option value={b.key}>{b.label}{b.sequences ? ` · ${b.sequences} animations` : ''}</option>{/each}
     </select>
   {/if}
   {#if variants.length}

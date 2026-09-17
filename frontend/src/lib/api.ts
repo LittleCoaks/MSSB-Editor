@@ -18,7 +18,7 @@ export interface RosterData { stats: StatRow[]; lineups: Lineup[]; names: string
 export interface StructInfo { size: number; strides: { stride: number; score: number }[]; stride: number; columns: string[] }
 export interface GroupInfo { id: number; type: number; kind: string; samples: number; sfx: number }
 export interface ModelInfo { section: number; offset: number; meshes: string[]; triangles: number; textures: number[] }
-export interface BankInfo { key: string; entry: number; section: number; label: string; sequences: number | null }
+export interface BankInfo { key: string; entry: number; section: number; label: string; sequences: number | null; model?: number | null }
 export interface EntryDetail extends EntrySummary {
   file_kind: string; hvqm4: Record<string, string | number> | null; sections: Section[]; textures: Texture[];
   audio: AudioStream[]; sfx: SfxInfo[]; songs: SongInfo[]; group: GroupInfo | null; text: { count: number } | null; roster: { rows: number; lineups: number } | null; models: ModelInfo[]; banks: BankInfo[]; parts: string[]; variants: { slot: number; name: string; entry: number }[]; file_name: string;
@@ -58,7 +58,7 @@ export interface RosterFile { entry: number; role: string; kind: string; size: n
 export interface StadiumFile { entry: number; textures: number; size: number; slots?: number[]; sky?: { rgb: number[]; night: boolean } | null; models?: { section: number; meshes: string[]; triangles: number; textures: number }[]; triangles?: number; sections?: number }
 export interface StadiumProp { entry: number; name: string; triangles: number; textures: number; models: { section: number; meshes: string[]; triangles: number; textures: number }[] }
 export interface StadiumEntry { id: number; name: string; files: StadiumFile[]; thumb: number | null }
-export interface StadiumDetail extends StadiumEntry { props: StadiumProp[] }
+export interface StadiumDetail extends StadiumEntry { props: StadiumProp[] }   // props: the park's prop pack (waves, Chain Chomps, barrels...)
 export interface UpdateStatus { current: string; latest: string | null; available: boolean; asset: { name: string; url: string; size: number } | null; notes: string; url: string; checked_at: number; error: string | null; can_install: boolean }
 export interface UpdateInfo { version: string; releases: string; check_updates: boolean; repo: string; status: UpdateStatus | null }
 export interface RosterDetail extends Omit<RosterEntry, 'variants'> {

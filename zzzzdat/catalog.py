@@ -227,7 +227,9 @@ def categorise(e: Entry, fi=None, runs: dict[str, str] | None = None) -> str:
     if cc and cc.get("table") == "subfiles":
         return "character model"
     tbl = table_of(e, runs) if runs is not None else ""
-    if tbl in ("stadiums", "marioStadiumCDR") or (e.known and ("Stadium" in e.known or "Park" in e.known)) or label.startswith("stadium"):
+    if tbl == "marioStadiumCDR" or label in ("sea00.gpc", "parts01.gpc", "wanwan_00.gpc", "packun.gpc", "parts00_00.gpc", "taru00.gpc", "parts0600_00.gpc"):
+        return "stadium props"
+    if tbl == "stadiums" or (e.known and ("Stadium" in e.known or "Park" in e.known)) or label.startswith("stadium"):
         return "stadium"
     if fi is not None:
         has_model = any(s.kind == "geopalette" for s in fi.sections)

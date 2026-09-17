@@ -607,13 +607,39 @@ class Store:
             return []
         out = []
         data = self.data(e)
-        for s in self.info(e).sections:
+        secs = self.info(e).sections
+        geos = [s.index for s in secs if s.kind == "geopalette"]
+        bone_ids: dict[int, set[int]] = {}
+        for g in geos:
+            a = self.actor_for(e, g)
+            bone_ids[g] = {b.id for b in a} if a else set()
+
+        def owner(sec: int, ids: set[int]) -> int | None:
+            """The GeoPalette a bank belongs to. A prop pack lists each
+            object's banks right after its GeoPalette, so the nearest one
+            before the bank whose skeleton has every bone the bank moves;
+            banks parked at the end of the pack (the Piranha Plant's, the
+            Klaptrap's) go to the model whose skeleton fits them best."""
+            if len(geos) < 2:
+                return None
+            if ids:
+                for g in reversed([g for g in geos if g < sec]):
+                    if ids <= bone_ids[g]:
+                        return g
+                best = max(geos, key=lambda g: (len(ids & bone_ids[g]) / len(ids), -abs(g - sec)))
+                if ids & bone_ids[best]:
+                    return best
+            prev = [g for g in geos if g < sec]
+            return prev[-1] if prev else None
+        for s in secs:
             if s.magic == c3.ACT_VERSION and anim.is_bank(data, s.offset):
                 b = anim.parse_bank(data, s.offset)
                 if b and b.sequences:
                     playable = sum(1 for q in b.sequences if not anim.is_static(q))
+                    ids = {tr.bone for q in b.sequences for tr in q.tracks}
                     out.append({"key": f"{e.id}:{s.index}", "entry": e.id, "section": s.index,
-                                "label": f"in this file (section {s.index})", "sequences": playable})
+                                "label": f"in this file (section {s.index})", "sequences": playable,
+                                "model": owner(s.index, ids)})
         c = chars.classify_entry(e.refs)
         if c and c.get("slot") is not None:
             for x in self.entries:

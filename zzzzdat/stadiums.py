@@ -18,6 +18,24 @@ STADIUM_VA = 0x800EFBE8
 SLOTS_PER_STADIUM = 3
 # in table order; identified from the rendered parks (lava arena, palace, jungle river, toy sign)
 NAMES = ["Mario Stadium", "Bowser Castle", "Wario Palace", "Yoshi Park", "Peach's Garden", "DK Jungle", "Toy Field"]
+# each park's prop pack, in the same order: the seven descriptors of game.rel's
+# `marioStadiumCDR` table (named by the decomp on the US disc; the packs' own
+# embedded names find them on the other builds). Waves for the stadium by the
+# sea, Bowser's parts, Chain Chomps and the sandstorm, Piranha Plants, the
+# garden's parts, barrels with the Klaptrap and the river, the toy parts.
+PROP_LABELS = ["sea00.gpc", "Parts01.gpc", "wanwan_00.gpc", "packun.gpc", "parts00_00.gpc", "taru00.gpc", "parts0600_00.gpc"]
+
+
+def prop_packs(store) -> list[Entry | None]:
+    """The prop pack of each stadium, in NAMES order (None where not found)."""
+    tbl = [e for e in store.zzzz_entries() if catalog.table_of(e) == "marioStadiumCDR" and e.kind == "container"]
+    if len(tbl) == len(NAMES):
+        return tbl
+    by_label = {}
+    for e in store.zzzz_entries():
+        if e.kind == "container" and e.label in PROP_LABELS and e.label not in by_label and not e.tag:
+            by_label[e.label] = e
+    return [by_label.get(lb) for lb in PROP_LABELS]
 
 
 def _by_va(store) -> dict[int, Entry]:
@@ -100,13 +118,12 @@ def detail(store, sid: int) -> dict:
                       "models": _model_rows(store, e), "triangles": sum(m["triangles"] for m in store.models(e)),
                       "sections": len(store.info(e).sections)})
     props = []
-    if sid == 0:
-        for e in store.zzzz_entries():
-            if catalog.table_of(e) == "marioStadiumCDR" and e.kind == "container":
-                ms = store.models(e)
-                if ms:
-                    props.append({"entry": e.id, "name": (e.label or "").rsplit(".", 1)[0], "triangles": sum(m["triangles"] for m in ms),
-                                  "textures": e.ntex, "models": _model_rows(store, e)})
+    pack = prop_packs(store)[sid]
+    if pack is not None:
+        ms = store.models(pack)
+        if ms:
+            props.append({"entry": pack.id, "name": (pack.label or "").rsplit(".", 1)[0], "triangles": sum(m["triangles"] for m in ms),
+                          "textures": pack.ntex, "models": _model_rows(store, pack)})
     d = {"id": sid, "name": NAMES[sid], "files": files, "props": props,
          "thumb": files[0]["entry"] if files else None}
     cache[sid] = d
