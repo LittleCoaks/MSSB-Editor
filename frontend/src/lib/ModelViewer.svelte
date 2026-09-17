@@ -21,6 +21,7 @@
   let canvas: HTMLCanvasElement
   let section = $state(models[0]?.section ?? 0)
   let wire = $state(false)
+  let lit = $state(true)          // lighting on: a soft ambient and a headlight; off: the game's shading alone
   let fmt = $state<'glb' | 'obj' | 'dae'>('glb')   // download format; glb is the only one that carries the rig and the textures together
   // `bank`: animation bank key, '' = static export (bindable so a page can drive it)
   let clips = $state<THREE.AnimationClip[]>([])
@@ -56,7 +57,9 @@
     canvas.addEventListener('keydown', e => key(e, true))
     canvas.addEventListener('keyup', e => key(e, false))
     canvas.addEventListener('blur', () => held.clear())
-    // no lights: materials are unlit (see dress)
+    // a soft ambient plus a headlight riding on the camera (lit materials only; see dress)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55))
+    const head = new THREE.DirectionalLight(0xffffff, 0.7); head.position.set(0.3, 0.6, 1); camera.add(head); scene.add(camera)
     grid = new THREE.GridHelper(1000, 20, 0x334455, 0x223344); scene.add(grid)
     const tick = () => {
       if (!alive) return
@@ -123,7 +126,8 @@
 
   $effect(() => { if (bank && !shownBanks.some(b => b.key === bank)) bank = '' })
   $effect(() => { const s = section, e = entry, b = bank, p = part, v = variant, k = pose; if (renderer) load(e, s, b, p, v, k) })
-  $effect(() => { const w = wire; root?.traverse(o => { if ((o as THREE.Mesh).isMesh) ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).wireframe = w }) })
+  $effect(() => { const w = wire; scene?.traverse(o => { const ms = (o as THREE.Mesh).userData?.mats; if (ms) { ms.lit.wireframe = w; ms.unlit.wireframe = w } }) })
+  $effect(() => { const on = lit; scene?.traverse(o => { const ms = (o as THREE.Mesh).userData?.mats; if (ms) (o as THREE.Mesh).material = on ? ms.lit : ms.unlit }) })
   $effect(() => { const c = clip; if (mixer) play(c) })
   // field lines: fences, walls and base paths from the stadium's collision table
   $effect(() => {
@@ -196,32 +200,37 @@
         const m = o as THREE.Mesh
         if (!m.isMesh) return
         tris += m.geometry.index ? m.geometry.index.count / 3 : 0
-        // unlit: the game's shading is in the textures and vertex colours, and a
-        // light on top of it turned the far side of every character chalky
+        // two materials per mesh: unlit shows the game's own shading (textures and
+        // vertex colours) as is; lit adds a soft ambient and a headlight on the
+        // camera so surface detail reads without any side going chalky
         const std = m.material as THREE.MeshStandardMaterial
-        const mat = new THREE.MeshBasicMaterial({ map: std.map, color: std.color, vertexColors: std.vertexColors, transparent: std.transparent,
-                                                  opacity: std.opacity, alphaTest: std.alphaTest, alphaMap: std.alphaMap, name: std.name })
-        mat.userData = std.userData
-        m.material = mat
-        mat.side = isSky(m) ? THREE.BackSide : THREE.DoubleSide
+        const common = { map: std.map, color: std.color, vertexColors: std.vertexColors, transparent: std.transparent,
+                         opacity: std.opacity, alphaTest: std.alphaTest, alphaMap: std.alphaMap, name: std.name }
+        const mats = { lit: new THREE.MeshLambertMaterial(common), unlit: new THREE.MeshBasicMaterial(common) }
+        m.userData.mats = mats
+        m.material = lit ? mats.lit : mats.unlit
         if (isGlare(m)) m.visible = false   // the sun-glare billboard is a screen effect, not scenery
-        mat.wireframe = wire
         m.frustumCulled = false
-        // markings, scuffs, shadows and lettering the game painted into the surface
-        // below them (extras.decal is the layer): identical depths cannot be told
-        // apart, so nudge and order them instead of letting them tear
-        const decal = (mat.userData?.decal ?? 0) as number
-        if (decal) {
-          mat.polygonOffset = true
-          mat.polygonOffsetFactor = -1
-          mat.polygonOffsetUnits = -decal
-          m.renderOrder = decal
-        }
-        if (mat.userData?.blend === 'add') {
-          // paint on a black ground: the console added it to what was underneath
-          mat.blending = THREE.AdditiveBlending
-          mat.transparent = true
-          mat.depthWrite = false
+        for (const mat of [mats.lit, mats.unlit]) {
+          mat.userData = std.userData
+          mat.side = isSky(m) ? THREE.BackSide : THREE.DoubleSide
+          mat.wireframe = wire
+          // markings, scuffs, shadows and lettering the game painted into the surface
+          // below them (extras.decal is the layer): identical depths cannot be told
+          // apart, so nudge and order them instead of letting them tear
+          const decal = (std.userData?.decal ?? 0) as number
+          if (decal) {
+            mat.polygonOffset = true
+            mat.polygonOffsetFactor = -1
+            mat.polygonOffsetUnits = -decal
+            m.renderOrder = decal
+          }
+          if (std.userData?.blend === 'add') {
+            // paint on a black ground: the console added it to what was underneath
+            mat.blending = THREE.AdditiveBlending
+            mat.transparent = true
+            mat.depthWrite = false
+          }
         }
       })
       return tris
@@ -308,6 +317,7 @@
     {/each}
   {/if}
   <label><input type="checkbox" bind:checked={wire}> wireframe</label>
+  <label title="a soft ambient light and a headlight on the camera; off shows the game's own shading alone"><input type="checkbox" bind:checked={lit}> lighting</label>
   {#if overlay}<label title="the stadium's collision panels: fences, walls, dugouts"><input type="checkbox" bind:checked={showLines}> collision</label>{/if}
   {#if overlay && showLines && tagLegend.length}<span class="legend">{#each tagLegend as l}<span title="{l.n} triangles"><i style="background:{l.css}"></i>{tagName(l.tag)}</span>{/each}</span>{/if}
   <button onclick={reset}>Reset view</button>
