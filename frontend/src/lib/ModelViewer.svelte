@@ -8,8 +8,10 @@
   let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false, overlay = undefined }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean; overlay?: string } = $props()
   let showLines = $state(false)   // the collision overlay hides the stadium; ask for it
   let lines: THREE.Group | null = null
-  let left = $state('')          // what hangs on each wrist: '', 'hand', 'glove' or 'bat'
-  let right = $state('')
+  // what hangs on each wrist: '', 'hand', 'glove' or 'bat'; a character starts with its hands on
+  const defaultPart = (side: 'L' | 'R') => parts.includes(`${side}_hand`) ? 'hand' : ''
+  let left = $state(defaultPart('L'))
+  let right = $state(defaultPart('R'))
   // the request: per-side mesh names joined by commas (L_hand,R_bat), '' for the body alone
   const part = $derived([left && `L_${left}`, right && `R_${right}`].filter(Boolean).join(','))
   const choices = (side: 'L' | 'R') => (['hand', 'glove', 'bat'] as const).filter(c => parts.includes(`${side}_${c}`))
@@ -151,7 +153,9 @@
   // dependency on the first pass and the collision overlay then never hides
   $effect(() => { const on = showLines; if (lines) lines.visible = on })
   let lastEntry = entry
-  $effect(() => { if (entry !== lastEntry) { lastEntry = entry; bank = ''; left = ''; right = ''; variant = undefined } })
+  // the parts list can arrive after the entry (the Characters page fetches it), so key on both
+  let lastParts = ''
+  $effect(() => { const key = parts.join(','); if (entry !== lastEntry || key !== lastParts) { if (entry !== lastEntry) { bank = ''; variant = undefined } lastEntry = entry; lastParts = key; left = defaultPart('L'); right = defaultPart('R') } })
 
   function load(e: number, s: number, b: string, p: string, v?: number, k?: number) {
     msg = 'loading…'
