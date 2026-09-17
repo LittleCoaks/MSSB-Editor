@@ -1,5 +1,5 @@
 """The character stat table and preset line-ups: the first file game.rel
-loads (`lbl_3_data_0`, 18,144 bytes).
+loads (`rosterFileDescriptorGame`, 18,144 bytes).
 
 Two tables, worked out from the data with the decomp's struct for the rows:
 

@@ -12,3 +12,4 @@ config.json
 !/index/GYQE01.json
 !/index/known_names.json
 !/index/editor_names.json
+!/index/symbol_names.json

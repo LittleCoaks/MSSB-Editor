@@ -8,8 +8,9 @@ from ...paths import EXTRACT_DIR
 from .. import HttpError, Request, router
 
 
-def entry_summary(e) -> dict:
-    return {"id": e.id, "offset": e.offset, "disc_size": e.disc_size, "size": e.size,
+def entry_summary(e, st=None) -> dict:
+    return {"path": st.paths.get(e.id, "") if st else "",
+            "id": e.id, "offset": e.offset, "disc_size": e.disc_size, "size": e.size,
             "compressed": e.compressed, "lookback_bits": e.lookback_bits, "repeat_bits": e.repeat_bits,
             "kind": e.kind, "ntex": e.ntex, "nsec": e.nsec, "naud": e.naud, "thumb": e.thumb,
             "module": e.module, "symbol": e.symbol, "archive": e.archive, "name": e.name, "refs": e.refs,
@@ -17,7 +18,7 @@ def entry_summary(e) -> dict:
 
 
 def entry_detail(store, e) -> dict:
-    d = entry_summary(e)
+    d = entry_summary(e, store)
     fi = store.info(e)
     d["file_kind"] = fi.kind
     d["hvqm4"] = fi.hvqm4
@@ -50,7 +51,7 @@ def get_index(req: Request):
                          "error": req.ctx.store_error or "no game selected"})
     doc = json.loads(st.index_path.read_text(encoding="utf-8")) if st.index_path.exists() else {}
     req.json({"meta": doc.get("meta", {}), "archive": str(st.archive.path), "archive_size": st.archive.size,
-              "extract_dir": str(EXTRACT_DIR), "entries": [entry_summary(e) for e in st.entries]})
+              "extract_dir": str(EXTRACT_DIR), "entries": [entry_summary(e, st) for e in st.entries]})
 
 
 @router.get(r"/api/catalog")

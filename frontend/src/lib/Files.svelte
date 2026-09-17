@@ -45,7 +45,7 @@
     if (q) {
       const isHex = /^0x[0-9a-f]+$/.test(q)
       list = list.filter(e => String(e.id) === q || (isHex && e.offset === parseInt(q, 16)) || app.nameOf(e).toLowerCase().includes(q)
-        || e.known.toLowerCase().includes(q) || e.label.toLowerCase().includes(q) || e.symbol.toLowerCase().includes(q)
+        || e.path.includes(q) || e.known.toLowerCase().includes(q) || e.label.toLowerCase().includes(q) || e.symbol.toLowerCase().includes(q)
         || e.names.some(n => n.toLowerCase().includes(q)) || e.refs.some(r => r.toLowerCase().includes(q)))
     }
     if (byPlace) return list.filter(e => e.archive === 'ZZZZ.dat').sort((a, b) => a.offset - b.offset)

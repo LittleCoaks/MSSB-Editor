@@ -25,12 +25,12 @@ def test_canonical_names():
 
 
 def test_display_name_and_grouping():
-    e_slot = mk(1, [f"dol:.data:{chars.SUBFILES_VA + 16:#x} lbl_800F1D78+0x10"], label="mario00.gpc")
+    e_slot = mk(1, [f"dol:.data:{chars.SUBFILES_VA + 16:#x} CharacterFiles+0x10"], label="mario00.gpc")
     e_known = mk(2, ["menus:.data:0x241c lbl_2_data_241C"], known="First Found Baby Luigi", label="b_luigi00.gpc")
     e_gpc = mk(3, ["scan:lzss-probe"], label="kinopio00.gpc")
     e_var = mk(6, ["scan:lzss-probe"], known="First Found Toad(G)", label="kinopio00.gpc")
     e_hand = mk(4, ["scan:lzss-probe"], label="L_hand07.gpc", names=["L_hand07.gpc", "mario00.gpc"])
-    e_movie = mk(5, ["dol:.data:0x801092c8 lbl_801092C8"], kind="hvqm4", known="movie1.HVQM4")
+    e_movie = mk(5, ["dol:.data:0x801092c8 BootSequenceFiles"], kind="hvqm4", known="movie1.HVQM4")
     cat = catalog.build_catalog([e_slot, e_known, e_gpc, e_hand, e_movie, e_var])
     names = cat["names"]
     assert names[1] == "Mario - low-detail model"
@@ -59,7 +59,7 @@ def test_analysis_tags_name_and_group():
     src = Entry(id=1, offset=0x0F12C800, disc_size=0x800, size=0x800, flags=4, lookback_bits=11, repeat_bits=4,
                 refs=["scan:lzss-probe"], kind="anim", tag="animsrc:0:b", twin=2)
     shipped = Entry(id=2, offset=0x1000, disc_size=0x800, size=0x800, flags=4, lookback_bits=11, repeat_bits=4,
-                    refs=["dol:.data:0x800f1d98 lbl_800F1D78+0x20"], kind="anim", tag="names:1")
+                    refs=["dol:.data:0x800f1d98 CharacterFiles+0x20"], kind="anim", tag="names:1")
     copy = Entry(id=3, offset=0x19A6F800, disc_size=0x800, size=0x800, flags=4, lookback_bits=11, repeat_bits=4,
                  refs=["scan:AdGCForm"], kind="container", tag="mirror", twin=2)
     by_id = {e.id: e for e in (src, shipped, copy)}

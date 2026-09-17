@@ -67,12 +67,12 @@ def cmd_list(a):
         ents = [e for e in ents if e.module == a.module]
     if a.grep:
         g = a.grep.lower()
-        ents = [e for e in ents if g in e.symbol.lower() or g in e.name or g in e.known.lower()
+        ents = [e for e in ents if g in e.symbol.lower() or g in e.name or g in e.known.lower() or g in store.paths[e.id]
                 or any(g in n.lower() for n in e.names)]
-    print(f"{'id':>5} {'offset':>10} {'size':>8} {'disc':>8} {'c':1} {'kind':10} {'tex':>4} {'aud':>3} {'label':22} symbol")
+    print(f"{'id':>5} {'offset':>10} {'size':>8} {'disc':>8} {'c':1} {'kind':10} {'tex':>4} {'aud':>3} {'path':44} symbol")
     for e in ents:
         print(f"{e.id:5d} {e.offset:#10x} {fmt_size(e.size):>8} {fmt_size(e.disc_size):>8} "
-              f"{'z' if e.compressed else '-'} {e.kind:10} {e.ntex:4d} {e.naud:3d} {(e.known or e.label):22} {e.symbol}")
+              f"{'z' if e.compressed else '-'} {e.kind:10} {e.ntex:4d} {e.naud:3d} {store.paths[e.id]:44} {e.symbol}")
     print(f"{len(ents)} entries")
 
 

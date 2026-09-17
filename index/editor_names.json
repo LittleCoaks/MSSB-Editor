@@ -100,6 +100,11 @@
   "0x180bf800": "Prototype test animations (test, f_h_01)",
   "0x7f24800": "Dictionary music (MusyX group 0: one 34.7 s loop as a left/right sample pair)",
   "0x84f1800": "Sound effects group 32 (with the main menu music: a 76.6 s looping left/right pair, samples 34+35)",
-  "0x8d8b000": "Sound effects group 53 (a 20.7 s left/right music pair and a 4 s jingle pair)"
+  "0x8d8b000": "Sound effects group 53 (a 20.7 s left/right music pair and a 4 s jingle pair)",
+  "0xeae4000": "Prototype pitch-type labels (Japanese: straight, curve, slider... 'magic ball no. 1/666'), digits and a shrugging DK portrait",
+  "0xeaf0800": "Prototype music-note particles",
+  "0xeaf3000": "Prototype 'STAGE1' lettering",
+  "0xeaf6800": "Prototype hexagonal mesh tile",
+  "0x18ac5000": "Explosion flipbook (9 frames)"
  }
 }

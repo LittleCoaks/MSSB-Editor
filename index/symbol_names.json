@@ -1,0 +1,744 @@
+{
+ "source": "descriptor tables named 2026-09-17 from the code that reads them (decomp config/GYQE01/**/symbols.txt carries the same names); 'pending' symbols hold more than a descriptor table and need splitting in the decomp before they can be renamed",
+ "asset_name_convention": "<domain>/<subject>/<role>[_variant], textures <file>/tex_NN[_what]; the embedded .gpc/.tpl name is always kept alongside",
+ "tables": {
+  "CharacterFiles": {
+   "module": "dol",
+   "was": "lbl_800F1D78",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "[roster slot 0..53][track 0..18]. Roster slot order: Mario, Luigi, DK, Diddy, Peach, Daisy, Yoshi, Baby Mario, Baby Luigi, Bowser, Wario, Waluigi, Koopa(red), Toad(red), Boo, Toadette, Shy Guy(red), Birdo, Monty, Bowser Jr, Paratroopa(red), Pianta x3, Noki x3, Hammer Bro, Toadsworth, Toad x4, Magikoopa x4, King Boo, Petey, Dixie, Goomba, Paragoomba, Koopa(green), Paratroopa(green), Shy Guy x4, Dry Bones x4, Fire Bro, Boomerang Bro (not character id; id->slot goes through the table at 0x80108DB8). Track 0 = full-detail model pack (gpc+tpl), track 1 = low-detail model pack for distant cameras, tracks 2..18 = 17 animation banks. Track 8 is frequently the same-size shared bank (210656 bytes) and track 14 is a 15742-byte bank common to almost all slots. Variant slots reuse the base slot's anim entries (same entry ids) but have unique model entries.",
+   "evidence": "fn_80021BBC (0x80021BBC, build/GYQE01/asm/auto_fn_80021BBC_text.s @80021C60-80021C84): `mulli r5, r30, 0x13` then adds lbl_800F1D78 and ARAMTransfers 19 descriptors (the preceding block does the same kind of copy from lbl_800EFD38) - i.e. row = roster slot, 19 descriptors per row. A pointer to the table is also kept in sdata lbl_803CB790 (.4byte lbl_800F1D78), read by animationInitializat*, fn_80014A18, fn_80014D4C, fn_80014E50, fn_80014F40, fn_80015468 (animation/model loaders). Content: 1026 contiguous descriptors = 54 x 19, no gaps, size 0x4020 exact; each row starts with two 'character model' containers (mario00.gpc, luigi00.gpc, ... HB00.gpc) followed by 17 anim banks. Colour-variant rows (Pianta, Noki, Toad, Magikoopa, Shy Guy, Dry Bones, Bros) have their own model entries but repeat the base slot's anim entry ids. Matches E:/Project Rio/MSSB Editor/zzzzdat/chars.py ('Sub-files table at 0x800F1D78: 54 slots x 19 tracks', TRACKS = 19, SLOT_NAMES).",
+   "review": "Confirmed in build/GYQE01/asm/auto_fn_80021BBC_text.s at 80021C60: mulli r5,r30,0x13 then the base lbl_800F1D78, so 19 descriptors per row. Size 0x4020 = 54*19*16 matches symbols.txt. The name follows the sibling StadiumFiles at 0x800EFBE8. grep -w finds no CharacterFiles in config, src or include. The index is the roster slot, not the character id; put that in a comment. Not checked: the evidence file, zzzzdat/chars.py, the lbl_803CB790 pointer and its reader functions, so the 54-slot order and track meanings are unverified. The 54x19 shape rests on the asm stride and the 0x4020 size."
+  },
+  "AramCharacterFiles": {
+   "module": "dol",
+   "was": "lbl_800EFD38",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "Four consecutive runs, lengths in lbl_803CB7E0: [0..53] by character slot id (54 slots; 0-32 model containers, 33-53 variant texture sets); [54..431] = 54 + charSlot*7 + item (item 0 L hand, 1 R hand, 2 L glove, 3 R glove, 4 batting, 5 pitching, 6 catching hand-pose track); [432..485] by character slot -> animation file (variants repeat the base entry id); [486..514] hand-pose event set id 0..28.",
+   "evidence": "fn_800227E4 (ARAM preload init, allocs 0x4D6600) walks the table in consecutive runs whose lengths come from sdata lbl_803CB7E0 = {0x36, 0x17A, 0x36, 0x1D} (54+378+54+29 = 515 = size 0x2030/16) and stores each file's ARAM address into pointer arrays at lbl_803716B8+0x1D8/0x1DC/0x1E0/0x1E4. fn_8002254C queues ARAMTransfer of slot [idx] (run 0, addr array +0x1D8); fn_8002244C queues slot [0x36 + (slot<<0 | sub) ] using addr array +0x1DC (arg = charSlot<<16 | flat index); fn_80021ADC/fn_80021BBC (index < 0x1D) read slot [0x1E6 + i] via ARAMTransfer mode 3 when the ARAM-preloaded flag (0x1EA bit 3) is set, else fall back to lbl_800F71D8[i]. Contents: slots 0-32 character model containers (mario00.gpc ... HB00.gpc), 33-53 texture sets for the colour-variant character slots; 54-431 seven files per character slot (L_hand, R_hand, L_glove, R_glove, 3 hand-pose tracks); 432-485 one animation file per character slot; 486-514 the 29 shared hand-pose event sets. Editor zzzzdat/chars.py calls this the 'master' table with the same layout.",
+   "review": "The build asm shows fn_800227E4, the function at 0x8002244C, fn_80021ADC and fn_80021BBC all referencing lbl_800EFD38, and fn_80021ADC falls back to lbl_800F71D8. lbl_803CB7E0 is 8 bytes of 2-byte data, which fits the four run lengths claimed. The editor's chars.py agrees on the layout. I did not re-derive the 0x36 and 0x1E6 offsets instruction by instruction. 'chara' is used in the decomp's symbol names, the 'Table' suffix matches audioFileTable and relFileTable, and nothing collides."
+  },
+  "CharacterHandFiles": {
+   "module": "dol",
+   "was": "lbl_800F5D98",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "[character slot id 0..53][0 L hand (batting), 1 R hand (batting), 2 L glove, 3 R glove, 4 L hand (pitching), 5 R hand (pitching)]",
+   "evidence": "Only reached through the sdata pointer lbl_803CB7A8 (-> lbl_800F5D98), read by fn_80014204, fn_800145F8, fn_80019C00, fn_8001A3FC. fn_80014204 loops 0x36 (54) character slots alongside the s16 table lbl_800EEAAC and takes the max flags_size of descriptor [i] to size a buffer. 324 slots = 54 * 6, contents strictly periodic: L_hand07, R_hand07, L_glove01, R_glove01, L_hand07, R_hand07; variant slots repeat the base character's entry ids. Editor chars.py HAND_TABLE_VA/HAND_TABLE_ROLES: first hand pair = batting, second = pitching (they differ only in the hand-pose event track section). These are the non-ARAM (disc) copies, entry ids 1505-1702.",
+   "review": "The facts hold: sdata lbl_803CB7A8 holds a pointer to lbl_800F5D98 (sdata asm line 75), and fn_80014204 and fn_800145F8 load through it. The symbol size 0x1440 is 54 slots times 6 descriptors, and chars.py HAND_TABLE_VA and HAND_TABLE_ROLES match the claimed index meaning. The sibling descriptor tables are named *FileTable (audioFileTable, relFileTable, the proposed aramCharaFileTable), so I renamed it for consistency. charaHandFileTable does not collide with anything."
+  },
+  "CommonUIFiles_main": {
+   "module": "dol",
+   "was": "lbl_800EEFD0",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "Common UI file enum: 0 HUD text, 1 HUD frames, 2 controls screen, 3 results/ranking, 4 play-call text, 5 menu bars/cursors, 6-13 help screens 1-8, 14 practice icons, 15 text glyph sheets, 16 team logos (all), 17-28 team logos per captain (Mario, Luigi, Peach, Daisy, Yoshi, Birdo, Wario, Waluigi, DK, Diddy, Bowser, Bowser Jr.), 29 help text, 30 sky panoramas, 31 records book, 32 stadium previews, 33 options text, 34-35 title screen, 36 team-setup backgrounds, 37 dotted portraits, 38-44 blank textures, 45-61 loading tips.",
+   "evidence": "fn_80020278 / fn_80020388 (Ghidra area in_game) take its address; 62 descriptors, size 0x3E0 exact. Same list is duplicated per translation unit (static table in a header) in game.rel x5, debug.rel, and inside relFileTable; loaders pass &table[i] to diskReadRelated(desc, mode).",
+   "review": "Only fn_80020278 and fn_80020388 reference it, and Ghidra puts both in the in_game area. The 62-entry content matches the claim. The name is not used in any symbols.txt or in src/include, and it fits the existing StadiumFiles / audioFileDescriptors style. The '_main' suffix marks the main.dol copy, since per-TU copies exist in the RELs."
+  },
+  "CommonUIFiles_inGame": {
+   "module": "game",
+   "was": "lbl_3_data_3D80",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "0..61 common UI file enum (see commonUIFiles_main); 62 coin00 model, 63 ball_kage/shadow models, 64 text strings (23), 65 text strings (168), 66 p_machine00 (pitching machine).",
+   "evidence": "fn_3_59C2C and fn_3_5A28C (game/asm/auto_00_0005985C_text.s) call diskReadRelated on +0x0 (HUD text, mode 2), +0xE0 (practice icons, mode 0xB), +0x1D0 (help text, mode 9). 67 slots, size 0x430 exact: the 62 common entries plus 5 game-only files.",
+   "review": "The asm confirms only fn_3_59C2C and fn_3_5A28C reference it; Ghidra puts both in the in_game area. Size 0x430 is 67 slots. No collision. I did not see a code reference to +0x3E0, so keep it as one object."
+  },
+  "CommonUIFiles_matchEnd": {
+   "module": "game",
+   "was": "lbl_3_data_6130",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "Common UI file enum, same as commonUIFiles_main.",
+   "evidence": "Only referenced by matchEndGameScreenFunction (game/asm/auto_00_0005985C_text.s, loads +0x10 HUD frames mode 0xC). 62 slots, size 0x3E0 exact; identical to the common list.",
+   "review": "matchEndGameScreenFunction is the only text reference in auto_00_0005985C_text.s. The qualifier comes from that already-named function. No collision."
+  },
+  "CommonUIFiles_pauseMenu": {
+   "module": "game",
+   "was": "lbl_3_data_F538",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "Common UI file enum, same as commonUIFiles_main.",
+   "evidence": "Only referenced by loadPauseMenu (game/asm/auto_00_000AC9F8_text.s). 62 slots, size exact; identical copy.",
+   "review": "loadPauseMenu is the only text reference. The qualifier comes from that named function. No collision."
+  },
+  "CommonUIFiles_practicePause": {
+   "module": "game",
+   "was": "lbl_3_data_10598",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "Common UI file enum, same as commonUIFiles_main.",
+   "evidence": "Only referenced by practice_pause_unloadPauseMenu (game/asm/auto_00_000AC9F8_text.s). 62 slots, size exact; identical copy.",
+   "review": "practice_pause_unloadPauseMenu is the only text reference. No collision."
+  },
+  "CommonUIFiles_minigame": {
+   "module": "game",
+   "was": "lbl_3_data_21EC8",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "Common UI file enum, same as commonUIFiles_main.",
+   "evidence": "Referenced by fn_3_10B8D0, minigameSimulation and toyFieldStadiumLoad (game/asm/auto_00_00106DFC_text.s). 62 slots, size exact; identical copy.",
+   "review": "The references are fn_3_10B8D0, minigameSimulation and toyFieldStadiumLoad, all in the minigame/toy-field translation unit, so the qualifier is supported. No collision."
+  },
+  "StadiumFiles_debug_10518": {
+   "module": "debug",
+   "was": "lbl_1_data_10518",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "[stadium id][variant]; code only uses element 0",
+   "evidence": "src/debug/rep_7730.c:1645 fn_1_2004C: ARAMTransfer(lbl_1_data_10518, 0,0,0) - only slot [0][0] (Mario Stadium, entry 8) is ever loaded by this debug scene. Size 0x150 exact, content identical to StadiumFiles.",
+   "review": "Verified src/debug/rep_7730.c:1645 ARAMTransfer(lbl_1_data_10518,0,0,0), size 0x150. A/B suffix is arbitrary and inverted vs address order; address qualifier is neutral."
+  },
+  "StadiumFiles_debug_10674": {
+   "module": "debug",
+   "was": "lbl_1_data_10674",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "[stadium id][variant]; code only uses element 0",
+   "evidence": "src/debug/rep_7730.c:394 fn_1_1DCE4: ARAMTransfer(lbl_1_data_10674,0,0,0), loads slot 0 only. Second static copy in the same TU region (two source files including the same header). Size 0x150 exact.",
+   "review": "Verified rep_7730.c:394 use. Same reasoning as 10518: replace arbitrary 'Rep7730A' with address qualifier."
+  },
+  "ChallengeMapCharacterFiles": {
+   "module": "menus",
+   "was": "lbl_2_data_2F990",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "challenge-mode map character id: 0 Mario, 1 Peach, 2 Wario, 3 DK, 4 Yoshi, 5 Bowser, 6 Bowser Jr, 7 Pianta, 8 Toad, 9 Magikoopa, 10 Koopa, 11 Shy Guy, 12 Toadsworth (first 5 = playable captains in challenge order, matching lbl_2_data_1326C)",
+   "evidence": "menus/asm/menus/rep_0F60.s @0x8E938, 0x8EB0C, 0x8EB90: ARAMTransfer(&lbl_2_data_2F990[idx<<4]) where idx is a u8 at starMissionCompletionTracker+0x441C (challenge-mode state; the same struct's +0x441D/+0x4445 are used by challenge code in text_0323C.c). Contents: 13 low-poly character model containers (mario00, peach00, wario00, donkey00, yoshi00, koopa00, koopa_jr00, monte_B00, kinopio00, kamekku00, nokonoko00, heiho, kinoji00). Size 0xD0 = 13*16 exact.",
+   "review": "rep_0F60.s confirms references with count 0xD loops and ARAMTransfer; 13 character model containers, size exact. Index source is challenge state; name is supported by content + code. No collision."
+  },
+  "ChallengeTexFiles": {
+   "module": "menus",
+   "was": "lbl_2_data_1326C",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "0 = challenge-mode common backgrounds; 1..6 = captain artwork for challenge captain id 0..5 (Mario, Peach, Wario, DK, Yoshi, Bowser). Slot 0 is the odd one.",
+   "evidence": "menus/asm/auto_00_0004B1AC_text.s fn_2_4EABC: return diskReadRelated(lbl_2_data_1326C, 0x17) != 0 - loads slot 0 (challenge backgrounds, 1743) into texture slot 0x17. Slots 1-6 (captain artwork Mario, Peach, Wario, DK, Yoshi, Bowser = 1747-1752) have no located direct reference; their order matches the first six entries of challengeMapCharacterFiles. Size 0x70 = 7*16 exact.",
+   "review": "Only slot 0 (challenge backgrounds) has a proven use; slot 0 is not captain art, so 'CaptainArt' misnames the table. All 7 are challenge-mode texture packs; use the neutral name."
+  },
+  "MinigameCommonFiles_game": {
+   "module": "game",
+   "was": "lbl_3_data_225F0",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "0 coin, 1 Toy Field blocks/shadows, 2 minigame description text",
+   "evidence": "Byte-identical copy of dol lbl_800EE930[0..3]. Referenced as the .data base of game/minigame/pitching_machine.s (fn_3_116840, fn_3_116B74, fn_3_118B18, fn_3_1194FC use g_Minigame and base+0x70/+0x98 to reach following symbols).",
+   "review": "The dossier cross-lists the same three entries. It is referenced from pitching_machine.s and also from auto_00_0011D3AC_text.s:228, which the proposer missed. The module suffix matches the sibling convention."
+  },
+  "BootSequenceFiles": {
+   "module": "dol",
+   "was": "lbl_801092C8",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "0 = intro movie (movie1.HVQM4), 1 = boot screen textures",
+   "evidence": "fn_8006AF9C (asm/auto_fn_8006AF9C_text.s:85) takes its address; slots are movie1.HVQM4 (entry 1, intro movie) and entry 4 boot screens (health warning etc.). Followed directly by lbl_801092E8 title screen textures.",
+   "review": "The reference at fn_8006AF9C:85 is verified. Content is movie1 plus the boot screens. The name is descriptive and unique."
+  },
+  "movie2FileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_12170",
+   "confidence": "medium",
+   "evidence_kind": "content",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_37630 (menus/asm/auto_00_00033E70_text.s:4030) loads it; file is movie2.HVQM4 (3.3 MB). Which cutscene it is was not established, so name by file.",
+   "review": "Named by file only, which makes no unsupported claim. No collision."
+  },
+  "movie3FileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_12180",
+   "confidence": "medium",
+   "evidence_kind": "content",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_37460 (same TU as fn_2_37630) loads it; file is movie3.HVQM4 (24 MB).",
+   "review": "Named by file only. No collision."
+  },
+  "titleScreenTexturesFileDescriptor": {
+   "module": "dol",
+   "was": "lbl_801092E8",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_80069B68 (asm/auto_fn_80069B68_text.s:42) loads it; entry 5 = title screen logo and artwork.",
+   "review": "Single descriptor; the content is identified as title screen textures. No collision."
+  },
+  "testTextFileDescriptor": {
+   "module": "dol",
+   "was": "lbl_80109044",
+   "confidence": "medium",
+   "evidence_kind": "content",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_800697B0 loads it; entry 81 decodes to 11 strings 'none','test1'..'test8'... (placeholder/test text).",
+   "review": "The reference at fn_800697B0:51 is verified. The 'debug' prefix would wrongly suggest the debug REL, where the Debug suffix is already used for module copies. The content is only 'test' strings, so the prefix is dropped."
+  },
+  "challengeDialogueTextFileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_12298",
+   "confidence": "medium",
+   "evidence_kind": "content",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_409CC (menus/asm/auto_00_0003C03C_text.s:5181) loads it; entry 82 = 954 strings of Challenge-mode captain dialogue, unlock messages ('You can now select the Flower Level!', 'became a Superstar!') and shop item text.",
+   "review": "The content (Challenge-mode dialogue, unlock and shop text) supports the name. No collision."
+  },
+  "recordsBookTexturesFileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_1FF84",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_549B4 loads it together with lbl_2_data_1FF94; entry 1744 = Records book textures.",
+   "review": "Content-based name. No collision."
+  },
+  "RecordsBookFiles": {
+   "module": "menus",
+   "was": "lbl_2_data_1FF94",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "0 = records/bio text, 1 = Toadsworth and hand models",
+   "evidence": "fn_2_549B4 (menus/asm/auto_00_0004B1AC_text.s:10642). Slot 0 = text 83 (records numerals + character bios 'Mario - Everyone's favorite hero'), slot 1 = entry 1769 kinoji00 (Toadsworth) + L_hand07/R_hand07 models.",
+   "review": "The facts are fine, but 'TextAndModel' is clumsy. A shorter array name matches the existing StadiumFiles style. Index: 0 = text 83, 1 = Toadsworth and hand models."
+  },
+  "menuBarsFileDescriptorRecordsScreen": {
+   "module": "menus",
+   "was": "lbl_2_data_20BF0",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_5ED3C (0xC00 after recordsScreen at 0x5E104, same region) loads it and lbl_2_data_20C00; entry 1745 = menu bars and cursors.",
+   "review": "It is loaded together with 20C00 (records text plus the bronze/silver/gold medal strings), which supports the records-screen qualifier. The suffix is needed to tell it apart from lbl_2_data_1324C."
+  },
+  "PracticeScreenFiles": {
+   "module": "game",
+   "was": "lbl_3_data_10578",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "0 = practice text, 1 = pitching machine model",
+   "evidence": "loadPracticeScreen (game/asm/auto_00_000B3B70_text.s:747) loads it; slot 0 text 87 ('Practice pitching.' ...), slot 1 p_machine00 pitching machine model.",
+   "review": "It is loaded by the already-named loadPracticeScreen, and the content matches."
+  },
+  "BallModelFiles": {
+   "module": "dol",
+   "was": "lbl_800EE910",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "index = (stadium == Toy Field): 0 normal ball/cursor props, 1 Toy Field ball",
+   "evidence": "fn_800188C0 (asm/auto_fn_800188C0_text.s:63-77): if g_d_GameSettings[7] (stadium id) == 6 it transfers &table[1], else &table[0], result to hugeAnimStruct+0x2c84. Slot 0 = ball.gpc set, slot 1 = toy_ball.gpc set.",
+   "review": "Both references in fn_800188C0 (lines 63-77) are verified, selecting slot 1 when the stadium is Toy Field. The content is the ball / toy_ball sets."
+  },
+  "rosterFileDescriptorMenus": {
+   "module": "menus",
+   "was": "lbl_2_data_C8",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_554 (menus/asm/auto_00_00000000_text.s:475) loads it; same entry 7 as game copy.",
+   "review": "Same entry 7 as the game copy. The sibling naming is consistent."
+  },
+  "sequencedSongsFileDescriptor": {
+   "module": "game",
+   "was": "lbl_3_data_3D60",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_3_59F40 and fn_3_5A28C (ARAMTransfer) in game/asm/auto_00_0005985C_text.s; entry 28 = 19 MusyX sequences (menu themes/jingles per editor README 'Sequenced songs').",
+   "review": "Entry 28 is the sequenced songs container. The name is consistent with the existing audioFileDescriptors."
+  },
+  "teamStarModelFileDescriptorGame": {
+   "module": "game",
+   "was": "lbl_3_data_11380",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "maybeLoadHUDObjectFromMemory (game/asm/game/animation/scene_effects.s:5692); entry 809 = teamstar.gpc/tpl.",
+   "review": "Entry 809 is teamstar. No collision."
+  },
+  "teamStarModelFileDescriptorMenus": {
+   "module": "menus",
+   "was": "lbl_2_data_4B90",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_1B1BC (near challengeFileSelect/optionsScreen region) loads it; same entry 809.",
+   "review": "Same entry 809 as the game copy."
+  },
+  "cameraDataFileDescriptor": {
+   "module": "game",
+   "was": "lbl_3_data_20FDC",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "loadSomeDataFile (game/asm/auto_00_00106DFC_text.s:43); entry 1738 = camera data sets (editor catalog).",
+   "review": "Entry 1738 is camera data per the editor catalog. No collision."
+  },
+  "skyPanoramaFileDescriptor": {
+   "module": "dol",
+   "was": "lbl_800FB5B0",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "gameSettingsRelated (asm/Unknown/File_0x8004a1bc.s:93); entry 1740 = sky and stadium background panoramas.",
+   "review": "Entry 1740. No collision."
+  },
+  "skyPanoramaFileDescriptorChallengeMap": {
+   "module": "menus",
+   "was": "lbl_2_data_1F894",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "challengeMap references it; entry 1740.",
+   "review": "It is referenced by the already-named challengeMap."
+  },
+  "skyPanoramaFileDescriptorDebug": {
+   "module": "debug",
+   "was": "lbl_1_data_B70",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_1_88D0 references it; entry 1740.",
+   "review": "Entry 1740, with the module suffix."
+  },
+  "challengeMapTexturesFileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_1F884",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "challengeMap references it; entry 1742 = challenge mode map and speech textures.",
+   "review": "It is referenced by challengeMap, and entry 1742 is the challenge map textures."
+  },
+  "menuBarsFileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_1324C",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_4EB2C stub loads it; entry 1745 = menu bars and cursors.",
+   "review": "Content-based name; entry 1745 is menu bars and cursors. It is distinct from the RecordsScreen copy."
+  },
+  "stadiumPreviewsFileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_1325C",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_4EAF4 stub loads it; entry 1746 = stadium preview pictures.",
+   "review": "Content-based name; entry 1746 is the stadium preview pictures."
+  },
+  "menuFontFileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_132DC",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_4E970 stub loads it; entry 1753 = menu font, Nintendo logo etc.",
+   "review": "Content-based name; entry 1753 is the menu font and related textures."
+  },
+  "challengeMapModelsFileDescriptor": {
+   "module": "menus",
+   "was": "lbl_2_data_2FE48",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_8E478 (rep_0F60.s:3809); entry 1756 = ch_ground + mario/peach/... captain figure models of the Challenge overworld.",
+   "review": "Entry 1756 is ch_ground plus the captain figure models. No collision."
+  },
+  "HandPoseEventSetFiles": {
+   "module": "dol",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "hand-pose event set id 0..28 (disc copy used when the ARAM preload is absent); slot 29 is an extra file never indexed by fn_80021ADC (meaning unknown).",
+   "evidence": "fn_80021ADC(i, buf) with bounds check i < 0x1D: if character files are preloaded in ARAM it reads lbl_800EFD38[0x1E6+i], otherwise ARAMTransfer(&lbl_800F71D8[i], buf, 0, 0) i.e. a disc read. Sizes of slots 0-28 (1240, 788, 640, 620 ...) are identical to master slots 486-514 (the 29 hand-pose event sets per editor README/chars.py; table at 0x800EEB18 assigns a set to each character). Also pointed to by sdata lbl_803CB794. Slot 29 (entry 840, 325 bytes) is outside the code's 0..28 range and the last 0xC0 bytes of the symbol hold no descriptors.",
+   "review": "fn_80021ADC loads lbl_800EFD38 on one path and lbl_800F71D8 on the other, so the fallback claim stands. sdata lbl_803CB794 points at lbl_800F71D8, and the dossier shows 30 descriptors ending at +0x1D0 inside a 0x2A0 symbol. chars.py EVENT_COPY_VA calls it the copy of the hand-pose event sets outside the ARAM chunk. I added the *FileTable suffix to match the sibling tables; the new name does not collide. Slot 29 and the trailing 0xC0 bytes are still unexplained, so treat the split at +0x1E0 as pending.",
+   "split": "Symbol size 0x2A0 but descriptors only to +0x1E0; split at +0x1E0 (0xC0 bytes of non-descriptor data, unidentified). Whether slot 29 belongs to the table or is a separate single descriptor at +0x1D0 is unresolved.",
+   "split_from": "lbl_800F71D8"
+  },
+  "StadiumFiles_game": {
+   "module": "game",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "same as StadiumFiles: [stadium id][variant]",
+   "evidence": "game/asm/game/hud/stadium_draw.s @0x64E8: identical StadiumID*3 + GameSettings[0xA] index then ARAMTransfer; also used in game/rep_1C0.s. Bytes identical to dol StadiumFiles for 0x0-0x150.",
+   "review": "Same index computation and ARAMTransfer use, bytes identical to dol table. No collision. Must be split at +0x150; the name applies only to the first 0x150 bytes.",
+   "split": "Symbol size 0x224 but table ends at +0x150. +0x150..+0x224 is unrelated data of stadium_draw.c: records of {u32 2; funcptr fn_3_5C68/fn_3_5BF0/fn_3_5BCC; args} (drawing task tables). Split at +0x150.",
+   "split_from": "lbl_3_data_7EC"
+  },
+  "StadiumPropFiles": {
+   "module": "game",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "STADIUM_ID 0..6 (same order as StadiumFiles rows)",
+   "evidence": "game/asm/game/stadium/stadium_framework.s @0xB9BF4..: a switch on stadium id calls ARAMTransfer(marioStadiumCDR + 0x10*n) for n=0..6 and stores the result in hugeAnimStruct+8; also used in game/rep_1D58.s. Entries 21-27 are the 7 per-stadium prop containers (sea00/boat, Parts01, wanwan, packun, parts00, taru, parts0600). The current name (Mario Stadium only) is wrong for the whole table.",
+   "review": "Verified stadium_framework.s jump table: ARAMTransfer(marioStadiumCDR + 0x10*n) per stadium into hugeAnimStruct+8. Current name is wrong for a 7-stadium table. No collision; no src/include uses of old name. Split at +0x70.",
+   "split": "Symbol is 0x150 but only +0x0..0x70 are descriptors. +0x70..0x150 is 7 records of 0x20 bytes {u32 id(0x12,0x11,0x15,0x16,0x13,...); 0; 0; -1; 0x030A00FF; 0x05000000; f32 0.055; 0} - a separate per-stadium table; split at +0x70.",
+   "split_from": "marioStadiumCDR"
+  },
+  "StadiumPropFiles_debug": {
+   "module": "debug",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "STADIUM_ID 0..6",
+   "evidence": "debug/asm/auto_00_00001538_text.s: function reading drawStadiumRelated uses lbl_1_data_0 as base and ARAMTransfers from it (offset computed; checked only one site). Content identical to game stadiumPropFiles slots 0-6.",
+   "review": "Referenced from debug auto_00_00001538_text.s as base; content identical to game table slots 0-6. Split at +0x70.",
+   "split": "Size 0xA8: +0x0..0x70 table; +0x70..0xA8 is a task record containing fn_1_1240 pointers and {2, -1} - not descriptors. Split at +0x70.",
+   "split_from": "lbl_1_data_0"
+  },
+  "MinigameCommonFiles": {
+   "module": "dol",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "0 = coin model, 1 = Toy Field block/shadow models, 2 = minigame description text. Fixed roles, not an id index.",
+   "evidence": "fn_80019C00 (asm/auto_fn_80019C00_text.s:239) ARAMTransfers slot 0 into hugeAnimStruct+0x2d9c in the in-game loader step after the stadium==6 (Toy Field) check. Slots: 84 coin00, 85 Toy Field blocks + ball_kage/shadow, 86 text = minigame descriptions (fireworks, wall, chain chomp gems, piranha eggs, barrels, coins, all minigames).",
+   "review": "Citation verified: fn_80019C00 line 239 ARAMTransfers it to hugeAnimStruct+0x2d9c, on the path taken when g_d_GameSettings[7]==6 (Toy Field). Slots 84/85/86 match the dossier. Slot 2 is minigame text and Toy Field is a minigame mode, so the name holds. The symbol must be split at +0x30; the rest is not descriptors.",
+   "split": "Symbol is 0x128; descriptors end at +0x30. +0x30..+0x128 is u16 pair lists terminated by 0xFFFF,0x0000 (at least three lists) - separate table(s), not descriptors.",
+   "split_from": "lbl_800EE930"
+  },
+  "movie1FileDescriptorDebug": {
+   "module": "debug",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_1_282F4 (debug/asm/debug/rep_7BA0.s:54) reads it; content = movie1.HVQM4 descriptor, same bytes as dol bootSequenceFiles[0].",
+   "review": "Named by file, which makes no unsupported claim. Split the symbol at +0x10.",
+   "split": "Size 0x28: descriptor at +0, +0x10..+0x28 is 0x18 zero bytes (movie player state or padding), not descriptors.",
+   "split_from": "lbl_1_data_112D8"
+  },
+  "recordsScreenTextFileDescriptor": {
+   "module": "menus",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_5ED3C loads it; descriptor = text 83. Rest of the symbol is ASCII 'none','bronze','silver','gold'.",
+   "review": "Text 83 is records text, and the adjacent medal-name strings agree. Split at +0x10.",
+   "split": "Size 0x38: +0x00 descriptor; +0x10..+0x38 four 10-byte strings none/bronze/silver/gold (char medalNames[4][10]) - a separate object.",
+   "split_from": "lbl_2_data_20C00"
+  },
+  "rosterFileDescriptorGame": {
+   "module": "game",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "maybeProcessTeamData (game/asm/game/rep_0.s:34) loads it; entry 7 = character stats and preset lineups.",
+   "review": "It is loaded by maybeProcessTeamData, and entry 7 is the stats/lineups file. Split at +0x10.",
+   "split": "Size 0x118: +0x00 descriptor; +0x10.. fixed-width 22-byte ASCII strings of real Japanese ballparks ('Yokohama Stadium','Tokyo Dome','Nagoya Dome','Kousien Stadium','Hirosima Stadium','Jingu Stadium','Green St...') - leftover debug stadium names, a separate char[][22] object.",
+   "split_from": "lbl_3_data_0"
+  },
+  "chainModelFileDescriptorDebug": {
+   "module": "debug",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_1_20F8C (src/debug/rep_7730.c, debug/asm/debug/rep_7730.s:4085); entry 90 = chain.gpc.",
+   "review": "Entry 90 is chain.gpc. Split off the float at +0x10.",
+   "split": "Size 0x14: +0x10 is float 0.125f, a separate constant.",
+   "split_from": "lbl_1_data_104F4"
+  },
+  "teamStarModelFileDescriptorDebug": {
+   "module": "debug",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_1_10560 (debug/asm/debug/rep_0610.s:4511); descriptor of entry 809 at +0.",
+   "review": "Entry 809 is at +0. Split at +0x10.",
+   "split": "Size 0x40: +0x10..+0x40 is a parameter struct (rgba 0xFF000080, 0x400, 1.0f, 60, 0.08f, 10.0f, -1.0f ...), not descriptors.",
+   "split_from": "lbl_1_data_ADE0"
+  },
+  "cupModelsFileDescriptorChallengeMap": {
+   "module": "menus",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_8DFB0 in rep_0F60 (same unit as the challenge ground/character model loader); entry 1755.",
+   "review": "Entry 1755 is the cup models, and it sits in the challenge-map unit. Split at +0x10.",
+   "split": "Size 0x24: +0x10..+0x24 = {0,0,0,2,&fn_2_8ACDC} a small task/callback struct, separate object.",
+   "split_from": "lbl_2_data_2FE58"
+  },
+  "StadiumFiles_debug_8D0": {
+   "module": "debug",
+   "confidence": "medium",
+   "evidence_kind": "content",
+   "index_meaning": "[stadium id][variant], same as StadiumFiles",
+   "evidence": "src/debug/rep_0138.c:75,1061-1064 treats lbl_1_data_8C8 as a u8 state flag (==1, ==2, reset to 0) - that is +0. The 21 stadium descriptors sit at +0x8..+0x158, byte-identical to StadiumFiles. No direct code reference to the table part was found (only the byte is referenced), so it is an unused static copy from a shared header.",
+   "review": "Content-identical copy at +0x8, unreferenced. lbl_1_data_8C8 itself stays (u8 flag). 'Rep0138' file-placeholder qualifier is unstable; use address qualifier of the new sub-symbol (.data 0x8D0).",
+   "split": "+0x0 u8 flag (+pad to 8) keeps lbl_1_data_8C8; new symbol at +0x8 size 0x150; +0x158..+0x174 (0x1C bytes) trailing unrelated data.",
+   "split_from": "lbl_1_data_8C8"
+  },
+  "MenuCommonTexFiles_mainMenu": {
+   "module": "menus",
+   "confidence": "medium",
+   "evidence_kind": "content",
+   "index_meaning": "0 sky/stadium background panoramas (1740), 1 help text pages (1739), 2 options text (1754), 3 team-name logos all captains (865), 4..15 team-name logos per captain: Mario, Luigi, Peach, Daisy, Yoshi, Birdo, Wario, Waluigi, DK, Diddy, Bowser, Bowser Jr (866-877)",
+   "evidence": "src/menus/main_menu.c:630 mainMenuScreen uses lbl_2_data_180 as its TU data base (u8 *tbl). The 16-descriptor block at +0x2C4 is the header-static table that exists in 20+ TUs across dol/game/debug/menus. Meaning of slots taken from text_0323C.c usage of the identical block (see lbl_2_data_720).",
+   "review": "Blob label stays; new sub-symbol at +0x2C4 size 0x100. main_menu.c owns the blob; table content identical to the copy whose use is proven in text_0323C.c. No collision.",
+   "split": "Blob 0x4A4: +0x0..0x2C4 main-menu TU data, +0x2C4..0x3C4 descriptor table, +0x3C4..0x4A4 other data. Do not rename the blob; add a symbol at +0x2C4 size 0x100.",
+   "split_from": "lbl_2_data_180"
+  },
+  "MenuCommonTexFiles_text0323C": {
+   "module": "menus",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "same 16 slots as menuCommonTexFiles_mainMenu; code uses 0, 1 and 3",
+   "evidence": "src/menus/text_0323C.c:1692-1706: diskReadRelated(&lbl_2_data_720[0x5F4], 6) (slot 0 -> tex slot 6), diskReadRelated(&lbl_2_data_720[0x604], 9) (slot 1 help text -> tex slot 9), diskReadRelated(&lbl_2_data_720[0x624], 0xF) (slot 3 team logos -> tex slot 0xF).",
+   "review": "Verified text_0323C.c:1692-1706 diskReadRelated(&lbl_2_data_720[0x5F4/0x604/0x624], 6/9/0xF). Sub-symbol at +0x5F4; blob label stays.",
+   "split": "Blob 0x744: table at +0x5F4..+0x6F4; before and after are other TU data. New symbol at +0x5F4 size 0x100.",
+   "split_from": "lbl_2_data_720"
+  },
+  "MenuCommonTexFiles_captainSelect": {
+   "module": "menus",
+   "confidence": "medium",
+   "evidence_kind": "content",
+   "index_meaning": "same 16 slots as menuCommonTexFiles_*",
+   "evidence": "src/menus/captain_select/captain_select.c:93,181 uses lbl_2_data_19E8 as a const f32 layout table (+0). The descriptor block is at +0x2EC to the end; content-identical to the other copies; no direct code use found in this TU.",
+   "review": "Blob is owned by captain_select.c; table content identical. Sub-symbol at +0x2EC; blob label stays.",
+   "split": "+0x0..0x2EC captain-select f32 table (keeps lbl_2_data_19E8), +0x2EC..0x3EC descriptor table.",
+   "split_from": "lbl_2_data_19E8"
+  },
+  "DebugTexFiles": {
+   "module": "debug",
+   "confidence": "medium",
+   "evidence_kind": "content",
+   "index_meaning": "debug texture pack id 0..10 -> entries 878..888 in order",
+   "evidence": "debug/asm/debug/rep_0250.s: lbl_1_data_CC8 (+0) is passed to addGraphicsElementToScene and +0x14 read as a u8 texture index, i.e. +0 is a graphics element definition. The 11 descriptors at +0x244..+0x2F4 are the consecutive debug-only texture containers 878-888 (editor labels: debug menu graphics/icons/HUD/digit/camp icon). No indexed access to the table located.",
+   "review": "Table content (debug-only texture containers 878-888) is solid, but 'Menu' is not shown by code and the packs include HUD/digit textures. Drop 'Menu'. Sub-symbol at +0x244; lbl_1_data_CC8 stays.",
+   "split": "+0x0..0x244 graphics element definitions (keep lbl_1_data_CC8), +0x244..0x2F4 descriptor table (to end of symbol).",
+   "split_from": "lbl_1_data_CC8"
+  },
+  "ChallengeMapSceneFiles": {
+   "module": "menus",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "UI record list (ends with type 3), not a descriptor table; trailing pair: 0 = challenge map textures, 1 = sky panoramas",
+   "evidence": "fn_2_8ABFC passes the symbol to addGraphicsElementToScene(node, const UIRecordDescriptor*) and then tests superstarUnlocked/menuCursors; it sits in rep_0F60 with fn_2_8E478 (loads ch_ground challenge models). 0xC60 = 99 * 0x20 UIRecordDescriptor, then two file descriptors (1742 challenge map textures, 1740 sky panoramas).",
+   "review": "The symbol is used as a UIRecordDescriptor list, and its trailing files (1742 and 1740) are challenge-map assets. It must be split at +0xC60.",
+   "split": "Split at +0xC60: [0,0xC60) UIRecordDescriptor list; [0xC60,0xC80) FileDescriptor challengeMapSceneFiles[2].",
+   "split_from": "lbl_2_data_2ECE4"
+  },
+  "contactWordModelsFileDescriptor": {
+   "module": "game",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "UI record list; the single descriptor is at +0x180",
+   "evidence": "fn_3_BEFF8 (scene_effects.s:5088) passes it to addGraphicsElementToScene; 0x180 = 12 UIRecordDescriptor. Trailing descriptor = entry 810 (maxtame, maxpitch, good ... word sprites); file_map says scene_effects holds contact-word sprites.",
+   "review": "A UI record list with a trailing entry 810 of word sprites. Split at +0x180.",
+   "split": "Split at +0x180: list then FileDescriptor contactWordModelsFileDescriptor.",
+   "split_from": "lbl_3_data_1146C"
+  },
+  "DebugBallFiles": {
+   "module": "debug",
+   "split_from": "lbl_1_data_2398",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "[2] ball.gpc and toy_ball.gpc packs, +0x8040",
+   "evidence": "Size 0x85A0 but plain descriptors only from +0x8040. +0x0..+0x8040 = 2052 16-byte records whose first word is a name pointer into .rodata (lbl_1_rodata_91C, _934, ...) = the development-file-name version of the character sub-file table; fn_1_16978 (debug/rep_0610.s) indexes it as base + (slot*19 + track [+2..8]) * 16 and calls ARAMTransfer (19 tracks per slot, cf. dol lbl_800F1D78). Tail: +0x8040 2 ball packs (807 ball, 808 toy_ball), +0x8060 30 unlabeled entries 811-840, +0x8240 54 hand packs indexed by roster slot (ends exactly at 0x85A0).",
+   "review": "No rename is correct. The object holds several sub-tables: named records, then ball, unknown and hand descriptor lists. Split before naming any of them."
+  },
+  "HandPoseEventSetFiles_debug": {
+   "module": "debug",
+   "split_from": "lbl_1_data_2398",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "[30] copy of HandPoseEventSetFiles, +0x8060",
+   "evidence": "Size 0x85A0 but plain descriptors only from +0x8040. +0x0..+0x8040 = 2052 16-byte records whose first word is a name pointer into .rodata (lbl_1_rodata_91C, _934, ...) = the development-file-name version of the character sub-file table; fn_1_16978 (debug/rep_0610.s) indexes it as base + (slot*19 + track [+2..8]) * 16 and calls ARAMTransfer (19 tracks per slot, cf. dol lbl_800F1D78). Tail: +0x8040 2 ball packs (807 ball, 808 toy_ball), +0x8060 30 unlabeled entries 811-840, +0x8240 54 hand packs indexed by roster slot (ends exactly at 0x85A0).",
+   "review": "No rename is correct. The object holds several sub-tables: named records, then ball, unknown and hand descriptor lists. Split before naming any of them."
+  },
+  "DebugCharacterHandFiles": {
+   "module": "debug",
+   "split_from": "lbl_1_data_2398",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "[54] hand packs by roster slot, +0x8240",
+   "evidence": "Size 0x85A0 but plain descriptors only from +0x8040. +0x0..+0x8040 = 2052 16-byte records whose first word is a name pointer into .rodata (lbl_1_rodata_91C, _934, ...) = the development-file-name version of the character sub-file table; fn_1_16978 (debug/rep_0610.s) indexes it as base + (slot*19 + track [+2..8]) * 16 and calls ARAMTransfer (19 tracks per slot, cf. dol lbl_800F1D78). Tail: +0x8040 2 ball packs (807 ball, 808 toy_ball), +0x8060 30 unlabeled entries 811-840, +0x8240 54 hand packs indexed by roster slot (ends exactly at 0x85A0).",
+   "review": "No rename is correct. The object holds several sub-tables: named records, then ball, unknown and hand descriptor lists. Split before naming any of them."
+  }
+ },
+ "pending": {
+  "dol:lbl_800EF508": {
+   "module": "dol",
+   "was": "lbl_800EF508",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "audio file index 0..47 (MusyX sound group file; 2 = instrument bank group 31, 4 = dictionary music, 37 = group 32 with main menu music)",
+   "evidence": "Already named in config/GYQE01/symbols.txt (audioFileTable = .data:0x800EF508 size 0x300) and documented in include/Unknown/File_0x80062a94.h: 16 bytes per audio file index, passed to ARAMTransfer by audioFileLoaderTask (0x80021758); index 4 is the Dictionary set. 48 MusyX group files, entries 30-77.",
+   "review": "This is a no-rename proposal. The symbol is already audioFileTable in config/GYQE01/symbols.txt (line 4207, size 0x300, which is 48 descriptors), and include/Unknown/File_0x80062a94.h documents it. The collision flag is set only because the name is this symbol's own existing name.",
+   "proposed": "audioFileTable",
+   "split": "none; keep existing name"
+  },
+  "debug:lbl_1_data_196C": {
+   "module": "debug",
+   "was": "lbl_1_data_196C",
+   "confidence": "low",
+   "evidence_kind": "content",
+   "index_meaning": "debug-menu sound test file index 0..49 (its own ordering, not the dol audio file index beyond slot 25)",
+   "evidence": "50 descriptors (0x320, no gaps) all pointing at the same MusyX group files as dol audioFileTable, but NOT a straight copy: slots 0-25 match, then the order differs and entries 64/65/66 appear twice (slots 27-29 and 37-39), entry 77 (group 53) is absent. Referenced once in debug REL text near 0x9F48 (auto_00_00009EA0_text.s:58); the reader was not decompiled (Ghidra headless unavailable), so index semantics are from content only.",
+   "review": "The name rests on content alone. The function that reads the table was never decompiled, and the 'debug-menu sound test' index meaning is a guess. The table is also not a copy of audioFileTable: it has 50 slots, some entries appear twice, and entry 77 is missing, so its purpose is unknown. Repo policy prefers a placeholder to an unsupported name, so keep lbl_1_data_196C until the reader near 0x9EA0 in the debug REL is understood.",
+   "proposed": "lbl_1_data_196C",
+   "split": "single table"
+  },
+  "dol:lbl_800E8AA8": {
+   "module": "dol",
+   "was": "lbl_800E8AA8",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "0=menus.rel 1=game.rel 2=debug.rel; 3=menu font pages, 4=menu text strings, 5=controller button icons; 6..67 = common UI file enum (same order as commonUIFiles_*).",
+   "evidence": "Address 0x800E8AA8 is already named relFileTable (size 0x440) in config/GYQE01/symbols.txt:4161; referenced from build/GYQE01/asm/auto_handleLoadingProcess_text.s and auto_fn_800097A0_text.s. Slots 0-2 are menus/game/debug.rel, 3-5 boot font/text/button icons, 6-67 are byte-identical to the 62-entry common UI list (lbl_800EEFD0 etc.). Existing name kept per policy (existing style wins) although it undersells the contents.",
+   "review": "The address is already named relFileTable (size 0x440) at config/GYQE01/symbols.txt:4161, so there is nothing to rename. The collision flag is only the symbol matching itself. The existing name stays per policy. No split: nobody verified that code references +0x30 or +0x60 separately.",
+   "proposed": "relFileTable",
+   "split": "Logically three lists: +0x00 3 REL descriptors, +0x30 3 boot assets, +0x60 62-entry common UI list. Only split if handleLoadingProcess addresses +0x30/+0x60 separately (not verified)."
+  },
+  "debug:lbl_1_data_FB98": {
+   "module": "debug",
+   "was": "lbl_1_data_FB98",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "files[0] = menu font + logo pack; files[1..62] = common UI file enum + 1. Index is the debug viewer's selected file (item+0x20).",
+   "evidence": "src/debug/rep_7730.c: fn_1_267F4 does entry = lbl_1_data_FB98 + idx*0x10; diskReadRelated(entry,0) (idx = item+0x20, a debug texture-viewer selection); but the same symbol is also read as floats/Vecs at +0x8d0..+0x92c (camera settings, fn_1_23B54 etc.) and is typed data:float size 0x7AC. Only +0x0..+0x3F0 are descriptors: slot 0 = entry 1753 (menu font/Nintendo logo/frames) followed by the 62 common UI entries.",
+   "review": "No rename is correct. Per the proposal (not re-checked here), the symbol mixes 63 descriptors with float and viewer data under one float-typed object, so a whole-symbol name would mislead. Split it first.",
+   "proposed": "lbl_1_data_FB98",
+   "split": "Split at +0x3F0: [0,0x3F0) -> debugViewerUIFiles[63]; [0x3F0,0x7AC) is non-descriptor viewer data (menu rows/floats); code also reaches +0x8D0..+0x92C which is past the declared size, so the following symbols belong to the same TU block. Rename only after the split."
+  },
+  "menus:lbl_2_data_12EC0": {
+   "module": "menus",
+   "was": "lbl_2_data_12EC0",
+   "confidence": "low",
+   "evidence_kind": "content",
+   "index_meaning": "Roster slot 0..53; variant slots 24-26, 29-47, 52-53 alias Mario, 49-51 alias slot 48.",
+   "evidence": "54 descriptors then 8 extra bytes (size 0x368): tail is two pointers, lbl_800F5D98 (dol hand table) and lbl_800F71D8. Same roster-slot indexing as lbl_2_data_241C but only slots 0-23, 27, 28 and 48 are real; all other slots are filled with Mario (893) and slots 49-51 with Dry Bones grey (941) = placeholder/unfinished copy. Read by fn_2_47540/477C0/478F4/481F4 (menus/rep_08E8.s) which scan flags_size&0x0FFFFFFF for the maximum.",
+   "review": "Same problem as lbl_2_data_241C: '_rep08E8' is an unprecedented split-file suffix. The object is also 0x368 bytes, 54 descriptors plus two trailing pointers, so an array name misdescribes it until it is split or typed as a struct. The scene is not identified. Keep the placeholder.",
+   "proposed": "lbl_2_data_12EC0",
+   "split": "+0x360: two pointers (lbl_800F5D98, lbl_800F71D8) - either separate 8-byte object or struct tail."
+  },
+  "debug:lbl_1_data_F968": {
+   "module": "debug",
+   "was": "lbl_1_data_F968",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "Debug model-viewer selection index 0..23.",
+   "evidence": "debug/rep_74A0.s: fn_1_1CBE4 indexes it by item+0x14 (u8) <<4 and calls ARAMTransfer; 24 descriptors of development test models (mario00, koopa_t00, peach_test00, sta, heihachi, koopa_skintest00, yakyukun00, test x7). Size 0x1A0 = 24 descriptors + 0x20 bytes holding function pointers fn_1_1ADA4 / fn_1_1A774.",
+   "review": "The facts check out: fn_1_1CBE4 indexes it by (u8)item+0x14 << 4 and calls ARAMTransfer, and the dossier shows 24 development test-model packs. The symbol is 0x1A0 bytes, though, and its last 0x20 bytes are function pointers. The data asm shows fn_1_26AF8 relocations inside it, not the fn_1_1ADA4 / fn_1_1A774 the proposal claimed. Naming the whole object debugTestModelFiles[24] would be wrong. Split at +0x180 first, then apply debugTestModelFiles to the 0x180-byte part; that name is collision-free. Keep the placeholder until the split.",
+   "proposed": "lbl_1_data_F968",
+   "split": "+0x180..+0x1A0 is not descriptor data (two function pointers with zero padding) - separate object."
+  },
+  "menus:cursorToStadIDMapping": {
+   "module": "menus",
+   "was": "cursorToStadIDMapping",
+   "confidence": "high",
+   "evidence_kind": "code",
+   "index_meaning": "cursorToStadIDMapping: stadium-select cursor -> STADIUM_ID. Table part: same 16 slots as menuCommonTexFiles_*",
+   "evidence": "src/menus/text_110B0.c:212-215: g_d_GameSettings.StadiumID = cursorToStadIDMapping[menuCursors[0x11]] - the name correctly describes the first 8 bytes only. The symbol is sized 0x288 and swallows the common texture table at +0x8.",
+   "review": "No rename; shrink to 8 bytes and add menuCommonTexFiles_stadiumSelect at +0x8 (no collision).",
+   "proposed": "cursorToStadIDMapping",
+   "split": "Keep name, shrink to 0x8; new symbol menuCommonTexFiles_stadiumSelect at +0x8 size 0x100; +0x108..+0x288 further stadium-select TU data (unexamined)."
+  },
+  "menus:lbl_2_data_15C8": {
+   "module": "menus",
+   "was": "lbl_2_data_15C8",
+   "confidence": "low",
+   "evidence_kind": "inferred",
+   "index_meaning": "same 16 slots as menuCommonTexFiles_*",
+   "evidence": "No references at all in build/GYQE01/menus/asm. Blob has identical size (0x3EC) and table offset (+0x2EC) as lbl_2_data_19E8, so it is a sibling TU with the same layout (another character/captain select style scene). Scene unknown, so only an address qualifier is justified.",
+   "review": "Content-identical table; scene unknown so address qualifier is the honest choice. Note the qualifier is the blob address, sub-symbol lives at +0x2EC; blob label stays.",
+   "proposed": "menuCommonTexFiles_15C8",
+   "split": "+0x0..0x2EC likely f32 layout table like 19E8; table at +0x2EC..+0x3EC (end of symbol)."
+  },
+  "menus:lbl_2_data_2A3C0": {
+   "module": "menus",
+   "was": "lbl_2_data_2A3C0",
+   "confidence": "low",
+   "evidence_kind": "inferred",
+   "index_meaning": "same 16 slots as menuCommonTexFiles_*",
+   "evidence": "Unreferenced in asm. Table at +0x5F4, the same offset as in lbl_2_data_720 (text_0323C), so this TU shares that file's leading data layout (likely the challenge/second instance of the same lineup scene), but no code proves the scene.",
+   "review": "Content-identical; address qualifier only, no scene guessed.",
+   "proposed": "menuCommonTexFiles_2A3C0",
+   "split": "Blob 0x71C: table at +0x5F4..+0x6F4, 0x28 bytes trailing."
+  },
+  "menus:lbl_2_data_2B3A4": {
+   "module": "menus",
+   "was": "lbl_2_data_2B3A4",
+   "confidence": "low",
+   "evidence_kind": "inferred",
+   "index_meaning": "same 16 slots as menuCommonTexFiles_*",
+   "evidence": "menus/asm/auto_00_00071EC4_text.s references lbl_2_data_2B3A4 28 times as a TU data base (with graphicsRelatedArray, Static_Stats_Tables, starMissionCompletionTracker -> challenge-mode code), but I did not find a use of the +0x38 table. Scene not proven.",
+   "review": "Content-identical; address qualifier only. Blob label stays for +0..0x38.",
+   "proposed": "menuCommonTexFiles_2B3A4",
+   "split": "+0x0..0x38 TU data (keeps label), +0x38..0x138 descriptor table (to end)."
+  },
+  "menus:lbl_2_data_2E02C": {
+   "module": "menus",
+   "was": "lbl_2_data_2E02C",
+   "confidence": "low",
+   "evidence_kind": "inferred",
+   "index_meaning": "same 16 slots as menuCommonTexFiles_*",
+   "evidence": "auto_00_00071EC4_text.s @0x834FC passes lbl_2_data_2E02C (+0) to addGraphicsElementToScene, so +0 is a graphics element definition; the table occupies +0x1C0 to end. No direct table use seen.",
+   "review": "Content-identical; address qualifier only. Blob label stays.",
+   "proposed": "menuCommonTexFiles_2E02C",
+   "split": "+0x0..0x1C0 graphics element def(s), +0x1C0..0x2C0 descriptor table."
+  },
+  "menus:lbl_2_data_2FFF8": {
+   "module": "menus",
+   "was": "lbl_2_data_2FFF8",
+   "confidence": "low",
+   "evidence_kind": "inferred",
+   "index_meaning": "same 16 slots as menuCommonTexFiles_*",
+   "evidence": "Unreferenced in asm. Table offset +0x2C4 equals that of lbl_2_data_180 (main_menu.c), i.e. a TU with the same leading data as the main menu, but nothing proves which scene.",
+   "review": "Content-identical; address qualifier only.",
+   "proposed": "menuCommonTexFiles_2FFF8",
+   "split": "Blob 0x7F8: table at +0x2C4..+0x3C4; rest other data."
+  },
+  "game:lbl_3_data_3D70": {
+   "module": "game",
+   "was": "lbl_3_data_3D70",
+   "confidence": "low",
+   "evidence_kind": "content",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_3_59C2C loads it via diskReadRelated; entry 29 = one-song container. Which song it is is not known.",
+   "review": "The dossier confirms entry 29 is a one-song container. The name claims nothing beyond that.",
+   "proposed": "sequencedSongSingleFileDescriptor",
+   "split": "3D60/3D70/3D80 are contiguous; 3D80 is the big 67-slot game table, so these two may be the head of the same source array."
+  },
+  "debug:lbl_1_data_108F0": {
+   "module": "debug",
+   "was": "lbl_1_data_108F0",
+   "confidence": "medium",
+   "evidence_kind": "code",
+   "index_meaning": "n/a",
+   "evidence": "fn_1_27BB8/fn_1_27E98 (rep_7A28.c, the particle/effect parameter editor). +0x00 two function pointers (fn_1_27AD0, fn_1_27594), +0x08 descriptor of entry 809. The symbol as a whole is not a table; no rename until split.",
+   "review": "No rename. The symbol is a mixed object and needs a split first.",
+   "proposed": "lbl_1_data_108F0",
+   "split": "Split at +0x08: [0,8) fn-pointer pair, [8,0x18) FileDescriptor (proposed teamStarModelFileDescriptorEffectEditor)."
+  },
+  "menus:lbl_2_data_1323C": {
+   "module": "menus",
+   "was": "lbl_2_data_1323C",
+   "confidence": "low",
+   "evidence_kind": "inferred",
+   "index_meaning": "single descriptor",
+   "evidence": "fn_2_4EB64, one of four 56-byte single-file loader stubs in one TU (fn_2_4E970/4EAF4/4EB2C/4EB64), each loading one of the contiguous descriptors 1323C/1324C/1325C ... 132DC. Entry 1742. Scene of the TU unknown, hence 'Common'.",
+   "review": "The 'Common' qualifier is a guess because the scene of the loader-stub TU is unknown. Keep the placeholder.",
+   "proposed": "lbl_2_data_1323C",
+   "split": "1323C,1324C,1325C are contiguous and 132DC follows 0x70 later: probably one source array of menu texture files with per-file loader stubs."
+  },
+  "menus:lbl_2_data_2E944": {
+   "module": "menus",
+   "was": "lbl_2_data_2E944",
+   "confidence": "low",
+   "evidence_kind": "inferred",
+   "index_meaning": "Vec pairs per cup (4 cups x 2); descriptor single",
+   "evidence": "fn_2_8563C/fn_2_85D6C/fn_2_86DCC in rep_0DE0 (next to loadStadiumScreen_maybe). +0x00..+0x60 = 8 Vec (x~1.1-1.34, y~-9.5..-11.9, z~-0.5..-0.7) in 4 near-duplicate pairs; +0x60 descriptor of entry 1755 (kinoko/flower/star/special cup models). The Vec meaning (positions of the 4 cups, 2 states) is inferred from shape only.",
+   "review": "The meaning of the Vec data is inferred from its shape only. Split the symbol first; only the +0x60 descriptor (cup models) is identified.",
+   "proposed": "lbl_2_data_2E944",
+   "split": "Split at +0x60: Vec[8] then FileDescriptor cupModelsFileDescriptor."
+  },
+  "debug:lbl_1_data_A940": {
+   "module": "debug",
+   "was": "lbl_1_data_A940",
+   "confidence": "low",
+   "evidence_kind": "content",
+   "index_meaning": "0 = unidentified file at disc offset 0x18AAF800, 1 = cup models",
+   "evidence": "fn_1_10560 (rep_0610.s:4535). +0x00 is another descriptor-shaped record {0,0x200,0x18AAF800,0x15450} that the dossier did not resolve to an index entry (offset 0x18AAF800, uncompressed, size 0x15450), +0x10 descriptor of entry 1755 cups, +0x20 bytes 03 03 + zeros, +0x30 two rodata string pointers. Mixed struct; keep placeholder until split.",
+   "review": "No rename. It is a mixed struct with an unresolved first record.",
+   "proposed": "lbl_1_data_A940",
+   "split": "[0,0x20) FileDescriptor[2]; [0x20,0x30) params; [0x30,0x38) char* pair."
+  }
+ }
+}

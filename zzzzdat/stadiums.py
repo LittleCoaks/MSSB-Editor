@@ -7,7 +7,7 @@ order. Some stadiums use three distinct files
 file is a section container: one or two big GeoPalettes (the park and its
 sky dome), tiny placeholder meshes, per-section actors, a texture table and
 0x..4300 tables of float records (placement/collision data, not decoded).
-Mario Stadium also has a props table (`marioStadiumCDR` in game.rel).
+Mario Stadium also has a props table (`StadiumPropFiles` in game.rel).
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ SLOTS_PER_STADIUM = 3
 # in table order; identified from the rendered parks (lava arena, palace, jungle river, toy sign)
 NAMES = ["Mario Stadium", "Bowser Castle", "Wario Palace", "Yoshi Park", "Peach's Garden", "DK Jungle", "Toy Field"]
 # each park's prop pack, in the same order: the seven descriptors of game.rel's
-# `marioStadiumCDR` table (named by the decomp on the US disc; the packs' own
+# `StadiumPropFiles` table (named by the decomp on the US disc; the packs' own
 # embedded names find them on the other builds). Waves for the stadium by the
 # sea, Bowser's parts, Chain Chomps and the sandstorm, Piranha Plants, the
 # garden's parts, barrels with the Klaptrap and the river, the toy parts.
@@ -28,7 +28,7 @@ PROP_LABELS = ["sea00.gpc", "Parts01.gpc", "wanwan_00.gpc", "packun.gpc", "parts
 
 def prop_packs(store) -> list[Entry | None]:
     """The prop pack of each stadium, in NAMES order (None where not found)."""
-    tbl = [e for e in store.zzzz_entries() if catalog.table_of(e) == "marioStadiumCDR" and e.kind == "container"]
+    tbl = [e for e in store.zzzz_entries() if catalog.table_of(e) == "StadiumPropFiles" and e.kind == "container"]
     if len(tbl) == len(NAMES):
         return tbl
     by_label = {}
