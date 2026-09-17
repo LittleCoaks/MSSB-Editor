@@ -256,9 +256,27 @@ class FileInfo:
         return out
 
 
+REL_NAMES = {1: "debug.rel", 2: "menus.rel", 3: "game.rel"}
+
+
+def is_rel(data: bytes) -> bool:
+    """A relocatable module (the game's overlay code, kept compressed in
+    aaaa.dat): OSModuleInfo id, next, prev, numSections, ..."""
+    if len(data) < 0x40:
+        return False
+    mid, nxt, prev, nsec = struct.unpack_from(">IIII", data, 0)
+    return 1 <= mid <= 16 and nxt == 0 and prev == 0 and 1 <= nsec <= 64
+
+
 def identify(data: bytes) -> FileInfo:
     if is_hvqm4(data):
         return FileInfo("hvqm4", hvqm4=hvqm4_info(data))
+    if is_rel(data):
+        mid = struct.unpack_from(">I", data, 0)[0]
+        fi = FileInfo("rel")
+        fi.names = [REL_NAMES.get(mid, f"module {mid}.rel"),
+                    f"code module {mid}, {struct.unpack_from('>I', data, 12)[0]} sections"]
+        return fi   # code: nothing in it is a sound, whatever the sample scanner finds
     if musyx.is_group(data):
         return musyx_info(data)
     if song.song_offsets(data):

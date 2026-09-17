@@ -188,7 +188,7 @@ def thumb_for(e: Entry) -> str | None:
 # kind -> the plain word for it; containers get something more specific below
 KIND_CATEGORY = {"textures": "textures", "anim": "animation", "hvqm4": "movie", "adgc": "sound bank",
                  "dsp-adpcm": "sound", "dtk-adpcm": "music", "musyx": "sound effects", "songs": "sequenced music",
-                 "text": "text", "roster": "game data", "rel": "code", "error": "data"}
+                 "text": "text", "roster": "game data", "rel": "code module", "error": "data"}
 
 
 def categorise(e: Entry, fi=None, runs: dict[str, str] | None = None) -> str:

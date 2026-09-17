@@ -69039,14 +69039,17 @@
    "kind": "rel",
    "ntex": 0,
    "nsec": 0,
-   "label": "",
-   "names": [],
+   "label": "menus.rel",
+   "names": [
+    "menus.rel",
+    "code module 2, 17 sections"
+   ],
    "known": "",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
    "tag": "",
-   "category": "code"
+   "category": "code module"
   },
   {
    "id": 2554,
@@ -69064,14 +69067,17 @@
    "kind": "rel",
    "ntex": 0,
    "nsec": 0,
-   "label": "",
-   "names": [],
+   "label": "game.rel",
+   "names": [
+    "game.rel",
+    "code module 3, 17 sections"
+   ],
    "known": "",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
    "tag": "",
-   "category": "code"
+   "category": "code module"
   },
   {
    "id": 2555,
@@ -69089,14 +69095,17 @@
    "kind": "rel",
    "ntex": 0,
    "nsec": 0,
-   "label": "",
-   "names": [],
+   "label": "debug.rel",
+   "names": [
+    "debug.rel",
+    "code module 1, 17 sections"
+   ],
    "known": "",
    "naud": 0,
    "thumb": 0,
    "twin": -1,
    "tag": "",
-   "category": "code"
+   "category": "code module"
   }
  ]
 }

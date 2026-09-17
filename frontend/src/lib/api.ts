@@ -154,7 +154,7 @@ export const hex = (n: number, w = 8) => '0x' + n.toString(16).padStart(w, '0')
 
 export const KIND_LABEL: Record<string, string> = {
   container: 'asset pack', textures: 'textures', anim: 'animation', hvqm4: 'movie', adgc: 'sound bank',
-  'dsp-adpcm': 'sound', 'dtk-adpcm': 'music', musyx: 'sound effects', songs: 'sequenced music', text: 'text', roster: 'game data', geopalette: 'model', unknown: 'data', rel: 'code',
+  'dsp-adpcm': 'sound', 'dtk-adpcm': 'music', musyx: 'sound effects', songs: 'sequenced music', text: 'text', roster: 'game data', geopalette: 'model', unknown: 'data', rel: 'code module',
 }
 
 export let catalogNames: Record<string, string> = {}
