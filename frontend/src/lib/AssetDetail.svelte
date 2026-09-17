@@ -241,7 +241,7 @@
         <div class="row" style="margin-top:10px">
           <span class="dim">Layer:</span>
           {#if d.songs.length >= 2}
-            <button onclick={() => playLayer([0, 1])} title="the menu player runs several sequences at once; songs 1 and 2 are the two it starts">Menu (songs 1 + 2)</button>
+
           {/if}
           <button onclick={() => playLayer(layer)} disabled={layer.length < 2}>Play ticked together{layer.length ? ` (${layer.map(n => n + 1).join(' + ')})` : ''}</button>
           <label class="dim"><input type="checkbox" bind:checked={loopLayer}> repeat 3×</label>
