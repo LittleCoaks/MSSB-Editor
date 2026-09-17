@@ -11,7 +11,7 @@ Mario Stadium also has a props table (`marioStadiumCDR` in game.rel).
 """
 from __future__ import annotations
 
-from . import catalog
+from . import catalog, placement
 from .descriptors import Entry
 
 STADIUM_VA = 0x800EFBE8
@@ -99,6 +99,49 @@ def _model_rows(store, e: Entry) -> list[dict]:
     return rows
 
 
+def _game_rel_data(store) -> bytes:
+    """game.rel's .data section (decompressed once per store)."""
+    cache = store.__dict__.setdefault("_game_rel_data", {})
+    if "d" not in cache:
+        from . import descriptors
+        cache["d"] = b""
+        for b in descriptors.load_binaries(store.game, store.resolve_layout()):
+            if b.module == "game":
+                o, n = next(((o, n) for o, n, name, _ in b.sections if name == ".data"), (0, 0))
+                cache["d"] = b.data[o:o + n]
+    return cache["d"]
+
+
+def _prop_rows(store, sid: int, pack: Entry) -> list[dict]:
+    """The pack's models with what the scene needs to draw each: whether the
+    pack's own actor places it (`fixed`), where game.rel stands its copies
+    (`instances`), which sky it belongs to (`when`) and the banks that move it."""
+    rows = _model_rows(store, pack)
+    try:
+        inst = placement.instances(_game_rel_data(store), sid)
+    except Exception:
+        inst = {}
+    twins = placement.NIGHT_TWINS.get(sid) or {}
+    banks = store.banks(pack)
+    for r in rows:
+        sec = r["section"]
+        m = store.model(pack, sec, posed=True)
+        ps = [p for mm in m.meshes for p in mm.positions]
+        cx = (max(p[0] for p in ps) + min(p[0] for p in ps)) / 2 if ps else 0.0
+        cz = (max(p[2] for p in ps) + min(p[2] for p in ps)) / 2 if ps else 0.0
+        # an object the pack places itself stands away from the origin; the
+        # instanced ones are modelled around it
+        r["fixed"] = (cx * cx + cz * cz) ** 0.5 > 5.0
+        r["instances"] = inst.get(sec, [])
+        r["when"] = "day" if sec in twins else "night" if sec in twins.values() else None
+        r["banks"] = [{"key": b["key"], "name": b["label"]} for b in banks if b.get("model") == sec and b["sequences"]]
+        # what to call it in a list: its first mesh, its animation's name when that says more (みき01 -> yashinoki)
+        r["title"] = r["meshes"][0] + (f" · {r['banks'][0]['name']}" if r["banks"] and r["banks"][0]["name"] not in r["meshes"][0] else "")
+        if r["when"]:
+            r["title"] += f" ({r['when']})"
+    return rows
+
+
 def detail(store, sid: int) -> dict:
     if not 0 <= sid < len(NAMES):
         raise KeyError(f"no stadium {sid}")
@@ -123,7 +166,8 @@ def detail(store, sid: int) -> dict:
         ms = store.models(pack)
         if ms:
             props.append({"entry": pack.id, "name": (pack.label or "").rsplit(".", 1)[0], "triangles": sum(m["triangles"] for m in ms),
-                          "textures": pack.ntex, "models": _model_rows(store, pack)})
+                          "textures": pack.ntex, "models": _prop_rows(store, sid, pack),
+                          "banks": store.banks(pack)})
     d = {"id": sid, "name": NAMES[sid], "files": files, "props": props,
          "thumb": files[0]["entry"] if files else None}
     cache[sid] = d

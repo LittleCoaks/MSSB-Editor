@@ -14,8 +14,13 @@ relative to the bank):
 Worked out from the data (the SDK's flag names do not match what the
 exporter wrote): the setting holds a quaternion first when animType & 8
 (4 x s16, always 14 fraction bits) then a translation when animType & 1
-(3 x s16, fraction bits = quantizeInfo & 0xF). Other animType bits are not
-seen in this game except 0x2A on a few dozen tracks, which are skipped.
+(3 x s16, fraction bits = quantizeInfo & 0xF). The stadium props' tracks are
+animType 0x2B (0x2A without a translation): a scale comes first (bit 2,
+3 x s16 at the track's fraction bits), then four s16 bit 0x20 adds (they
+read like a scale-orientation quaternion and are ignored), then the
+quaternion and the translation as before. Key 0 of every such track equals
+its bone's rest scale, rotation and translation, which is how the order was
+confirmed.
 interpolationType packs two 3-bit fields: bits 5-7 for the quaternion,
 bits 0-2 for the vector (0 = step, otherwise curve; the game uses hermite
 tangents which are approximated here by linear / slerp interpolation).
@@ -49,6 +54,7 @@ class Key:
     time: float                    # frames
     quat: tuple | None
     trans: tuple | None
+    scale: tuple | None = None
 
 
 @dataclass
@@ -98,8 +104,8 @@ def parse_bank(data: bytes, base: int) -> Bank | None:
             if at + 16 > len(data):
                 break
             atime, pkf, total, tid, q, aty, ity, _rep = struct.unpack_from(">fIHHBBBB", data, at)
-            has_q, has_t = bool(aty & 8), bool(aty & 1)
-            if aty & ~9 or not (has_q or has_t):
+            has_q, has_t, has_s = bool(aty & 8), bool(aty & 1), bool(aty & 2)
+            if aty & ~0x2B or not (has_q or has_t or has_s):
                 skipped += 1
                 continue
             frac = float(1 << (q & 0xF))
@@ -110,7 +116,15 @@ def parse_bank(data: bytes, base: int) -> Bank | None:
                     break
                 kt, pset, _pint = struct.unpack_from(">fII", data, ko)
                 so = base + pset
-                quat = trans = None
+                quat = trans = scale = None
+                if so + (6 if has_s else 0) + (8 if aty & 0x20 else 0) + (8 if has_q else 0) + (6 if has_t else 0) > len(data):
+                    break
+                if has_s:
+                    x, y, z = struct.unpack_from(">3h", data, so)
+                    scale = (x / frac, y / frac, z / frac)
+                    so += 6
+                if aty & 0x20:
+                    so += 8
                 if has_q:
                     x, y, z, w = struct.unpack_from(">4h", data, so)
                     quat = (x / QUAT_SCALE, y / QUAT_SCALE, z / QUAT_SCALE, w / QUAT_SCALE)
@@ -118,7 +132,7 @@ def parse_bank(data: bytes, base: int) -> Bank | None:
                 if has_t:
                     x, y, z = struct.unpack_from(">3h", data, so)
                     trans = (x / frac, y / frac, z / frac)
-                keys.append(Key(kt, quat, trans))
+                keys.append(Key(kt, quat, trans, scale))
             if keys:
                 tracks.append(Track(tid, keys, atime, quat_step=(ity >> 5) == 0, trans_step=(ity & 7) == 0))
         seqs.append(Sequence(name or f"sequence {s + 1}", tracks))
@@ -196,6 +210,8 @@ def is_static(seq: Sequence, eps: float = 1e-4) -> bool:
             if first.quat and k.quat and any(abs(a - b) > eps for a, b in zip(k.quat, first.quat)):
                 return False
             if first.trans and k.trans and any(abs(a - b) > eps for a, b in zip(k.trans, first.trans)):
+                return False
+            if first.scale and k.scale and any(abs(a - b) > 1e-3 for a, b in zip(k.scale, first.scale)):
                 return False
     return True
 

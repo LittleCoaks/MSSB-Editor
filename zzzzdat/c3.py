@@ -16,7 +16,7 @@ after roeming/MSSB-Export-Models `helper_c3.py`:
 
 quantize: high nibble = GX component type (0 = u8, 1 = s8, 2 = u16, 3 = s16,
 4 = f32), low nibble = fixed-point fraction bits (ignored for f32). Display state ids: 1 = texture
-(setting & 0xFF is the texture index when byte 1 of setting is 0x11),
+(setting & 0xFF is the texture index, byte 2 the stage, byte 1 the wrap modes),
 2 = vertex descriptor (13 components x 2 bits, GX order: pos-matrix, pos,
 normal, color0, color1, tex0..tex7; 0 = absent, 2 = u8 index, 3 = u16 index),
 3 = matrix load. Primitive lists are GX display lists: 0x61 = BP register
@@ -69,7 +69,15 @@ class Model:
 
 def _cstr(data: bytes, off: int, limit: int = 128) -> str:
     end = data.find(b"\0", off, off + limit)
-    return data[off:end if end != -1 else off + limit].decode("ascii", "replace")
+    raw = data[off:end if end != -1 else off + limit]
+    try:
+        return raw.decode("ascii")
+    except UnicodeDecodeError:
+        # the artists named some objects in Japanese (Shift-JIS): ボート, 加算光
+        try:
+            return raw.decode("cp932")
+        except UnicodeDecodeError:
+            return raw.decode("ascii", "replace")
 
 
 def _array(data: bytes, off: int, count: int, quant: int, ncomp: int, want: int) -> list[tuple]:
@@ -224,14 +232,15 @@ def parse_geopalette(data: bytes, base: int) -> Model | None:
             for s in range(nstates):
                 sid, setting, plist, blen = struct.unpack_from(">BxxxIII", data, dol + pstates + s * 16)
                 if sid == 1:
-                    # 0xAA11SSii: ii = texture index, SS = the stage: 0 is the
-                    # base texture, 0x20 a second stage laid over it (the
-                    # props' sphere-mapped reflections, Heihachi's shirt decal)
-                    if (setting >> 16) & 0xFF == 0x11:
-                        if (setting >> 8) & 0xFF == 0:
-                            tex = setting & 0xFF
-                        else:
-                            overlay = setting & 0xFF
+                    # 0xFFWWSSii: ii = texture index; SS = the stage (0 is the base
+                    # texture, 0x20 a second stage laid over it - the props'
+                    # sphere-mapped reflections, Heihachi's shirt decal); WW = the
+                    # wrap modes (0x11 repeat both ways, 0x00 clamp: the Chain
+                    # Chomp's eyes and teeth); FF = filtering (0x11 or 0x15)
+                    if (setting >> 8) & 0xFF == 0:
+                        tex = setting & 0xFF
+                    elif overlay is None:
+                        overlay = setting & 0xFF
                 elif sid == 2:
                     layout = _vertex_layout(setting)
                 elif sid == 3:
@@ -403,11 +412,11 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
             tex_index[tex] = len(gtextures) - 1
         return tex_index[tex]
 
-    def material(tex: int | None, decal: int = 0, see_through: bool = False) -> int:
+    def material(tex: int | None, decal: int = 0, see_through: bool = False, glow: bool = False) -> int:
         """`see_through` when the draw's own vertex colours carry alpha below 1:
         the game fades those polygons (the mown stripes on a field are painted at
         a third of full strength), which an OPAQUE material would throw away."""
-        key = (tex, decal, see_through)
+        key = (tex, decal, see_through, glow)
         if key in mat_for:
             return mat_for[key]
         kind = tex_modes.get(tex, "opaque")
@@ -431,8 +440,13 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
         extras = {}
         if decal:
             extras["decal"] = decal
-        if kind == "add" and decal:
+        if (kind == "add" and decal) or glow:
             extras["blend"] = "add"
+        elif tex is None and see_through:
+            # no texture, only a white-to-clear vertex fade: a shaft of light (DK Jungle's
+            # sun rays). How strong the game draws it is set in code; a third is a guess.
+            extras["blend"] = "add"
+            extras["dim"] = 0.35
         if extras:
             mat["extras"] = extras
         materials.append(mat)
@@ -460,6 +474,25 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
     for mi, m in enumerate(model.meshes):
         prims = []
         levels = decal_levels(m)
+        # light effects, which the console added to the scene: a flare (a
+        # light-on-black texture that is not a decal on some surface) and a beam -
+        # a white or pale-gradient texture on a draw whose vertex colours fade to
+        # black, in a mesh with flares or one that is nothing but beams (solid
+        # white trim shaded to black is common: Peach's castle). Mario Stadium's light towers, Toy Field's spotlights.
+        # Drawn solid they are black blobs and grey cones.
+        def fades(d) -> bool:
+            cs = {v[3] for t in d.tris for v in t if len(v) > 3 and v[3] is not None and v[3] < len(m.colors)}
+            return any(0.299 * m.colors[c][0] + 0.587 * m.colors[c][1] + 0.114 * m.colors[c][2] < 0.02 for c in cs)
+        def solid(d) -> bool:
+            """No vertex alpha: a white layer that fades out by alpha is a shadow laid on the field, not a beam."""
+            return all(m.colors[v[3]][3] > 0.99 for t in d.tris for v in t if len(v) > 3 and v[3] is not None and v[3] < len(m.colors))
+        flares = [tex_modes.get(d.texture) == "add" and not levels[i] for i, d in enumerate(m.draws)]
+        pale = ("white", "beam")
+        only_light = all(tex_modes.get(d.texture) in pale for d in m.draws)
+        glows = [flares[i] and len(m.colors) > 1
+                 or (tex_modes.get(d.texture) in pale and not levels[i] and solid(d) and fades(d)
+                     and (any(flares) or (only_light and tex_modes.get(d.texture) == "beam")))
+                 for i, d in enumerate(m.draws)]
         for di, d in enumerate(m.draws):
             vmap: dict[tuple, int] = {}
             pos, nrm, uv, col, idx = [], [], [], [], []
@@ -509,7 +542,7 @@ def to_glb(model: Model, textures: dict[int, bytes] | None = None, bones: list |
             iblob = b"".join(struct.pack("<I", i) for i in idx)
             faded = has_c and any(c[3] < 0.99 for c in col)
             prims.append({"attributes": attrs, "indices": add_accessor(add_view(iblob, 34963), len(idx), 5125, "SCALAR"),
-                          "material": material(d.texture, levels[di], faded), "mode": 4})
+                          "material": material(d.texture, levels[di], faded, glows[di]), "mode": 4})
         if prims:
             meshes.append({"name": m.name, "primitives": prims})
             nodes.append({"mesh": len(meshes) - 1, "name": m.name})
@@ -608,6 +641,11 @@ def _rig(nodes: list, bones: list, mesh_node_of: dict, skinned_mesh, banks: list
                     samplers.append({"input": tacc, "output": add_accessor(add_view(t), len(tr.keys), 5126, "VEC3"),
                                      "interpolation": "STEP" if tr.trans_step else "LINEAR"})
                     channels.append({"sampler": len(samplers) - 1, "target": {"node": node_of[b.offset], "path": "translation"}})
+                if tr.keys[0].scale is not None:
+                    sc = b"".join(struct.pack("<3f", *(k.scale or (1, 1, 1))) for k in tr.keys)
+                    samplers.append({"input": tacc, "output": add_accessor(add_view(sc), len(tr.keys), 5126, "VEC3"),
+                                     "interpolation": "STEP" if tr.trans_step else "LINEAR"})
+                    channels.append({"sampler": len(samplers) - 1, "target": {"node": node_of[b.offset], "path": "scale"}})
             if channels:
                 animations.append({"name": f"{label} / {seq.name}" if label else seq.name, "samplers": samplers, "channels": channels})
     return [flip], skins, animations
@@ -671,7 +709,15 @@ def is_actor(data: bytes, base: int) -> bool:
     if base + 0x20 > len(data):
         return False
     v, _a, off, root = struct.unpack_from(">IIII", data, base)
-    return v == ACT_VERSION and off == 0xC and root == 0x20
+    # Wario Palace's and Toy Field's park actors carry a version word of 0, as
+    # their GeoPalettes do...
+    nb = struct.unpack_from(">H", data, base + 6)[0]
+    sane = root == 0x20 and 0 < nb < 512 and base + 0x20 + nb * 0x1C <= len(data)
+    if v == 0:
+        # ...and a stale pointer where the 0xC belongs; the first bone's control offset vouches for it
+        ctrl = struct.unpack_from(">I", data, base + 0x20)[0] if sane else 0
+        return sane and 0x20 + nb * 0x1C <= ctrl < 0x10000 and base + ctrl + 44 <= len(data)
+    return v == ACT_VERSION and off == 0xC and sane
 
 
 def parse_actor(data: bytes, base: int) -> list[Bone] | None:

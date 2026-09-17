@@ -2,13 +2,13 @@
   import { onMount } from 'svelte'
   import { app, type Page } from './lib/state.svelte'
   import GameSetup from './lib/GameSetup.svelte'
-  import Music from './lib/Music.svelte'
+  import Audio from './lib/Audio.svelte'
   import Files from './lib/Files.svelte'
   import Characters from './lib/Characters.svelte'
   import Stadiums from './lib/Stadiums.svelte'
 
   const pages: { id: Page; label: string }[] = [
-    { id: 'files', label: 'Browse assets' }, { id: 'characters', label: 'Characters' }, { id: 'stadiums', label: 'Stadiums' }, { id: 'music', label: 'Music' }, { id: 'game', label: 'Game' },
+    { id: 'files', label: 'Browse assets' }, { id: 'characters', label: 'Characters' }, { id: 'stadiums', label: 'Stadiums' }, { id: 'music', label: 'Audio' }, { id: 'game', label: 'Game' },
   ]
 
   onMount(() => {
@@ -16,6 +16,7 @@
     if (h.startsWith('entry/')) { app.selected = +h.slice(6); app.page = 'files' }
     else if (h.startsWith('characters/')) app.page = 'characters'
     else if (h.startsWith('stadiums/')) app.page = 'stadiums'
+    else if (h.startsWith('music/')) app.page = 'music'
     else if (pages.some(p => p.id === h)) app.page = h as Page
     app.refresh()
     app.checkUpdates()
@@ -65,7 +66,7 @@
   {:else if app.page === 'stadiums'}
     <Stadiums />
   {:else if app.page === 'music'}
-    <Music />
+    <Audio />
   {/if}
 </main>
 

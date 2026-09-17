@@ -492,15 +492,53 @@ class Store:
         (the prototype packs put it after the geometry)."""
         data = self.data(e)
         secs = self.info(e).sections
-        acts = [s for s in secs if s.magic == c3.ACT_VERSION and c3.is_actor(data, s.offset)]
+        acts = [s for s in secs if s.magic in (c3.ACT_VERSION, 0) and c3.is_actor(data, s.offset)]
         geos = [s for s in secs if s.kind == "geopalette"]
         pick = None
         if acts and len(acts) == len(geos) and any(g.index == section for g in geos):
             pick = acts[[g.index for g in geos].index(section)]
         else:
             order = list(reversed(secs[:section])) + secs[section + 1:]
-            pick = next((s for s in order if s.magic == c3.ACT_VERSION and c3.is_actor(data, s.offset)), None)
+            pick = next((s for s in order if s.magic in (c3.ACT_VERSION, 0) and c3.is_actor(data, s.offset)), None)
         return c3.parse_actor(data, pick.offset) if pick else None
+
+    @staticmethod
+    def _masked_layers(m: c3.Model, texs, data, pngs: dict, modes: dict) -> None:
+        """Draws whose first stage is a greyscale mask on black and whose second
+        stage is the picture (DK Jungle's grass patches: a white blob masks the
+        grass texture onto the dirt). Drawn as it stands the mask is a black
+        square with a white cloud in it; here the two stages become one
+        texture - the picture's colours, the mask's brightness as alpha."""
+        made: dict[tuple, int] = {}
+        for mm in m.meshes:
+            for d in mm.draws:
+                if d.overlay is None or d.texture is None or not (d.texture < len(texs) and d.overlay < len(texs)):
+                    continue
+                key = (d.texture, d.overlay)
+                if key not in made:
+                    mt, pt = texs[d.texture][1], texs[d.overlay][1]
+                    mask = mt.decode_rgba(data)
+                    n = len(mask) // 4
+                    grey = all(abs(mask[i] - mask[i + 1]) < 12 and abs(mask[i] - mask[i + 2]) < 12 for i in range(0, len(mask), 4))
+                    black = sum(1 for i in range(0, len(mask), 4) if mask[i] < 16)
+                    # an all-black first stage is a black object with a reflection over it (the Chain Chomp), not a mask
+                    if not grey or black < n * 0.25 or max(mask[0::4]) < 128 or modes.get(d.texture) not in ("opaque", "add", "beam"):
+                        made[key] = -1
+                    else:
+                        pic = pt.decode_rgba(data)
+                        out = bytearray(n * 4)
+                        for y in range(mt.height):
+                            py = y * pt.height // mt.height
+                            for x in range(mt.width):
+                                o = (y * mt.width + x) * 4
+                                q = (py * pt.width + x * pt.width // mt.width) * 4
+                                out[o:o + 3] = pic[q:q + 3]
+                                out[o + 3] = mask[o]
+                        made[key] = max(max(pngs, default=0) + 1, len(texs) + len([v for v in made.values() if v >= 0]))
+                        pngs[made[key]] = gx.to_png(mt.width, mt.height, bytes(out))
+                        modes[made[key]] = "alpha"
+                if made[key] >= 0:
+                    d.texture, d.overlay = made[key], None
 
     # -------------------------------------------------------------- songs --
     def midi(self, e: Entry, n: int) -> bytes:
@@ -582,7 +620,7 @@ class Store:
         """The skeleton of a container: bones of its first ACT section."""
         data = self.data(e)
         for s in self.info(e).sections:
-            if s.magic == c3.ACT_VERSION and c3.is_actor(data, s.offset):
+            if s.magic in (c3.ACT_VERSION, 0) and c3.is_actor(data, s.offset):
                 return c3.parse_actor(data, s.offset)
         return None
 
@@ -593,10 +631,25 @@ class Store:
                 return anim.parse_skin(data, s.offset)
         return None
 
-    def skin_weights(self, e: Entry, model: c3.Model, bones: list) -> dict | None:
+    def skin_for(self, e: Entry, section: int) -> anim.Skin | None:
+        """The skin of GeoPalette `section`: in a pack of several objects, the
+        skin section between this GeoPalette and the next one (the Piranha
+        Plant's, the Klaptrap's); a file with one model has one skin."""
+        data = self.data(e)
+        secs = self.info(e).sections
+        if sum(1 for s in secs if s.kind == "geopalette") < 2:
+            return self.skin(e)
+        for s in secs[section + 1:]:
+            if s.kind == "geopalette":
+                break
+            if s.kind == "unknown" and anim.is_skin(data, s.offset):
+                return anim.parse_skin(data, s.offset)
+        return None
+
+    def skin_weights(self, e: Entry, model: c3.Model, bones: list, section: int | None = None) -> dict | None:
         """Per-vertex bone weights for the body mesh, with the vertices the skin
         lists leave between their runs filled in (see `anim.fill_weight_gaps`)."""
-        sk = self.skin(e)
+        sk = self.skin(e) if section is None else self.skin_for(e, section)
         if not sk:
             return None
         mi = c3.skinned_mesh_index(model, bones) if bones else None
@@ -640,8 +693,11 @@ class Store:
                 if b and b.sequences:
                     playable = sum(1 for q in b.sequences if not anim.is_static(q))
                     ids = {tr.bone for q in b.sequences for tr in q.tracks}
+                    # a prop pack's banks hold one named sequence each (boat, packun_eat01)
+                    named = [q.name for q in b.sequences if q.name and not q.name.startswith("sequence ")]
+                    label = named[0] if len(b.sequences) == 1 and named else f"in this file (section {s.index})"
                     out.append({"key": f"{e.id}:{s.index}", "entry": e.id, "section": s.index,
-                                "label": f"in this file (section {s.index})", "sequences": playable,
+                                "label": label, "sequences": playable,
                                 "model": owner(s.index, ids)})
         c = chars.classify_entry(e.refs)
         if c and c.get("slot") is not None:
@@ -653,6 +709,15 @@ class Store:
                     out.append({"key": f"{x.id}:0", "entry": x.id, "section": 0,
                                 "label": f"{cx['character']} {cx['role']} (file {x.id})", "sequences": None})
         return out
+
+    def own_banks(self, e: Entry, section: int, keys: tuple[str, ...]) -> tuple[str, ...]:
+        """`keys` without the banks that belong to another model of the same
+        pack: a palm tree's bank moves bones 0-9 of whatever skeleton it is
+        given, and on the boat's that tears the model apart."""
+        if not keys:
+            return keys
+        other = {b["key"] for b in self.banks(e) if b.get("model") is not None and b["model"] != section}
+        return tuple(k for k in keys if k not in other)
 
     def bank(self, key: str) -> tuple[str, anim.Bank] | None:
         """(label, Bank) for a key from `banks`: '<entry>:<section>'."""
@@ -673,6 +738,8 @@ class Store:
                     s.name = n
         c = chars.classify_entry(x.refs)
         label = f"{c['role']}" if (c and x.kind == "anim") else (f"section {sec}" if base else f"file {x.id}")
+        if base and len(b.sequences) == 1:
+            label = ""   # a prop pack's bank is one named sequence: the name says it all
         return label, b
 
     def variants(self, e: Entry) -> list[dict]:
@@ -826,7 +893,8 @@ class Store:
         """(model, {texture index: PNG}, {texture index: composite kind}, bones)
         for one GeoPalette section, with the attached parts and colour variant
         applied: what the glTF and COLLADA writers both start from."""
-        bones = self.actor(e) if rig else None
+        # the section's own skeleton: a prop pack holds one actor per object
+        bones = (self.actor_for(e, section) or self.actor(e)) if rig else None
         m = self.model(e, section, posed=not bones, pose=pose)
         data = self.data(e)
         texs = self.info(e).all_textures()
@@ -846,6 +914,8 @@ class Store:
                                   mm.tpl_names, attach=mm.attach) for mm in m.meshes])
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
         pngs, modes = self._decode(texs, tex_data, used)
+        if not base:
+            self._masked_layers(m, texs, tex_data, pngs, modes)
         if variant is not None:
             # a colour variant: the same model drawn with the slot's texture set
             v = next((x for x in self.variants(e) if x["slot"] == variant), None)
@@ -884,13 +954,14 @@ class Store:
 
     def glb(self, e: Entry, section: int, rig: bool = False, bank_keys: tuple[str, ...] = (),
             parts: str = "", variant: int | None = None, pose: int | None = None) -> bytes:
+        bank_keys = self.own_banks(e, section, bank_keys)
         key = (e.id, section, rig, bank_keys, parts, variant, pose)
         if key in self._glb:
             return self._glb[key]
         m, pngs, modes, bones = self.export_model(e, section, rig, parts, variant, pose)
         if bones:
             banks = [b for b in (self.bank(k) for k in bank_keys) if b]
-            g = c3.to_glb(m, pngs, bones=bones, skin_weights=self.skin_weights(e, m, bones), banks=banks,
+            g = c3.to_glb(m, pngs, bones=bones, skin_weights=self.skin_weights(e, m, bones, section), banks=banks,
                           tex_modes=modes)
         else:
             g = c3.to_glb(m, pngs, tex_modes=modes)
@@ -904,11 +975,12 @@ class Store:
                 pose: int | None = None) -> tuple[str, dict]:
         """(COLLADA document, {texture index: PNG}) for one section. The .dae
         references the PNGs as `<stem>_tex<n>.png`, so they belong beside it."""
+        bank_keys = self.own_banks(e, section, bank_keys)
         m, pngs, _modes, bones = self.export_model(e, section, rig, parts, variant, pose)
         names = {i: f"{stem}_tex{i}.png" for i in pngs}
         if bones:
             banks = [b for b in (self.bank(k) for k in bank_keys) if b]
-            return dae.to_dae(m, names, bones=bones, skin_weights=self.skin_weights(e, m, bones),
+            return dae.to_dae(m, names, bones=bones, skin_weights=self.skin_weights(e, m, bones, section),
                               banks=banks), pngs
         return dae.to_dae(m, names), pngs
 
@@ -970,14 +1042,15 @@ class Store:
             # a dome: spans more than the park with a tiny fraction of its triangles
             sky = m is not main and main_ext and extent(m) > main_ext and md["triangles"] < main_md["triangles"] * 0.1
             for mm in m.meshes:
-                # Japanese names arrive with replacement characters; the one in the sky
-                # sections is 加算光, "additive light": a sun-glare billboard
-                glare = sky and "�" in mm.name
+                # the sky sections' 加算光, "additive light", is a sun-glare billboard
+                glare = sky and ("加算光" in mm.name or "�" in mm.name)
                 mm.name = f"s{md['section']} {'glare ' if glare else 'sky ' if sky else ''}{mm.name}"
                 meshes.append(mm)
         m = c3.Model(meshes)
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
-        return (m, *self._decode(texs, data, used))
+        pngs, modes = self._decode(texs, data, used)
+        self._masked_layers(m, texs, data, pngs, modes)
+        return m, pngs, modes
 
     def scene_glb(self, e: Entry) -> bytes:
         """Every GeoPalette section of a pack in one glTF."""
@@ -995,10 +1068,11 @@ class Store:
         """The collision triangles of a stadium pack in the viewer's space (the
         same 180-degree turn about X the static model export applies).
 
-        The table is already in the space the field is drawn in for most parks -
-        putting it through the actor's placement of the field geometry throws
-        Mario Stadium 80 units off - but Wario Palace's and Toy Field's panels
-        still sit above their pitch, and what moves those two is not yet known."""
+        The table is already in the space the field is drawn in - putting it
+        through the actor's placement of the field geometry throws Mario Stadium
+        80 units off. (Wario Palace's and Toy Field's panels used to hang above
+        their pitch: those parks' actors carry a version word of 0 and went
+        unrecognised, so the park was posed with the sky's transform.)"""
         data = self.data(e)
         for s in self.info(e).sections:
             if collision.is_table(s.magic):

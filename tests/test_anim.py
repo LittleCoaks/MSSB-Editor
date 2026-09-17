@@ -111,3 +111,25 @@ def test_is_static_spots_a_sequence_that_never_moves():
     # one bone turning is enough, even if every other track holds still
     turn = [anim.Key(0.0, (0, 0, 0, 1), None), anim.Key(40.0, (0, 0.5, 0, 0.87), None)]
     assert not anim.is_static(anim.Sequence("turns", [anim.Track(1, rest, 40.0), anim.Track(2, turn, 40.0)]))
+
+
+def test_scaled_track_parses():
+    """animType 0x2B (the stadium props): scale, four ignored words, quaternion, translation."""
+    seqs, tracks = 0x18, 0x18 + 12
+    kf = tracks + 16
+    settings = kf + 2 * 12
+    out = bytearray(struct.pack(">IIHHHHII", c3.ACT_VERSION, seqs, 0, 1, 1, 2, 0, 0))
+    out += struct.pack(">IIHH", 0, tracks, 1, 0)
+    out += struct.pack(">fIHHBBBB", 10.0, kf, 2, 0, 0x3C, 0x2B, 0x47, 1)   # 12 fraction bits
+    body = bytearray()
+    keys = []
+    for t, sc, tr in ((0.0, 4096, 0), (10.0, 8192, 4096)):
+        keys.append(struct.pack(">fII", t, settings + len(body), 0))
+        body += struct.pack(">3h4h4h3h", sc, sc, sc, 0, 0, 0, 4096, 0, 0, 0, 16384, tr, 0, 0)
+    out += b"".join(keys) + body
+    b = anim.parse_bank(bytes(out), 0)
+    assert b and b.skipped == 0
+    k0, k1 = b.sequences[0].tracks[0].keys
+    assert k0.scale == (1.0, 1.0, 1.0) and k1.scale == (2.0, 2.0, 2.0)
+    assert k1.quat == (0.0, 0.0, 0.0, 1.0) and k1.trans == (1.0, 0.0, 0.0)
+    assert not anim.is_static(b.sequences[0])

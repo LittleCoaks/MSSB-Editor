@@ -221,7 +221,7 @@ DARK_SHARE = 0.45     # a uniformly dark surface has no pure black, so it fails 
 def composite_kind(rgba: bytes) -> str:
     """How a decoded texture wants compositing:
 
-    * `opaque` - every pixel solid;
+    * `opaque` - every pixel solid (`white` when it is also blank, `beam` when a pale bright-to-dim gradient);
     * `mask` - alpha is only ever 0 or 255, so a cutout (fences, nets, foliage);
     * `alpha` - an overlay: nothing in it is solid, so there is no sensible
       threshold to alpha-test against, and it has to be blended wherever it is
@@ -242,6 +242,7 @@ def composite_kind(rgba: bytes) -> str:
     if not n:
         return "opaque"
     partial = zero = dark = black = seen = 0
+    pale = True                     # no pixel with any real colour in it
     lo = [255, 255, 255, 255]
     hi = [0, 0, 0, 0]
     for i in range(0, len(rgba), 4):
@@ -255,6 +256,8 @@ def composite_kind(rgba: bytes) -> str:
             dark += 1
             if lum < BLACK_LEVEL:
                 black += 1
+        if pale and max(rgba[i:i + 3]) - min(rgba[i:i + 3]) > 40:
+            pale = False
         if a:                       # a fully clear pixel's colour is not part of the picture
             seen += 1
             for c in range(4):
@@ -274,7 +277,13 @@ def composite_kind(rgba: bytes) -> str:
         # behind whatever else is translucent. The stadiums' real gradients
         # start at 2.4% partial.
         return "mask"
-    return "add" if black >= n * BLACK_SHARE and dark >= n * DARK_SHARE else "opaque"
+    # paint on black needs paint: an all-dark swatch (the Chain Chomp's body) is just a dark surface
+    if black >= n * BLACK_SHARE and dark >= n * DARK_SHARE and max(hi[:3]) >= 16:
+        return "add"
+    if seen == n and not partial and hi[0] >= 200 and pale:
+        # white, or a pale gradient from bright to dim (`beam`): a light cone's texture
+        return "beam" if lo[0] < 96 else "white"
+    return "opaque"
 
 
 # ----------------------------------------------------------------- encoding --

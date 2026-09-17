@@ -7,7 +7,7 @@ release, and tests check that pyproject.toml agrees. Releases are tagged
 pads to three parts, so `v0.2` and `0.2.0` are the same version, but `v0.2`
 against a VERSION of `0.1.0` is the mistake the release workflow stops.
 """
-VERSION = "0.3"
+VERSION = "0.4"
 REPO = "LittleCoaks/MSSB-Editor"          # GitHub owner/name whose Releases carry the installers
 RELEASES_URL = f"https://github.com/{REPO}/releases"
 

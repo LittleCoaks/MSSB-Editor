@@ -1,8 +1,8 @@
 <script lang="ts">
   // The seven stadiums: whole-scene view of each file variant, the props, textures and downloads.
-  import { api, urls, kb, type StadiumEntry, type StadiumDetail } from './api'
+  import { api, urls, kb, type StadiumEntry, type StadiumDetail, type PropModel } from './api'
   import { app } from './state.svelte'
-  import ModelViewer from './ModelViewer.svelte'
+  import ModelViewer, { type SceneProp } from './ModelViewer.svelte'
 
   let list = $state<StadiumEntry[]>([])
   let current = $state<number | null>(null)
@@ -13,6 +13,8 @@
   let entry = $state<number | null>(null)     // the file shown in the viewer (a variant or a prop)
   let msg = $state('')
   let showProps = $state(true)   // draw the park's prop pack in the scene (waves, Chain Chomps, barrels...)
+  let animateProps = $state(true)
+  let propBank = $state('')
 
   async function load() {
     try { list = (await api.stadiums()).stadiums; err = '' } catch (e: any) { err = e.message }
@@ -29,6 +31,17 @@
   const shownFile = $derived(d ? d.files.find(f => f.entry === entry) ?? null : null)
   const shownProp = $derived(d ? d.props.find(p => p.entry === entry) ?? null : null)
   const shown = $derived(shownFile ?? shownProp)
+  // what the scene draws of the prop pack: models the pack places itself and the copies game.rel
+  // stands around the park, in the day or night make that suits the shown file. Things that only
+  // appear mid-game (rolling barrels, sandstorms, fireballs) have no resting place and stay out.
+  // animations that happen once (a block or barrel breaking, a plant eating): not something to loop in the scene
+  const ONE_SHOT = /clash|parts00_01|eat|nomikomi|throw|modori|open/
+  const forSky = (m: PropModel) => !m.when || m.when === (shownFile?.sky?.night ? 'night' : 'day')
+  const sceneProps = $derived<SceneProp[]>(!d || !shownFile || !showProps ? [] : d.props.flatMap(p =>
+    p.models.filter(m => (m.fixed || m.instances.length) && forSky(m)).map(m => ({
+      url: urls.glb(p.entry, m.section, m.banks.filter(b => !ONE_SHOT.test(b.name)).map(b => b.key).join(',') || undefined),
+      instances: m.fixed ? null : m.instances }))))
+  const unplaced = $derived(!d ? 0 : d.props.reduce((n, p) => n + p.models.filter(m => !m.fixed && !m.instances.length).length, 0))
   // day/night from the sky dome's texture; the same letter keeps files apart when two are alike
   const variantLabel = (f: { slots?: number[]; sky?: { night: boolean } | null }, i: number) => {
     if (!d) return ''
@@ -95,18 +108,24 @@
           {#if d.props.length}
             <div class="group">
               <span class="lbl">Props</span>
-              <label title="draw the park's props in the stadium scene, where the pack places them (some sit at the origin: the game positions those in code)"><input type="checkbox" bind:checked={showProps}> in scene</label>
+              <label title={`draw the park's props in the stadium scene: scenery where the pack places it, and the copies the game's placement tables stand around the park` + (unplaced ? `. ${unplaced} object(s) the game only moves from code have no resting place and are left out; pick the pack to see them` : '')}><input type="checkbox" bind:checked={showProps}> in scene</label>
+              <label title="loop each prop's animation in the scene (palm trees, boats, bench plants, signs)"><input type="checkbox" bind:checked={animateProps} disabled={!showProps}> animated</label>
               {#each d.props as p}<button class="chip" class:on={entry === p.entry} onclick={() => (entry = p.entry)} title={`${p.triangles.toLocaleString()} triangles · ${p.textures} textures`}>{p.name}</button>{/each}
             </div>
           {/if}
         </div>
         {#if section === 'scene' && entry !== null && shown}
           {#key entry}
-            <ModelViewer {entry} models={shown.models ?? []} whole={true} height="62vh" overlay={shownFile ? urls.collision(entry) : undefined}
-                         extras={shownFile && showProps ? d.props.map(p => urls.scene(p.entry)) : []} />
+            {#if shownFile}
+              <ModelViewer {entry} models={shown.models ?? []} whole={true} height="62vh" overlay={urls.collision(entry)} props={sceneProps} {animateProps} />
+            {:else if shownProp}
+              <!-- a prop pack holds many objects around one origin: one at a time, each with only its own animations -->
+              <ModelViewer {entry} models={shownProp.models} banks={shownProp.banks} bind:bank={propBank} height="62vh" />
+            {/if}
           {/key}
           <p class="dim small" style="margin:8px 0 0">
-            Every model section of the file drawn together{#if shown.models}: {shown.models.map(m => `${m.meshes.join(', ')} (${m.triangles.toLocaleString()})`).join(' · ')}{/if}.
+            {#if shownFile}Every model section of the file drawn together{#if shown.models}: {shown.models.map(m => `${m.meshes.join(', ')} (${m.triangles.toLocaleString()})`).join(' · ')}{/if}.
+            {:else}The pack's objects one at a time; the animation list holds only the shown object's own.{/if}
           </p>
         {:else if section === 'textures' && entry !== null}
           {#await api.entry(entry)}

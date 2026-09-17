@@ -1,11 +1,17 @@
+<script lang="ts" module>
+  /** A prop drawn with the scene: one glb, stood wherever `instances` says (null: where the pack's own actor puts it). */
+  export interface SceneProp { url: string; instances: { pos: number[]; rot: number; scale: number[] }[] | null }
+</script>
+
 <script lang="ts">
   import { onMount } from 'svelte'
   import * as THREE from 'three'
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
   import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+  import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js'
   import { urls, type BankInfo, type ModelInfo } from './api'
 
-  let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false, overlay = undefined, extras = [] }: { entry: number; models: Pick<ModelInfo, 'section' | 'meshes' | 'triangles'>[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean; overlay?: string; extras?: string[] } = $props()
+  let { entry, models, banks = [], parts = [], variants = [], bank = $bindable(''), height = '65vh', pose = undefined, whole = false, overlay = undefined, props = [], animateProps = true }: { entry: number; models: (Pick<ModelInfo, 'section' | 'meshes' | 'triangles'> & { title?: string })[]; banks?: BankInfo[]; parts?: string[]; variants?: { slot: number; name: string; entry: number }[]; bank?: string; height?: string; pose?: number; whole?: boolean; overlay?: string; props?: SceneProp[]; animateProps?: boolean } = $props()
   // banks that animate the shown model: a prop pack's banks each belong to one of its models
   const shownBanks = $derived(banks.filter(b => b.model === undefined || b.model === null || b.model === section))
   let showLines = $state(false)   // the collision overlay hides the stadium; ask for it
@@ -67,6 +73,7 @@
       if (w && h && (canvas.width !== w * devicePixelRatio || canvas.height !== h * devicePixelRatio)) { renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix() }
       const dt = clock.getDelta()
       if (mixer && playing) { mixer.update(dt * speed); if (action) frame = Math.round(action.time * FPS) }
+      if (animateProps) for (const g of propRoots.values()) for (const mx of (g.userData.mixers ?? []) as THREE.AnimationMixer[]) mx.update(dt)
       fly(dt)
       // a stadium spans thousands of units, so a fixed near plane leaves the depth
       // buffer too coarse to keep the field's painted layers apart: tie it to how
@@ -180,16 +187,32 @@
     }, undefined, err => (msg = 'could not load model: ' + err))
   }
 
-  // extra scenes drawn with the model (a stadium's props): loaded once each, dropped when no longer asked for
-  const extraRoots = new Map<string, THREE.Group>()
+  // props drawn with the scene (a stadium's prop pack): each model loaded once, a copy stood at
+  // every place the game puts one, each copy looping its own animation
+  const propRoots = new Map<string, THREE.Group>()
+  const IDLE = /taiki|normal|kihon|walk/   // of a prop's several animations, the one it rests in
   $effect(() => {
-    const want = extras
+    const want = props
     if (!renderer) return
-    for (const [u, g] of extraRoots) if (!want.includes(u)) { scene.remove(g); extraRoots.delete(u) }
-    for (const u of want) {
-      if (extraRoots.has(u)) continue
-      const holder = new THREE.Group(); extraRoots.set(u, holder); scene.add(holder)
-      new GLTFLoader().load(u, g => { if (extraRoots.get(u) === holder) { dress(g.scene); holder.add(g.scene) } }, undefined, () => {})
+    const keyOf = (p: SceneProp) => p.url + '|' + JSON.stringify(p.instances)
+    const keys = new Set(want.map(keyOf))
+    for (const [k, g] of propRoots) if (!keys.has(k)) { scene.remove(g); propRoots.delete(k) }
+    for (const p of want) {
+      const k = keyOf(p)
+      if (propRoots.has(k)) continue
+      const holder = new THREE.Group(); holder.userData.mixers = []; propRoots.set(k, holder); scene.add(holder)
+      new GLTFLoader().load(p.url, g => {
+        if (propRoots.get(k) !== holder) return
+        const c = g.animations.find(a => IDLE.test(a.name)) ?? g.animations[0]
+        for (const at of p.instances ?? [null]) {
+          const copy = SkeletonUtils.clone(g.scene)
+          dress(copy)
+          const spot = new THREE.Group(); spot.add(copy)
+          if (at) { spot.position.fromArray(at.pos); spot.rotation.y = at.rot * Math.PI / 180; spot.scale.fromArray(at.scale) }
+          holder.add(spot)
+          if (c) { const mx = new THREE.AnimationMixer(copy); mx.clipAction(c).play(); holder.userData.mixers.push(mx) }
+        }
+      }, undefined, () => {})
     }
   })
 
@@ -230,6 +253,7 @@
             mat.blending = THREE.AdditiveBlending
             mat.transparent = true
             mat.depthWrite = false
+            if (std.userData?.dim) mat.opacity = std.userData.dim as number
           }
         }
       })
@@ -291,7 +315,7 @@
 <div class="tools">
   {#if models.length > 1 && !whole}
     <select bind:value={section}>
-      {#each models as m}<option value={m.section}>{m.meshes.join(', ')} ({m.triangles.toLocaleString()} tris)</option>{/each}
+      {#each models as m}<option value={m.section}>{m.title ?? m.meshes.join(', ')} ({m.triangles.toLocaleString()} tris)</option>{/each}
     </select>
   {/if}
   {#if banks.length}

@@ -35,8 +35,13 @@ It is organised for people who are not reverse engineers:
   within it (one character, one park). The detail panel has a 3D model tab,
   texture gallery (with *Replace with PNG* on an extracted game), audio
   player, details and hex.
-- **Music** - a three-step replace flow (pick a song, choose the track, install)
-  with the original always restorable.
+- **Audio** - two sub-tabs. *Music*: a three-step replace flow (pick a song,
+  choose the track, install) with the original always restorable. *Sound
+  effects*: every MusyX group (game sounds, then the 32 characters' voices)
+  down the side, and the picked group as one compact list - a row per sound
+  effect or per sample, a filter, and a single shared player (`/api/sounds`,
+  `SoundList.svelte`; a sound group's *Audio* tab in Browse assets is the
+  same list).
 - **Game** - drop / browse / explore to pick the ISO or folder, extract for editing.
 
 To work on the UI:
@@ -287,9 +292,21 @@ Peach's Garden, DK Jungle, Toy Field; a stadium with fewer files repeats one
 file across its slots). The viewer draws every model section of a file
 together (`/api/entry/<id>/model/all.glb`, or `all.dae`): the park, its sky dome drawn
 inside-out so the camera can look through it, and the sun-glare billboard
-(a mesh named 加算光, "additive light") blended additively. Mario Stadium's
-props from game.rel's `marioStadiumCDR` table are listed beside the file
-variants. The variants are labelled day or night from the sky dome's
+(a mesh named 加算光, "additive light") blended additively. Each park's prop
+pack (game.rel's `marioStadiumCDR` table) is drawn into the scene one model
+at a time, rigged, each looping its own animation (*animated* toggle):
+scenery the pack's actors place themselves (waves, river, smoke), and the
+instanced props wherever game.rel's placement tables stand a copy
+(`zzzzdat/placement.py`: Mario Stadium's five palms, Bowser Castle's six
+Thwomps and star panels, Wario Palace's Chain Chomps, sandstorms, bench
+plants and sand stars; Mario Stadium's day and night makes of the boat and
+palm follow the shown file's sky). Props the game only moves from code
+(Piranha Plants, Peach's blocks, barrels, the Klaptrap, Toy Field's panels)
+have no resting place and are left out of the scene; picking the pack shows
+every object on its own, with only that object's animations on offer (a
+bank is bound to the model whose skeleton it moves, and the server drops a
+bank asked for on any other). The props' banks use animType 0x2B (scale +
+rotation + translation, see `anim.py`). The variants are labelled day or night from the sky dome's
 texture (Mario Stadium: two day files and a night one; Bowser Castle: two
 dark files and a daylight practice field); what separates two day files is
 still unknown. The night look is baked into the geometry: every stadium mesh
@@ -359,7 +376,7 @@ up the original once. When the length differs from the DOL's stream table it
 prints the two Gecko writes that repoint it. `pip install numpy` makes
 encoding about 30x faster.
 
-The **Music** page in the UI does the same with a file drop zone, progress
+The **Audio** page's *Music* tab does the same with a file drop zone, progress
 bar, a player for every track, and restore buttons.
 
 ## Models

@@ -26,14 +26,13 @@ Details of what already works are in the README.
 - [x] Collision surface tags: game.rel's `BALL_COLLISION_TYPE` (grass, wall,
       structure, foul line, dirt, pit, water, Chain Chomp hazard...; 0x80 =
       foul territory); the overlay is coloured by type with a legend.
-- [ ] **Stadium prop placement.** Each park has one prop pack (the seven
-      `marioStadiumCDR` files, in park order: waves, Bowser's parts, Chain
-      Chomps and the sandstorm, Piranha Plants, garden parts, barrels with
-      the Klaptrap and river, toy parts). Since 2026-09-17 the Stadiums page
-      draws the pack in the scene (toggle, on by default) where its actors
-      place the objects: scenery like the waves, river and smoke carries
-      world positions; instanced props (barrels, Piranha Plants, Chain
-      Chomps) sit at the origin because the game positions those in code.
+- [x] **Stadium prop placement** (`zzzzdat/placement.py`): every park's
+      static tables in game.rel are read - palms, Thwomps, star panels, Chain
+      Chomps, bench plants, sand stars, Piranha Plants, Peach's blocks, DK's
+      cannons and Klaptraps, Toy Field's floor panels - and the scene animates
+      them. Not drawn, because the game only spawns them mid-play: rolling
+      barrels, Wario Palace's sandstorms (types 3 and 6), Bowser's fireballs
+      (`BowserStadFireSpawners`), Toy Field's HOMERUN letters.
 - [x] Animation event keys: (code, frame) pairs; the frame's high byte marks
       bat contact (0x80), pitch release (0x50), the catch (0x40),
       follow-through (0x60), last frame (0x20). Inferred from where they fall

@@ -7,6 +7,7 @@
   import TextView from './TextView.svelte'
   import StatsView from './StatsView.svelte'
   import DataView from './DataView.svelte'
+  import SoundList from './SoundList.svelte'
 
   let { id, onclose }: { id: number; onclose: () => void } = $props()
   let d = $state<EntryDetail | null>(null)
@@ -26,8 +27,6 @@
     bigTex = null
     tick().then(() => bodyEl?.scrollTo({ top: texScroll }))
   }
-  let playing = $state<number | null>(null)
-  let player: HTMLAudioElement | undefined = $state()
   let songPlayer: HTMLAudioElement | undefined = $state()
   let songPlaying = $state<number | null>(null)
   let songMsg = $state('')
@@ -54,14 +53,10 @@
     layerPlaying = ns; songPlaying = -1; songMsg = 'rendering…'
     queueMicrotask(() => { if (songPlayer) { songPlayer.src = urls.songMix(d!.id, ns, loopLayer ? 3 : 1); songPlayer.load(); songPlayer.play().catch(() => (songMsg = 'could not play')) } })
   }
-  function playStream(n: number) {
-    playing = n
-    queueMicrotask(() => { if (player) { player.src = urls.audio(d!.id, n); player.load(); player.play().catch(() => {}) } })
-  }
 
   $effect(() => {
     const cur = id
-    d = null; msg = ''; bigTex = null; playing = null; songPlaying = null
+    d = null; msg = ''; bigTex = null; songPlaying = null
     api.entry(cur).then(x => { if (cur === id) { d = x; tab = x.models.length ? 'model' : x.textures.length ? 'textures' : x.audio.length ? 'audio' : x.songs.length ? 'songs' : x.hvqm4 ? 'movie' : x.text ? 'text' : x.roster ? 'stats' : x.kind === 'unknown' ? 'data' : 'details' } })
   })
   $effect(() => { if (tab === 'hex' && d) loadHex() })
@@ -191,33 +186,20 @@
         {/if}
       {:else if tab === 'audio'}
         {#if d.group}
-          <p class="dim" style="margin-top:0">MusyX {d.group.kind} group {d.group.id}: {d.group.samples} samples{d.group.sfx ? `, ${d.group.sfx} sound effects` : ''}. Each sound effect is a macro that plays one of the samples below.
-            <a href={urls.soundfont(d.id)} title="Every sample of the group as a SoundFont 2 bank, with its {d.group.type === 0 ? 'program pages' : 'sound effects'} as presets: playable in any sampler">Download .sf2</a></p>
-          {#if d.sfx.length}
-            <div class="sfxgrid">
-              {#each d.sfx as f}
-                <button class="sfx" disabled={!f.streams.length} title={`macro ${hex(f.macro, 4)}${f.streams.length ? '' : ' (plays through a layer; no direct sample)'}`} onclick={() => { if (f.streams.length) playStream(f.streams[0]) }}>▶ sfx {hex(f.id, 4)}{#if f.streams.length > 1}<span class="dim"> ×{f.streams.length}</span>{/if}</button>
-              {/each}
+          <SoundList entry={d.id} audio={d.audio} sfx={d.sfx} group={d.group} />
+        {:else}
+          {#each d.audio as s, n}
+            {@const pair = s.kind === 'musyx' && s.seconds >= 3 && d.audio[n + 1] && d.audio[n + 1].seconds === s.seconds && d.audio[n + 1].rate === s.rate}
+            {@const paired = n > 0 && s.kind === 'musyx' && s.seconds >= 3 && d.audio[n - 1].seconds === s.seconds && d.audio[n - 1].rate === s.rate}
+            {#if !paired}
+            <div class="card" style="margin-bottom:10px">
+              <div class="row"><b>{s.kind === 'musyx' ? (pair ? `Samples ${n + 1} + ${n + 2}` : `Sample ${n + 1}`) : `Stream ${n + 1}`}</b> {#if s.label}<span class="dim">{s.label}</span>{/if} <span class="dim">{s.rate} Hz · {pair ? 'left + right pair, played as stereo' : s.channels === 2 ? 'stereo' : 'mono'} · {s.seconds} s{s.loop ? ' · loops' : ''}{s.note !== undefined && s.note !== 60 ? ` · base note ${s.note}` : ''}</span>
+                {#if pair}<a href={urls.audioStereo(d.id, n, true)}>download stereo WAV</a> <span class="dim">·</span> <a href={urls.audioDownload(d.id, n)}>left</a> <a href={urls.audioDownload(d.id, n + 1)}>right</a>{:else}<a href={urls.audioDownload(d.id, n)}>download WAV</a>{/if}</div>
+              <audio controls preload={s.kind === 'musyx' ? 'none' : 'metadata'} src={pair ? urls.audioStereo(d.id, n) : urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
             </div>
-            {#if playing !== null}
-              <div class="card" style="margin:8px 0">
-                <div class="row"><b>Playing sample {playing + 1}</b> <span class="dim">{d.audio[playing].label}</span></div>
-                <audio controls bind:this={player} style="width:100%;margin-top:6px"></audio>
-              </div>
             {/if}
-          {/if}
+          {/each}
         {/if}
-        {#each d.audio as s, n}
-          {@const pair = s.kind === 'musyx' && s.seconds >= 3 && d.audio[n + 1] && d.audio[n + 1].seconds === s.seconds && d.audio[n + 1].rate === s.rate}
-          {@const paired = n > 0 && s.kind === 'musyx' && s.seconds >= 3 && d.audio[n - 1].seconds === s.seconds && d.audio[n - 1].rate === s.rate}
-          {#if !paired}
-          <div class="card" style="margin-bottom:10px">
-            <div class="row"><b>{s.kind === 'musyx' ? (pair ? `Samples ${n + 1} + ${n + 2}` : `Sample ${n + 1}`) : `Stream ${n + 1}`}</b> {#if s.label}<span class="dim">{s.label}</span>{/if} <span class="dim">{s.rate} Hz · {pair ? 'left + right pair, played as stereo' : s.channels === 2 ? 'stereo' : 'mono'} · {s.seconds} s{s.loop ? ' · loops' : ''}{s.note !== undefined && s.note !== 60 ? ` · base note ${s.note}` : ''}</span>
-              {#if pair}<a href={urls.audioStereo(d.id, n, true)}>download stereo WAV</a> <span class="dim">·</span> <a href={urls.audioDownload(d.id, n)}>left</a> <a href={urls.audioDownload(d.id, n + 1)}>right</a>{:else}<a href={urls.audioDownload(d.id, n)}>download WAV</a>{/if}</div>
-            <audio controls preload={s.kind === 'musyx' ? 'none' : 'metadata'} src={pair ? urls.audioStereo(d.id, n) : urls.audio(d.id, n)} style="width:100%;margin-top:6px"></audio>
-          </div>
-          {/if}
-        {/each}
       {:else if tab === 'movie'}
         <MoviePlayer entry={d.id} />
       {:else if tab === 'text'}
@@ -310,6 +292,4 @@
   .tex { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px; background: var(--panel); }
   .tex .checker { display: inline-block; }
   .big .checker { max-width: 100%; }
-  .sfxgrid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .sfx { padding: 4px 8px; font-size: 12px; font-family: ui-monospace, Consolas, monospace; }
 </style>

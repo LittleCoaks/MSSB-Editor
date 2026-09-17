@@ -55,8 +55,12 @@ export interface RosterVariant { slot: number; name: string; texture_entry: numb
 export interface RosterBank { key: string; entry: number; track: number; category: string; label: string; sequences: string[]; playable: number; named: boolean }
 export interface RosterSounds { entry: number; group: number | null; samples: { n: number; seconds: number; rate: number; label: string }[]; sfx: SfxInfo[] }
 export interface RosterFile { entry: number; role: string; kind: string; size: number; slot: number | null; textures: number; audio: number }
+export interface SoundGroup { entry: number; group: number | null; kind: string; character: string | null; stadium: string | null; name: string; samples: number; sfx: number; seconds: number }
 export interface StadiumFile { entry: number; textures: number; size: number; slots?: number[]; sky?: { rgb: number[]; night: boolean } | null; models?: { section: number; meshes: string[]; triangles: number; textures: number }[]; triangles?: number; sections?: number }
-export interface StadiumProp { entry: number; name: string; triangles: number; textures: number; models: { section: number; meshes: string[]; triangles: number; textures: number }[] }
+export interface PropSpot { pos: number[]; rot: number; scale: number[] }
+// a prop pack's model: `fixed` = the pack's own actor places it; `instances` = where game.rel stands its copies; `when` = the sky it is for
+export interface PropModel { title: string; section: number; meshes: string[]; triangles: number; textures: number; fixed: boolean; instances: PropSpot[]; when: 'day' | 'night' | null; banks: { key: string; name: string }[] }
+export interface StadiumProp { entry: number; name: string; triangles: number; textures: number; models: PropModel[]; banks: BankInfo[] }
 export interface StadiumEntry { id: number; name: string; files: StadiumFile[]; thumb: number | null }
 export interface StadiumDetail extends StadiumEntry { props: StadiumProp[] }   // props: the park's prop pack (waves, Chain Chomps, barrels...)
 export interface UpdateStatus { current: string; latest: string | null; available: boolean; asset: { name: string; url: string; size: number } | null; notes: string; url: string; checked_at: number; error: string | null; can_install: boolean }
@@ -112,6 +116,7 @@ export const api = {
   update: (check = false, force = false) => j<UpdateInfo>(`/api/update?${check ? 'check=1' : ''}${force ? '&force=1' : ''}`),
   updateSettings: (checkUpdates: boolean) => j<{ check_updates: boolean; repo: string }>(`/api/update/settings?check_updates=${checkUpdates ? 1 : 0}`, { method: 'POST' }),
   installUpdate: () => j<{ job: string }>('/api/update/install', { method: 'POST' }),
+  sounds: () => j<{ groups: SoundGroup[] }>('/api/sounds'),
   stadiums: () => j<{ stadiums: StadiumEntry[] }>('/api/stadiums'),
   stadium: (id: number) => j<StadiumDetail>('/api/stadiums/' + id),
 }
