@@ -39,6 +39,7 @@ class Draw:
     texture: int | None
     tris: list[tuple]  # ((p,n,t),(p,n,t),(p,n,t)) index triples; None where absent
     matrix: tuple | None = None
+    overlay: int | None = None   # a second texture stage (setting byte 1 = 0x20): a reflection map or a decal laid over the base
 
 
 @dataclass
@@ -218,12 +219,19 @@ def parse_geopalette(data: bytes, base: int) -> Model | None:
             pbank, pstates, nstates = struct.unpack_from(">IIH", data, dol + pdisp)
             layout = None
             tex = None
+            overlay = None
             mtx = None
             for s in range(nstates):
                 sid, setting, plist, blen = struct.unpack_from(">BxxxIII", data, dol + pstates + s * 16)
                 if sid == 1:
+                    # 0xAA11SSii: ii = texture index, SS = the stage: 0 is the
+                    # base texture, 0x20 a second stage laid over it (the
+                    # props' sphere-mapped reflections, Heihachi's shirt decal)
                     if (setting >> 16) & 0xFF == 0x11:
-                        tex = setting & 0xFF
+                        if (setting >> 8) & 0xFF == 0:
+                            tex = setting & 0xFF
+                        else:
+                            overlay = setting & 0xFF
                 elif sid == 2:
                     layout = _vertex_layout(setting)
                 elif sid == 3:
@@ -231,7 +239,8 @@ def parse_geopalette(data: bytes, base: int) -> Model | None:
                 if plist and layout:
                     tris = _primitives(data, dol + plist, blen, layout)
                     if tris:
-                        draws.append(Draw(tex, tris, mtx))
+                        draws.append(Draw(tex, tris, mtx, overlay=overlay))
+                        overlay = None
         meshes.append(Mesh(name, positions, normals, uvs, draws, tpl_names, colors=colors))
     return Model(meshes)
 

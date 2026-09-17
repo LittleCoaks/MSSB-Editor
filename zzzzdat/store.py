@@ -813,7 +813,7 @@ class Store:
             # a prop pack (ball.gpc, ball_kage.gpc): each object is followed by
             # its own texture table, and its draws count from that table
             m = c3.Model([c3.Mesh(mm.name, mm.positions, mm.normals, mm.uvs,
-                                  [c3.Draw(None if d.texture is None else d.texture + base, d.tris, d.matrix) for d in mm.draws],
+                                  [c3.Draw(None if d.texture is None else d.texture + base, d.tris, d.matrix, overlay=d.overlay) for d in mm.draws],
                                   mm.tpl_names, attach=mm.attach) for mm in m.meshes])
         used = {d.texture for mm in m.meshes for d in mm.draws if d.texture is not None}
         pngs, modes = self._decode(texs, tex_data, used)
@@ -838,7 +838,7 @@ class Store:
                 shift = next_tex if ptexs else 0
                 for mm in meshes:
                     mm = c3.Mesh(mm.name, mm.positions, mm.normals, mm.uvs,
-                                 [c3.Draw(None if d.texture is None else d.texture + shift, d.tris, d.matrix) for d in mm.draws],
+                                 [c3.Draw(None if d.texture is None else d.texture + shift, d.tris, d.matrix, overlay=d.overlay) for d in mm.draws],
                                  mm.tpl_names, attach=self.PART_BONES.get(mm.name))
                     m.meshes.append(mm)
                 if ptexs:

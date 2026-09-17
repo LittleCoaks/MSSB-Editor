@@ -208,6 +208,7 @@ def to_png(w: int, h: int, rgba: bytes) -> bytes:
 # same 0x1111 word), so how a texture wants compositing is read off its own
 # pixels instead.
 
+BLEND_PARTIAL = 0.02   # share of half-clear pixels that makes a texture a real gradient rather than a cutout with soft edges
 MIN_PARTIAL = 0.005   # below this, stray part-alpha pixels are dithering, not a gradient
 FLAT_RGB = 32         # a colour that varies less than this carries no picture of its own
 ALPHA_RANGE = 64      # while an alpha that varies more than this does
@@ -264,9 +265,14 @@ def composite_kind(rgba: bytes) -> str:
             hi[3] < 255                                        # never solid anywhere
             or (max(hi[c] - lo[c] for c in range(3)) <= FLAT_RGB and hi[3] - lo[3] > ALPHA_RANGE)):
         return "alpha"
-    if partial > n * MIN_PARTIAL:
+    if partial > n * BLEND_PARTIAL:
         return "blend"
     if zero:
+        # a solid picture with clear pixels and only a sprinkling of half-clear
+        # ones (the anti-aliased edge of a cutout; Heihachi's gi is 1.2%
+        # partial): a cutout, not a gradient, or blending sinks the whole body
+        # behind whatever else is translucent. The stadiums' real gradients
+        # start at 2.4% partial.
         return "mask"
     return "add" if black >= n * BLACK_SHARE and dark >= n * DARK_SHARE else "opaque"
 

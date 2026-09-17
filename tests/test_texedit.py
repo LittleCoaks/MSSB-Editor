@@ -216,9 +216,14 @@ def test_composite_kind_reads_the_pixels():
             grad += bytes((x * 8, y * 8, 128, 255))
     grad[3] = 128
     assert gx.composite_kind(grad) == "opaque"          # one stray pixel is dithering
-    for i in range(0, 20 * 4, 4):
+    for i in range(0, 30 * 4, 4):                       # ~3%: the stadiums' real gradients start at 2.4%
         grad[i + 3] = 128
     assert gx.composite_kind(grad) == "blend"
+    # a cutout with soft edges: clear pixels plus a sprinkling of half-clear
+    # ones (Heihachi's gi is 1.2% partial) is still a cutout, not a gradient
+    soft = bytearray(grad)                                # a real picture, not a flat colour
+    soft[3::4] = bytes(0 if i < 40 else (128 if i < 52 else 255) for i in range(n))
+    assert gx.composite_kind(soft) == "mask"
     # an overlay: a picture with nothing solid anywhere in it, so there is no
     # threshold to test against and it has to be blended wherever it is drawn
     over = bytearray(grad)
