@@ -241,6 +241,7 @@
               {/if}</td></tr>
             <tr><th>Size</th><td>{kb(d.size)} ({hex(d.size)}), {d.compressed ? `LZSS compressed to ${kb(d.disc_size)}` : 'stored uncompressed'}</td></tr>
             <tr><th>Loaded by</th><td>{d.refs.join(', ')}</td></tr>
+            {#if d.path}<tr><th>Path</th><td><code>{d.path}</code></td></tr>{/if}
             {#if d.known}<tr><th>Name</th><td>{d.known}</td></tr>{/if}
             {#if d.tag}<tr><th>Analysis</th><td>{tagText(d.tag)}{#if d.twin >= 0} <a href="#/entry/{d.twin}">{d.tag.startsWith('animsrc') ? 'names the shipped bank' : 'identical to'} file {d.twin}</a>{/if}</td></tr>{/if}
             {#if d.names.length}<tr><th>Embedded names</th><td>{d.names.join(', ')}</td></tr>{/if}

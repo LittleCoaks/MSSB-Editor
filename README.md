@@ -293,7 +293,7 @@ file across its slots). The viewer draws every model section of a file
 together (`/api/entry/<id>/model/all.glb`, or `all.dae`): the park, its sky dome drawn
 inside-out so the camera can look through it, and the sun-glare billboard
 (a mesh named 加算光, "additive light") blended additively. Each park's prop
-pack (game.rel's `marioStadiumCDR` table) is drawn into the scene one model
+pack (game.rel's `StadiumPropFiles` table) is drawn into the scene one model
 at a time, rigged, each looping its own animation (*animated* toggle):
 scenery the pack's actors place themselves (waves, river, smoke), and the
 instanced props wherever game.rel's placement tables stand a copy
@@ -434,7 +434,7 @@ Two ADPCM flavours are decoded to WAV on the fly (`zzzzdat/dsp.py`):
   references it; it sits between two referenced files (`p_machine00.gpc` and
   `chain.gpc`), so it was packed by the build like any other asset, presumably
   a placeholder or test stream someone forgot to remove. The sound effects and
-  voice lines are in the MusyX groups of the `lbl_800EF508` series (see below).
+  voice lines are in the MusyX groups of the `audioFileTable` series (see below).
 
 ## Desktop window and packaging
 
@@ -499,6 +499,25 @@ they come from:
 | `scan:AdGCForm` | 345 | files tagged with an `AdGCForm` fingerprint: one 5 MB stored DSP-ADPCM bank at 0x8F2E800, plus 344 compressed texture containers packed back to back at 0x19C86800-0x1A15E800 |
 | `scan:lzss-probe` | 641 | every 0x800 boundary in the remaining gaps that decodes as LZSS; a stream is assumed to run to the next hit. Their decompressed sizes are approximate (a little trailing junk decoded from padding is possible). |
 
+### Names: tables and paths
+
+The game has no file names, only descriptor tables, so names come in two
+layers. The **tables** carry real symbol names in the decomp
+(`CharacterFiles[54][19]`, `AramCharacterFiles`, `CharacterHandFiles`,
+`CommonUIFiles_inGame`, `StadiumPropFiles`...): `index/symbol_names.json`
+records each one with what its index means, the code that reads it and how
+sure that is, plus the symbols still waiting for better evidence. Every
+**file** then gets a path built from its table slot (`zzzzdat/names.py`):
+`char/waluigi/model` is `CharacterFiles[11][0]`, `char/waluigi/anim_motb` its
+batting bank (the track's development file name), `char/mario/handpose_batting`
+a hand-pose track, `char/shared/handpose_event_set_03` a shared event set.
+Files outside the character tables are named after the asset name embedded in
+them or their community name (`stadium/...`, `prop/...`, `tex/...`,
+`audio/group_30`); unreferenced files take the name of the file they copy
+(`unreferenced/...`), a cloned slot's own files are `displaced/...`, and the
+few that nothing identifies are `unidentified/<kind>_<offset>`. The path shows
+in the details pane, the search box and `zzzzdat list`.
+
 ### What the unreferenced files are
 
 About 40% of the archive is never named by a descriptor. `zzzzdat/twins.py`
@@ -550,7 +569,7 @@ Index entries are classified by content:
 | `songs` | 2 | MusyX song containers (19 + 1 sequenced songs), exported as MIDI |
 | `text` | 6 | text string tables, decoded to strings (see below) |
 | `roster` | 1 | the character stat table and preset line-ups |
-| `musyx` | 48 | MusyX sound groups from the `lbl_800EF508` table: 47 sound-effect groups (875 effects, 1,300 samples) and one instrument bank |
+| `musyx` | 48 | MusyX sound groups from the `audioFileTable` table: 47 sound-effect groups (875 effects, 1,300 samples) and one instrument bank |
 | `unknown` | 175 | |
 | `dtk-adpcm` | 17 | disc `.adp` music (not in the archive; ids 10000+) |
 
@@ -653,7 +672,7 @@ per-bone matrix channels and names its textures `<model>_tex<n>.png`, which
 ### MusyX sound groups
 
 The game's sound effects run on Factor 5's MusyX engine (the decomp has its
-source under `src/Musyx`). The 48 files of the `lbl_800EF508` table are
+source under `src/Musyx`). The 48 files of the `audioFileTable` table are
 group files: four sections (project, sample directory, pool, sample data)
 that `sndPushGroup` takes as-is. `zzzzdat/musyx.py` documents the layout;
 in short, the project's FX table maps a sound-effect id to a macro, the
@@ -761,7 +780,7 @@ inserted strings are left out, since a menu supplies those at run time.
 
 ### Character stats and line-ups
 
-The first file game.rel loads (`lbl_3_data_0`, 18,144 bytes) is the master
+The first file game.rel loads (`rosterFileDescriptorGame`, 18,144 bytes) is the master
 stat table: 54 `CharacterStats` rows of 0xA0 bytes in roster order, the
 struct the decomp gives for `inMemRoster` (pitching speeds and curve,
 fielding-ability flags, batting contact and power, trajectory, speed, arm,

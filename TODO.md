@@ -47,7 +47,7 @@ Details of what already works are in the README.
       (the file is 18,144 bytes and uncompressed) is a small step from there.
 - [ ] **Line-up records.** Which menu reads the 48 filled 18-byte records
       after the stat rows, and what the nine 0x0A bytes per record are.
-- [ ] **Camera sets** (`lbl_3_data_20FDC`, 461 KB): the stride guess says
+- [ ] **Camera sets** (`cameraDataFileDescriptor`, 461 KB): the stride guess says
       48-byte records; the layout is still unread.
 - [x] Whether an unused model's animations are simply the entries after it in
       the archive. **They are not**, so the viewer will not guess: see
@@ -56,6 +56,15 @@ Details of what already works are in the README.
 - [x] The hand tables, event-track sets, grip records, game.rel tables.
 - [x] The 37 no-character animation source banks.
 - [x] Entry 89's DSP-ADPCM stream ("Letters", Hikaru Utada).
+
+- [ ] **Names still open.** 17 table symbols are left as placeholders in
+      `index/symbol_names.json` ("pending"): the three 54-entry menus.rel
+      character tables (`clone.py` already knows they are per-slot captain-select
+      packs, which may be the evidence the review wanted), the five unplaced
+      `MenuCommonTexFiles` copies, and `lbl_1_data_FB98` (a data pool base).
+      Eight unreferenced animation banks, each followed by a small data file
+      (entries 970/971, 1051/1052...), sit inside characters' animation-source
+      blocks and match nothing; they stay `unidentified/`.
 
 ## Other versions of the game
 
@@ -68,7 +77,7 @@ Details of what already works are in the README.
       list of offsets in the American ZZZZ.dat. The same files could be
       matched across builds by content, so the names carry over.
 - [ ] **Mario Stadium's props** are only recognised on the American disc,
-      where the decomp names the `marioStadiumCDR` table; find that table by
+      where the decomp names the `StadiumPropFiles` table; find that table by
       shape instead.
 
 ## Viewer feedback from the v0.2 testers (2026-09-16)

@@ -96,7 +96,7 @@ def display_name(e: Entry, by_id: dict[int, Entry] | None = None) -> str:
     return ""
 
 STADIUM_NAMES = {
-    "stadiums": "Stadiums (main files)", "marioStadiumCDR": "Mario Stadium props",
+    "stadiums": "Stadiums (main files)", "StadiumPropFiles": "Mario Stadium props",
 }
 
 
@@ -227,7 +227,7 @@ def categorise(e: Entry, fi=None, runs: dict[str, str] | None = None) -> str:
     if cc and cc.get("table") == "subfiles":
         return "character model"
     tbl = table_of(e, runs) if runs is not None else ""
-    if tbl == "marioStadiumCDR" or label in ("sea00.gpc", "parts01.gpc", "wanwan_00.gpc", "packun.gpc", "parts00_00.gpc", "taru00.gpc", "parts0600_00.gpc"):
+    if tbl == "StadiumPropFiles" or label in ("sea00.gpc", "parts01.gpc", "wanwan_00.gpc", "packun.gpc", "parts00_00.gpc", "taru00.gpc", "parts0600_00.gpc"):
         return "stadium props"
     if tbl == "stadiums" or (e.known and ("Stadium" in e.known or "Park" in e.known)) or label.startswith("stadium"):
         return "stadium"
@@ -299,8 +299,8 @@ def build_catalog(entries: list[Entry]) -> dict:
                 g = group("characters", "Characters", re.sub(r"\W+", "_", ch.lower()), ch)
             elif cc or tbl == "event-sets":
                 g = group("characters", "Characters", "_shared", "Hand-pose event sets")
-            elif e.known and ("Stadium" in e.known or "Park" in e.known) or tbl in ("stadiums", "marioStadiumCDR"):
-                name = e.known or ({"stadiums": "Stadium files", "marioStadiumCDR": "Mario Stadium props"}.get(tbl, tbl))
+            elif e.known and ("Stadium" in e.known or "Park" in e.known) or tbl in ("stadiums", "StadiumPropFiles"):
+                name = e.known or ({"stadiums": "Stadium files", "StadiumPropFiles": "Mario Stadium props"}.get(tbl, tbl))
                 g = group("stadiums", "Stadiums", re.sub(r"\W+", "_", name.lower()), name)
             elif e.kind == "anim" and tbl == "subfiles":
                 g = group("characters", "Characters", "_animations", "Animations (unsorted)")
@@ -308,7 +308,7 @@ def build_catalog(entries: list[Entry]) -> dict:
                 g = group("menus", "Menus & UI", "menus_" + tbl, f"Menu textures ({tbl})")
             elif tbl == "screens" and e.ntex:
                 g = group("menus", "Menus & UI", "screens", "Screens & UI (main.dol)")
-            elif tbl == "lbl_1_data_CC8":
+            elif tbl == "DebugTexFiles":
                 g = group("menus", "Menus & UI", "debug", "Debug menu")
             elif e.label and e.label.endswith(".gpc"):
                 g = group("props", "Props & objects", _stem(e.label), e.label.rsplit(".", 1)[0])
