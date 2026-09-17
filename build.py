@@ -64,7 +64,9 @@ if sys.platform == "darwin":
     print(" ".join(cmd))
     sys.exit(subprocess.call(cmd))
 
-candidates = [r"C:\Program Files (x86)\NSIS\makensis.exe", r"C:\Program Files\NSIS\makensis.exe"]
+candidates = [os.path.join(os.environ.get(v, d), "NSIS", "makensis.exe")
+              for v, d in (("ProgramFiles(x86)", r"C:\Program Files (x86)"), ("ProgramFiles", r"C:\Program Files"))]
+candidates.append(os.path.join(os.environ.get("ChocolateyInstall", r"C:\ProgramData\chocolatey"), "bin", "makensis.exe"))
 makensis = shutil.which("makensis") or next((c for c in candidates if Path(c).exists()), None)
 if not makensis:
     sys.exit("makensis not found: install NSIS (https://nsis.sourceforge.io) to build the installer")

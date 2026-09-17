@@ -14,8 +14,10 @@ def get_music(req: Request):
     st = req.ctx.require_store()
     root = music.game_root()
     st.refresh_disc_entries()
-    disc_ids = {e.name.rsplit("/", 1)[-1]: e.id for e in st.entries if e.archive == "disc"}
-    tracks = music.status(root) if root else []
+    disc = [e for e in st.entries if e.archive == "disc"]
+    disc_ids = {e.name.rsplit("/", 1)[-1]: e.id for e in disc}
+    # a disc image has no folder to install into, but its tracks can still be listed and played
+    tracks = music.status(root) if root else music.status_from_listing({e.name.rsplit("/", 1)[-1]: e.size for e in disc})
     for t in tracks:
         t["entry"] = disc_ids.get(t["file"])
     req.json({"root": str(root) if root else None, "tracks": tracks, **music.backends()})

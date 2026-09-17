@@ -60,7 +60,13 @@ jobs:
       - name: Build the HVQM4 movie helper
         run: python native/build_hvqm4.py
       - name: Install NSIS (no longer on the runner image)
-        run: choco install nsis -y --no-progress
+        shell: pwsh
+        run: |
+          choco install nsis -y --no-progress
+          if ($LASTEXITCODE -ne 0) { choco install nsis -y --no-progress --force }
+          $m = Get-ChildItem "C:\Program Files (x86)\NSIS\makensis.exe", "C:\Program Files\NSIS\makensis.exe", "C:\ProgramData\chocolatey\bin\makensis.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $m) { throw "makensis not found after installing NSIS" }
+          & $m.FullName /VERSION
       - run: python build.py --installer
       - name: Smoke test the executable
         shell: pwsh

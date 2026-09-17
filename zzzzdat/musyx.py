@@ -146,28 +146,69 @@ def parse_group(data: bytes) -> Group | None:
         pos += 0x20
     # pool macros -> sample ids
     macros: dict[int, list[int]] = {}
-    if lo + 16 <= lo + ls:
-        macro_off = struct.unpack_from(">I", data, lo)[0]
-        pos = lo + macro_off
-        while pos + 8 <= lo + ls:
+    spawns: dict[int, list[int]] = {}   # macro id -> macros it starts (PLAY_MACRO)
+    mem: dict[str, dict[int, tuple[int, int]]] = {"macros": {}, "keymaps": {}, "layers": {}}
+
+    def mem_list(off: int) -> dict[int, tuple[int, int]]:
+        """MEM_DATA chain at pool + off: {id: (data start, data end)}."""
+        out: dict[int, tuple[int, int]] = {}
+        pos = lo + off
+        while off and pos + 8 <= lo + ls:
             nxt, mid = struct.unpack_from(">IH", data, pos)
             if nxt == 0xFFFFFFFF:
                 break
-            end = min(pos + nxt, lo + ls)
-            ids = []
-            q = pos + 8
+            out[mid] = (pos + 8, min(pos + nxt, lo + ls))
+            if nxt == 0:
+                break
+            pos += nxt
+        return out
+    if lo + 16 <= lo + ls:
+        macro_off, _curve_off, keymap_off, layer_off = struct.unpack_from(">4I", data, lo)
+        mem["macros"] = mem_list(macro_off)
+        mem["keymaps"] = mem_list(keymap_off)
+        mem["layers"] = mem_list(layer_off)
+        for mid, (a, end) in mem["macros"].items():
+            ids, sub = [], []
+            q = a
             while q + 8 <= end:
-                w0, w1 = struct.unpack_from(">II", data, q)
+                w0, _w1 = struct.unpack_from(">II", data, q)
                 op = w0 & 0x7F
                 if op == OP_START_SAMPLE:
                     sid = (w0 >> 8) & 0xFFFF
                     if sid not in ids:
                         ids.append(sid)
+                elif op == OP_PLAY_MACRO:
+                    sub.append((w0 >> 8) & 0xFFFF)
                 q += 8
             macros[mid] = ids
-            if nxt == 0:
-                break
-            pos += nxt
+            spawns[mid] = sub
+
+    def samples_of(mid: int, seen: set | None = None) -> list[int]:
+        """Every sample an sfx object plays: a macro (following the macros it
+        spawns), a layer (id | 0x8000: its macros over every key range) or a
+        keymap (id | 0x4000: one macro per key)."""
+        seen = seen if seen is not None else set()
+        if mid in seen:
+            return []
+        seen.add(mid)
+        out: list[int] = []
+
+        def add(ms):
+            for m in ms:
+                for sid in samples_of(m, seen):
+                    if sid not in out:
+                        out.append(sid)
+        if mid & 0x8000 and mid in mem["layers"]:
+            a, b = mem["layers"][mid]
+            num = struct.unpack_from(">I", data, a)[0] if a + 4 <= b else 0
+            add(struct.unpack_from(">H", data, a + 4 + i * 12)[0] for i in range(min(num, (b - a - 4) // 12)))
+        elif mid & 0x4000 and mid in mem["keymaps"]:
+            a, b = mem["keymaps"][mid]
+            add({struct.unpack_from(">H", data, a + k * 8)[0] for k in range((b - a) // 8)} - {0xFFFF})
+        else:
+            out.extend(macros.get(mid, []))
+            add(spawns.get(mid, []))
+        return out
     # fx table
     sfx = []
     if typ == 1:
@@ -180,7 +221,7 @@ def parse_group(data: bytes) -> Group | None:
                 if q + 10 > po + ps:
                     break
                 fid, mid, _k, _v, prio, maxv, key, pan = struct.unpack_from(">HHBBBBBB", data, q)
-                sfx.append(Sfx(fid, mid, prio, maxv, key, pan, list(macros.get(mid, []))))
+                sfx.append(Sfx(fid, mid, prio, maxv, key, pan, samples_of(mid)))
     return Group(gid, typ, samples, sfx, macros, mo)
 
 

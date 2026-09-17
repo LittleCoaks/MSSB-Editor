@@ -71,6 +71,23 @@ def status(root: Path | str) -> list[dict]:
     return out
 
 
+def status_from_listing(files: dict) -> list[dict]:
+    """The same rows as `status`, for a game with no extracted folder (a disc
+    image): {file name: size} of the .adp files on the disc, nothing
+    replaceable."""
+    out = []
+    for name, label in tracks.STOCK_TRACKS + tracks.CUSTOM_SLOTS:
+        size = files.get(name, 0)
+        exists = name in files
+        out.append({
+            "file": name, "label": label, "custom": name.startswith("custom_"), "category": tracks.category(name),
+            "exists": exists, "size": size,
+            "seconds": round(dtkadpcm.decode.__globals__["SAMPLES_PER_FRAME"] * (size // dtkadpcm.FRAME_BYTES) / dtkadpcm.SAMPLE_RATE, 2) if exists else 0,
+            "stock_size": None, "loop_end": None, "in_table": False, "modified": False, "has_backup": False, "mismatch": False,
+        })
+    return out
+
+
 def install(audio_path: str, root: Path | str, track: str, progress=None, pad_to_stock: bool = True) -> dict:
     return installer.install(audio_path, str(root), track, progress=progress, pad_to_stock=pad_to_stock)
 
