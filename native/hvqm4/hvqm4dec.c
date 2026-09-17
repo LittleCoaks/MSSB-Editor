@@ -54,10 +54,14 @@ static void emit_frame(Player *player, uint32_t index)
     for (uint32_t i = 0; i < h; ++i)
         for (uint32_t j = 0; j < w; ++j)
         {
-            float y = yp[i * w + j], u = up[i / 2 * (w / 2) + j / 2], v = vp[i / 2 * (w / 2) + j / 2];
-            *ptr++ = clamp_u8(y + 1.402f * (v - 128.f));
-            *ptr++ = clamp_u8(y - 0.34414f * (u - 128.f) - 0.71414f * (v - 128.f));
-            *ptr++ = clamp_u8(y + 1.772f * (u - 128.f));
+            /* The movies are video-range BT.601 (black is Y 16, white 235: the intro's
+             * luma spans 13..237), as the console's YUV framebuffer expects. Read as
+             * full range, black came out dark grey and the picture washed out. */
+            float y = 1.164383f * (yp[i * w + j] - 16.f);
+            float u = up[i / 2 * (w / 2) + j / 2] - 128.f, v = vp[i / 2 * (w / 2) + j / 2] - 128.f;
+            *ptr++ = clamp_u8(y + 1.596027f * v);
+            *ptr++ = clamp_u8(y - 0.391762f * u - 0.812968f * v);
+            *ptr++ = clamp_u8(y + 2.017232f * u);
         }
     g_len = 0;
     tje_encode_with_func(jpeg_write, NULL, 3, (int)w, (int)h, 3, rgb);

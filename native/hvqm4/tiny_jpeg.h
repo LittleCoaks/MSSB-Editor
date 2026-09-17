@@ -1160,7 +1160,10 @@ static int tjei_encode_main(TJEState* state,
     // Finish the image.
     { // Flush
         if (location > 0 && location < 8) {
-            tjei_write_bits(state, &bitbuffer, &location, (uint16_t)(8 - location), 0);
+            /* MSSB Editor: pad the last byte with 1-bits, as the JPEG spec (F.1.2.3) says.
+             * Upstream pads with zeros, which a strict decoder can read as more codes. */
+            uint16_t nfill = (uint16_t)(8 - location);
+            tjei_write_bits(state, &bitbuffer, &location, nfill, (uint16_t)((1u << nfill) - 1));
         }
     }
     uint16_t EOI = tjei_be_word(0xffd9);

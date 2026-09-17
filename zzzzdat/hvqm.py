@@ -166,7 +166,7 @@ class Movie:
 
 
 def movie_dir(game_key: str, entry_id: int) -> Path:
-    return CACHE_DIR / game_key / "v2" / "movies" / str(entry_id)
+    return CACHE_DIR / game_key / "v3" / "movies" / str(entry_id)   # v3: video-range colours, spec-correct JPEG padding
 
 
 def load(game_key: str, entry_id: int) -> Movie | None:
